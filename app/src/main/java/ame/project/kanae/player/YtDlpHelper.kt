@@ -220,8 +220,7 @@ class YtDlpHelper(private val context: Context) {
     private suspend fun ensureVisitorData() {
         val current = NewPipeDownloader.getInstance().getVisitorData()
         if (current.isNullOrBlank()) {
-            Log.d(TAG, "visitorData empty, bootstrapping with dummy search...")
-            searchFirstResult("music") // Trigger extraction sekali saja
+            Log.d(TAG, "visitorData empty — akan di-extract otomatis di request pertama (dummy search dihapus)")
         } else {
             Log.d(TAG, "Reusing cached visitorData")
         }

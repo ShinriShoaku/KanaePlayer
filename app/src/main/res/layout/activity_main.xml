@@ -1,402 +1,474 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:background="@color/bg_dark"
+android:fillViewport="true">
+
+<LinearLayout
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/bg_dark"
-    android:fillViewport="true">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎵 Kanae Player"
+        android:textSize="22sp"
+        android:textColor="@color/orange"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
 
-        <!-- ─── Title ───────────────────────────────────────────────────── -->
         <TextView
-            android:layout_width="match_parent"
+            android:id="@+id/tvTiktokStatus"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="🎵 Kanae Player"
-            android:textSize="22sp"
-            android:textColor="@color/orange"
-            android:textStyle="bold"
-            android:layout_marginBottom="12dp" />
+            android:layout_weight="1"
+            android:text="⚫ TikTok Live"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
 
-        <!-- ─── Status badges ───────────────────────────────────────────── -->
+        <TextView
+            android:id="@+id/tvYtdlpStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⚫ yt-dlp"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/card_bg"
+        app:cardCornerRadius="12dp"
+        android:layout_marginBottom="12dp">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:orientation="vertical"
+            android:padding="12dp">
 
             <TextView
-                android:id="@+id/tvTiktokStatus"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="⚫ TikTok Live"
-                android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:text="NOW PLAYING"
+                android:textColor="@color/orange"
+                android:textSize="11sp"
+                android:letterSpacing="0.1" />
 
             <TextView
-                android:id="@+id/tvYtdlpStatus"
-                android:layout_width="0dp"
+                android:id="@+id/tvNowPlaying"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="⚫ yt-dlp"
+                android:text="– Nothing playing –"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="8dp" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="@color/orange" />
+
+            <TextView
+                android:id="@+id/tvProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="0:00 / 0:00"
                 android:textColor="@color/text_secondary"
-                android:textSize="13sp" />
+                android:textSize="12sp"
+                android:layout_marginTop="4dp" />
+
         </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-        <!-- ─── Now playing card ────────────────────────────────────────── -->
-        <androidx.cardview.widget.CardView
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnPlayPause"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="▶ Play"
+            android:backgroundTint="@color/orange"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnSkip"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⏭ Skip"
+            android:backgroundTint="@color/purple"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnStop"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="⏹ Stop"
+            android:backgroundTint="@color/red" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+
+        <Button
+            android:id="@+id/btnOverlay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Playing Overlay"
+            android:backgroundTint="@color/teal"
+            android:layout_marginEnd="6dp" />
+
+        <Button
+            android:id="@+id/btnQueueOverlay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Queue Overlay"
+            android:backgroundTint="@color/purple" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btnShuffle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🔀 OFF"
+        android:backgroundTint="@color/card_bg"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvOverlayWarning"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="⚠️ Overlay permission required for floating window"
+        android:textColor="@color/yellow"
+        android:textSize="12sp"
+        android:visibility="gone"
+        android:layout_marginTop="4dp" />
+
+    <Button
+        android:id="@+id/btnGrantOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Grant Overlay Permission"
+        android:backgroundTint="@color/yellow"
+        android:textColor="@color/bg_dark"
+        android:visibility="gone"
+        android:layout_marginBottom="8dp" />
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/card_bg"
+        app:cardCornerRadius="12dp"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="12dp"
-            android:layout_marginBottom="12dp">
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="ADD TO QUEUE"
+                android:textColor="@color/orange"
+                android:textSize="11sp"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/etYoutubeUrl"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="YouTube URL or search query"
+                android:inputType="textUri"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
 
-                <TextView
-                    android:layout_width="match_parent"
+                <Button
+                    android:id="@+id/btnAddToQueue"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="NOW PLAYING"
+                    android:layout_weight="1"
+                    android:text="+ Add to Queue"
+                    android:backgroundTint="@color/orange"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnClearQueue"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Clear All"
+                    android:backgroundTint="@color/red" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/card_bg"
+        app:cardCornerRadius="12dp"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="QUEUE"
                     android:textColor="@color/orange"
                     android:textSize="11sp"
                     android:letterSpacing="0.1" />
-
                 <TextView
-                    android:id="@+id/tvNowPlaying"
-                    android:layout_width="match_parent"
+                    android:id="@+id/tvQueueCount"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="– Nothing playing –"
-                    android:textColor="@color/text_primary"
-                    android:textSize="16sp"
-                    android:maxLines="2"
-                    android:ellipsize="end"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginBottom="8dp" />
-
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="6dp"
-                    android:max="100"
-                    android:progress="0"
-                    android:progressTint="@color/orange" />
-
-                <TextView
-                    android:id="@+id/tvProgress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="0:00 / 0:00"
+                    android:text="Queue: 0"
                     android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvQueue"
+                android:layout_width="match_parent"
+                android:layout_height="280dp"
+                android:layout_marginTop="8dp"
+                android:nestedScrollingEnabled="false" />
+
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/card_bg"
+        app:cardCornerRadius="12dp"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TIKTOK LIVE CHAT"
+                android:textColor="@color/orange"
+                android:textSize="11sp"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="6dp" />
+
+            <ScrollView
+                android:id="@+id/scrollChat"
+                android:layout_width="match_parent"
+                android:layout_height="160dp">
+
+                <TextView
+                    android:id="@+id/tvChatLog"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text=""
+                    android:textColor="@color/white"
                     android:textSize="12sp"
-                    android:layout_marginTop="4dp" />
+                    android:fontFamily="monospace" />
+            </ScrollView>
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardBackgroundColor="@color/card_bg"
+        app:cardCornerRadius="12dp"
+        android:layout_marginBottom="24dp">
 
-        <!-- ─── Controls row ────────────────────────────────────────────── -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="12dp"
-            android:gravity="center">
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <Button
-                android:id="@+id/btnPlayPause"
-                android:layout_width="0dp"
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="▶ Play"
+                android:text="SETTINGS"
+                android:textColor="@color/orange"
+                android:textSize="11sp"
+                android:letterSpacing="0.1"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="EulerStream API Key"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etApiKey"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="eulerstream_api_key_here"
+                android:inputType="textPassword"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
                 android:backgroundTint="@color/orange"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="TikTok Username"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etTiktokUser"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@yourtiktokname"
+                android:inputType="text"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="COMMAND PREFIXES (comma separated)"
+                android:textColor="@color/orange"
+                android:textSize="11sp"
+                android:letterSpacing="0.1"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Request (e.g. #req,#request,#lagu)"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            <EditText
+                android:id="@+id/etCmdRequest"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="#req,#request,#lagu,#song"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Skip (e.g. #skip,#next)"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            <EditText
+                android:id="@+id/etCmdSkip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="#skip,#next,#lewat"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Stop (e.g. #stop)"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            <EditText
+                android:id="@+id/etCmdStop"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="#stop"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Queue (e.g. #queue)"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            <EditText
+                android:id="@+id/etCmdQueue"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="#queue,#antrian,#q"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange"
+                android:layout_marginBottom="10dp" />
 
             <Button
-                android:id="@+id/btnSkip"
-                android:layout_width="0dp"
+                android:id="@+id/btnSaveSettings"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="⏭ Skip"
-                android:backgroundTint="@color/purple"
-                android:layout_marginEnd="6dp" />
+                android:text="💾 Save &amp; Connect"
+                android:backgroundTint="@color/orange" />
 
-            <Button
-                android:id="@+id/btnStop"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="⏹ Stop"
-                android:backgroundTint="@color/red" />
         </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-        <!-- ─── Overlay + Shuffle ────────────────────────────────────────── -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="4dp">
-
-            <Button
-                android:id="@+id/btnOverlay"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Show Overlay"
-                android:backgroundTint="@color/teal"
-                android:layout_marginEnd="6dp" />
-
-            <Button
-                android:id="@+id/btnShuffle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="🔀 OFF"
-                android:backgroundTint="@color/card_bg" />
-        </LinearLayout>
-
-        <!-- Overlay permission warning -->
-        <TextView
-            android:id="@+id/tvOverlayWarning"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="⚠️ Overlay permission required for floating window"
-            android:textColor="@color/yellow"
-            android:textSize="12sp"
-            android:visibility="gone"
-            android:layout_marginTop="4dp" />
-
-        <Button
-            android:id="@+id/btnGrantOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Grant Overlay Permission"
-            android:backgroundTint="@color/yellow"
-            android:textColor="@color/bg_dark"
-            android:visibility="gone"
-            android:layout_marginBottom="8dp" />
-
-        <!-- ─── Add to queue ─────────────────────────────────────────────── -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="12dp"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="ADD TO QUEUE"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:layout_marginBottom="6dp" />
-
-                <EditText
-                    android:id="@+id/etYoutubeUrl"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="YouTube URL or search query"
-                    android:inputType="textUri"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:backgroundTint="@color/orange" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
-
-                    <Button
-                        android:id="@+id/btnAddToQueue"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="+ Add to Queue"
-                        android:backgroundTint="@color/orange"
-                        android:layout_marginEnd="6dp" />
-
-                    <Button
-                        android:id="@+id/btnClearQueue"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Clear All"
-                        android:backgroundTint="@color/red" />
-                </LinearLayout>
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- ─── Queue list ───────────────────────────────────────────────── -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="12dp"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="QUEUE"
-                        android:textColor="@color/orange"
-                        android:textSize="11sp"
-                        android:letterSpacing="0.1" />
-                    <TextView
-                        android:id="@+id/tvQueueCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Queue: 0"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvQueue"
-                    android:layout_width="match_parent"
-                    android:layout_height="280dp"
-                    android:layout_marginTop="8dp"
-                    android:nestedScrollingEnabled="false" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- ─── TikTok Chat log ──────────────────────────────────────────── -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="12dp"
-            android:layout_marginBottom="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="TIKTOK LIVE CHAT"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:layout_marginBottom="6dp" />
-
-                <ScrollView
-                    android:id="@+id/scrollChat"
-                    android:layout_width="match_parent"
-                    android:layout_height="160dp">
-
-                    <TextView
-                        android:id="@+id/tvChatLog"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text=""
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace" />
-                </ScrollView>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- ─── Settings ────────────────────────────────────────────────── -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="12dp"
-            android:layout_marginBottom="24dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="SETTINGS"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1"
-                    android:layout_marginBottom="8dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="EulerStream API Key"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-                <EditText
-                    android:id="@+id/etApiKey"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="eulerstream_api_key_here"
-                    android:inputType="textPassword"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:backgroundTint="@color/orange"
-                    android:layout_marginBottom="10dp" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="TikTok Username"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-
-                <EditText
-                    android:id="@+id/etTiktokUser"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@yourtiktokname"
-                    android:inputType="text"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:backgroundTint="@color/orange"
-                    android:layout_marginBottom="10dp" />
-
-                <Button
-                    android:id="@+id/btnSaveSettings"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="💾 Save &amp; Connect"
-                    android:backgroundTint="@color/orange" />
-
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-    </LinearLayout>
+</LinearLayout>
 </ScrollView>

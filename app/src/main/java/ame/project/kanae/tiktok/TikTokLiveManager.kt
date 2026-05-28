@@ -3,24 +3,11 @@ package ame.project.kanae.tiktok
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonObject
+import com.google.gson.JsonElement
 import ame.project.kanae.model.TikTokChat
 import kotlinx.coroutines.*
 import okhttp3.*
 
-/**
- * TikTokLiveManager
- *
- * Connects to EulerStream API to receive TikTok Live chat in real-time.
- *
- * EulerStream WebSocket endpoint:
- *   wss://eulerstream.com/ws?api_key=KEY&unique_id=USERNAME
- *
- * HTTP fallback (polling every 2 s):
- *   GET https://eulerstream.com/api/v1/fetch/chat?unique_id=USERNAME&limit=20
- *   Header: X-API-Key: KEY
- *
- * Register a listener via [onChat] to receive parsed TikTokChat objects.
- */
 class TikTokLiveManager(
     private val apiKey: String,
     private val tiktokUsername: String,
@@ -28,18 +15,17 @@ class TikTokLiveManager(
 ) {
     companion object {
         private const val TAG = "TikTokLiveManager"
-        private const val WS_URL = "wss://eulerstream.com/ws"
-        private const val HTTP_URL = "https://eulerstream.com/api/v1/fetch/chat"
+        private const val WS_URL = "wss://ws.eulerstream.com"
+        private const val HTTP_URL = "https://tiktok.eulerstream.com/webcast/fetch"
         private const val POLL_INTERVAL_MS = 2_000L
-
-        // ── Command prefixes (mirror config from main.py) ──────────────────
-        private val CMD_REQUEST = listOf("#req", "#request", "#lagu", "#song")
-        private val CMD_SKIP    = listOf("#skip", "#next", "#lewat")
-        private val CMD_STOP    = listOf("#stop")
-        private val CMD_QUEUE   = listOf("#queue", "#antrian", "#q")
     }
 
-    // ── Public callbacks ──────────────────────────────────────────────────────
+    data class CommandConfig(
+        val requestPrefixes: List<String> = listOf("#req", "#request", "#lagu", "#song"),
+        val skipPrefixes: List<String> = listOf("#skip", "#next", "#lewat"),
+        val stopPrefixes: List<String> = listOf("#stop"),
+        val queuePrefixes: List<String> = listOf("#queue", "#antrian", "#q")
+    )
 
     var onChat: ((TikTokChat) -> Unit)? = null
     var onConnected: (() -> Unit)? = null
@@ -49,17 +35,17 @@ class TikTokLiveManager(
     var isConnected: Boolean = false
         private set
 
-    // ── Private ───────────────────────────────────────────────────────────────
-
     private val client = OkHttpClient()
     private val gson = Gson()
     private var wsConnection: WebSocket? = null
     private var pollJob: Job? = null
-    private var lastChatIds = mutableSetOf<String>()   // dedup for HTTP polling
+    private var lastChatIds = mutableSetOf<String>()
+    private var commandConfig = CommandConfig()
 
-    // ── Public API ────────────────────────────────────────────────────────────
+    fun setCommandConfig(config: CommandConfig) {
+        commandConfig = config
+    }
 
-    /** Starts WebSocket connection; falls back to HTTP polling on failure. */
     fun connect() {
         if (tiktokUsername.isBlank() || apiKey.isBlank()) {
             onError?.invoke("TikTok username or EulerStream API key is empty")
@@ -78,20 +64,24 @@ class TikTokLiveManager(
         Log.d(TAG, "Disconnected")
     }
 
-    // ── WebSocket ─────────────────────────────────────────────────────────────
-
     private fun connectWebSocket() {
-        val url = "$WS_URL?api_key=${apiKey.trim()}&unique_id=${tiktokUsername.trim()}"
-        val request = Request.Builder().url(url).build()
+        val cleanUsername = tiktokUsername.trim().removePrefix("@")
+        val url = "$WS_URL?apiKey=${apiKey.trim()}&uniqueId=$cleanUsername"
+        Log.d(TAG, "WS Connecting to: $url")
+        val request = Request.Builder()
+            .url(url)
+            .header("User-Agent", "TikTokLiveManager/1.0")
+            .build()
 
         wsConnection = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WS onOpen")
+                Log.d(TAG, "WS onOpen. Response: ${response.message}")
                 isConnected = true
-                onConnected?.invoke()
+                scope.launch(Dispatchers.Main) { onConnected?.invoke() }
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
+                Log.d(TAG, "WS Message: $text")
                 parseWsMessage(text)
             }
 
@@ -110,30 +100,68 @@ class TikTokLiveManager(
         })
     }
 
-    /** Parses an EulerStream WebSocket JSON message. */
     private fun parseWsMessage(text: String) {
         try {
             val obj = gson.fromJson(text, JsonObject::class.java)
-            // EulerStream emits { "event": "chat", "data": { ... } }
-            val event = obj["event"]?.asString ?: return
-            val data  = obj["data"]?.asJsonObject ?: return
 
-            when (event) {
-                "chat", "comment" -> {
-                    val msg = buildChat(data) ?: return
+            // 1. Check for Bundled Messages format: { "messages": [ { "type": "...", "data": { ... } } ] }
+            if (obj.has("messages") && obj["messages"].isJsonArray) {
+                val messages = obj.getAsJsonArray("messages")
+                messages.forEach { el ->
+                    if (!el.isJsonObject) return@forEach
+                    val msgObj = el.asJsonObject
+                    val type = msgObj["type"]?.asString ?: ""
+                    val data = msgObj["data"]?.asJsonObject ?: return@forEach
+
+                    when (type) {
+                        "WebcastChatMessage", "chat", "comment", "message" -> {
+                            val chat = buildChat(data) ?: return@forEach
+                            scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
+                        }
+                        "roomInfo", "connect_success", "roomUser", "tiktok.connect" -> {
+                            if (!isConnected) {
+                                isConnected = true
+                                scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                            }
+                        }
+                    }
+                }
+                return
+            }
+
+            // 2. Check for Legacy Wrapped format: { "event": "chat", "data": { ... } }
+            if (obj.has("event") && obj.has("data") && obj["data"].isJsonObject) {
+                val event = obj["event"].asString
+                val data = obj["data"].asJsonObject
+                when (event) {
+                    "chat", "comment", "message", "WebcastChatMessage" -> {
+                        val msg = buildChat(data) ?: return
+                        scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
+                    }
+                    "connect_success", "roomUser" -> {
+                        isConnected = true
+                        scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                    }
+                }
+                return
+            }
+
+            // 3. Check for Flat format: { "type": "chat", "comment": "..." }
+            val type = (obj["type"] ?: obj["event"])?.asString
+            when (type) {
+                "chat", "comment", "message", "WebcastChatMessage" -> {
+                    val msg = buildChat(obj) ?: return
                     scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                 }
-                "connect_success" -> {
+                "connect_success", "roomUser" -> {
                     isConnected = true
                     scope.launch(Dispatchers.Main) { onConnected?.invoke() }
                 }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "parseWsMessage error: ${e.message}")
+            Log.e(TAG, "parseWsMessage error: ${e.message} | raw: $text")
         }
     }
-
-    // ── HTTP Polling Fallback ─────────────────────────────────────────────────
 
     private fun startHttpPolling() {
         pollJob?.cancel()
@@ -150,24 +178,53 @@ class TikTokLiveManager(
 
     private fun fetchChatHttp() {
         try {
+            val cleanUsername = tiktokUsername.trim().removePrefix("@")
+            val url = "$HTTP_URL?uniqueId=$cleanUsername&apiKey=${apiKey.trim()}&limit=20"
             val request = Request.Builder()
-                .url("$HTTP_URL?unique_id=${tiktokUsername.trim()}&limit=20")
-                .header("X-API-Key", apiKey.trim())
+                .url(url)
+                .header("User-Agent", "TikTokLiveManager/1.0")
                 .get()
                 .build()
 
             client.newCall(request).execute().use { resp ->
-                if (!resp.isSuccessful) return
+                if (!resp.isSuccessful) {
+                    Log.e(TAG, "fetchChatHttp unsuccessful: ${resp.code} ${resp.message}")
+                    return
+                }
                 val body = resp.body?.string() ?: return
-                val arr = gson.fromJson(body, com.google.gson.JsonArray::class.java) ?: return
+                // Check if it's an array or object
+                val json = gson.fromJson(body, com.google.gson.JsonElement::class.java)
+                val arr = if (json.isJsonArray) {
+                    json.asJsonArray
+                } else if (json.isJsonObject) {
+                    val obj = json.asJsonObject
+                    when {
+                        obj.has("messages") && obj["messages"].isJsonArray -> obj.getAsJsonArray("messages")
+                        obj.has("data") && obj["data"].isJsonArray -> obj.getAsJsonArray("data")
+                        obj.has("chats") && obj["chats"].isJsonArray -> obj.getAsJsonArray("chats")
+                        else -> null
+                    }
+                } else {
+                    null
+                } ?: return
 
                 arr.forEach { el ->
+                    if (!el.isJsonObject) return@forEach
                     val obj = el.asJsonObject
-                    val msgId = obj["id"]?.asString ?: obj["msgId"]?.asString ?: ""
-                    if (msgId in lastChatIds) return@forEach
+                    val msgId = obj["id"]?.asString 
+                        ?: obj["msgId"]?.asString 
+                        ?: obj["msg_id"]?.asString 
+                        ?: obj["unique_id"]?.asString // Fallback to something if no ID
+                        ?: ""
+                    
+                    if (msgId.isNotEmpty() && msgId in lastChatIds) return@forEach
+                    if (msgId.isNotEmpty()) lastChatIds.add(msgId)
 
-                    lastChatIds.add(msgId)
-                    if (lastChatIds.size > 200) lastChatIds = lastChatIds.toList().takeLast(100).toMutableSet()
+                    if (lastChatIds.size > 200) {
+                        val lastList = lastChatIds.toList().takeLast(100)
+                        lastChatIds.clear()
+                        lastChatIds.addAll(lastList)
+                    }
 
                     val chat = buildChat(obj) ?: return@forEach
                     scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
@@ -178,17 +235,25 @@ class TikTokLiveManager(
         }
     }
 
-    // ── Chat Builder ──────────────────────────────────────────────────────────
-
     private fun buildChat(data: JsonObject): TikTokChat? {
+        Log.d(TAG, "Building chat from: $data")
         return try {
             val uniqueId = data["uniqueId"]?.asString
                 ?: data["unique_id"]?.asString
                 ?: data["user"]?.asJsonObject?.get("uniqueId")?.asString
+                ?: data["user"]?.asJsonObject?.get("unique_id")?.asString
+                ?: data["nickname"]?.asString // Fallback to nickname as ID
                 ?: return null
-            val nickname = data["nickname"]?.asString ?: uniqueId
+            
+            val nickname = data["nickname"]?.asString 
+                ?: data["user"]?.asJsonObject?.get("nickname")?.asString
+                ?: uniqueId
+            
             val comment  = data["comment"]?.asString
                 ?: data["message"]?.asString
+                ?: data["text"]?.asString
+                ?: data["content"]?.asString
+                ?: data["msg"]?.asString
                 ?: return null
 
             val (cmdType, cmdArg) = parseCommand(comment)
@@ -205,19 +270,16 @@ class TikTokLiveManager(
         }
     }
 
-    // ── Command Parser ────────────────────────────────────────────────────────
-
     private fun parseCommand(text: String): Pair<TikTokChat.CommandType, String?> {
         val lower = text.lowercase().trim()
-        CMD_REQUEST.forEach { prefix ->
+        commandConfig.requestPrefixes.forEach { prefix ->
             if (lower.startsWith(prefix)) {
-                val arg = text.substring(prefix.length).trim()
-                return TikTokChat.CommandType.REQUEST to arg
+                return TikTokChat.CommandType.REQUEST to text.substring(prefix.length).trim()
             }
         }
-        CMD_SKIP.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.SKIP to null }
-        CMD_STOP.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.STOP to null }
-        CMD_QUEUE.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.QUEUE to null }
+        commandConfig.skipPrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.SKIP to null }
+        commandConfig.stopPrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.STOP to null }
+        commandConfig.queuePrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.QUEUE to null }
         return TikTokChat.CommandType.NONE to null
     }
 }

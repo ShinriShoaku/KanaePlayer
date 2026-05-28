@@ -19,15 +19,14 @@ import com.google.android.material.snackbar.Snackbar
 import ame.project.kanae.databinding.ActivityMainBinding
 import ame.project.kanae.model.Song
 import ame.project.kanae.service.PlayerForegroundService
+import ame.project.kanae.tiktok.TikTokLiveManager
 
 class MainActivity : AppCompatActivity() {
 
     companion object { private const val TAG = "MainActivity" }
 
-    // ── ViewBinding ───────────────────────────────────────────────────────────
     private lateinit var binding: ActivityMainBinding
 
-    // ── Service binding ───────────────────────────────────────────────────────
     private var service: PlayerForegroundService? = null
     private var serviceBound = false
 
@@ -44,7 +43,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ── BroadcastReceiver for state & chat updates ────────────────────────────
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, intent: Intent) {
             when (intent.action) {
@@ -58,13 +56,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ── Queue adapter ─────────────────────────────────────────────────────────
     private val queueAdapter = QueueAdapter(
         onRemove = { pos -> service?.removeFromQueue(pos) },
         onPlay   = { song -> service?.playSong(song) }
     )
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,11 +70,9 @@ class MainActivity : AppCompatActivity() {
         setupButtons()
         loadSavedSettings()
 
-        // Start + bind service
         startForegroundService(Intent(this, PlayerForegroundService::class.java))
         bindService(Intent(this, PlayerForegroundService::class.java), connection, BIND_AUTO_CREATE)
 
-        // Register broadcast
         val filter = IntentFilter().apply {
             addAction(PlayerForegroundService.BROADCAST_STATE)
             addAction(PlayerForegroundService.BROADCAST_CHAT)
@@ -98,10 +91,7 @@ class MainActivity : AppCompatActivity() {
         unregisterReceiver(stateReceiver)
     }
 
-    // ── Permission handling ───────────────────────────────────────────────────
-
     private fun checkPermissions() {
-        // POST_NOTIFICATIONS (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED
@@ -109,9 +99,9 @@ class MainActivity : AppCompatActivity() {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
-        // SYSTEM_ALERT_WINDOW (overlay)
         if (!Settings.canDrawOverlays(this)) {
             binding.btnOverlay.isEnabled = false
+            binding.btnQueueOverlay.isEnabled = false
             binding.tvOverlayWarning.visibility = View.VISIBLE
             binding.btnGrantOverlay.visibility  = View.VISIBLE
         }
@@ -133,14 +123,13 @@ class MainActivity : AppCompatActivity() {
     private val overlayPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (Settings.canDrawOverlays(this)) {
-                binding.btnOverlay.isEnabled    = true
+                binding.btnOverlay.isEnabled = true
+                binding.btnQueueOverlay.isEnabled = true
                 binding.tvOverlayWarning.visibility = View.GONE
                 binding.btnGrantOverlay.visibility  = View.GONE
                 snack("Overlay permission granted!")
             }
         }
-
-    // ── UI Setup ──────────────────────────────────────────────────────────────
 
     private fun setupRecyclerView() {
         binding.rvQueue.apply {
@@ -171,7 +160,7 @@ class MainActivity : AppCompatActivity() {
             val svc = service ?: return@setOnClickListener
             if (svc.overlayVisible) {
                 svc.hideOverlay()
-                binding.btnOverlay.text = "Show Overlay"
+                binding.btnOverlay.text = "Playing Overlay"
             } else {
                 if (!Settings.canDrawOverlays(this)) {
                     requestOverlayPermission(); return@setOnClickListener
@@ -181,18 +170,42 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        binding.btnQueueOverlay.setOnClickListener {
+            val svc = service ?: return@setOnClickListener
+            if (!Settings.canDrawOverlays(this)) {
+                requestOverlayPermission(); return@setOnClickListener
+            }
+            svc.toggleQueueOverlay()
+        }
+
         binding.btnGrantOverlay.setOnClickListener { requestOverlayPermission() }
 
         binding.btnSaveSettings.setOnClickListener {
+            val svc = service ?: return@setOnClickListener
+            val state = svc.getStateMap()
+            val tiktokOk = state["tiktok_connected"] as? Boolean ?: false
+
+            if (tiktokOk) {
+                svc.saveSettings("", "", null) // This will trigger disconnect in service
+                snack("Disconnecting...")
+                return@setOnClickListener
+            }
+
             val apiKey   = binding.etApiKey.text.toString().trim()
             val username = binding.etTiktokUser.text.toString().trim()
             if (apiKey.isBlank() || username.isBlank()) {
                 snack("API Key and TikTok username are required")
                 return@setOnClickListener
             }
-            service?.saveSettings(apiKey, username)
-            saveSettingsToPrefs(apiKey, username)
-            snack("Settings saved – reconnecting TikTok Live…")
+            val cmdConfig = TikTokLiveManager.CommandConfig(
+                requestPrefixes = binding.etCmdRequest.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() },
+                skipPrefixes    = binding.etCmdSkip.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() },
+                stopPrefixes    = binding.etCmdStop.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() },
+                queuePrefixes   = binding.etCmdQueue.text.toString().split(",").map { it.trim() }.filter { it.isNotBlank() }
+            )
+            svc.saveSettings(apiKey, username, cmdConfig)
+            saveSettingsToPrefs(apiKey, username, cmdConfig)
+            snack("Settings saved – connecting TikTok Live…")
         }
     }
 
@@ -200,23 +213,30 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("ytplayer_prefs", MODE_PRIVATE)
         binding.etApiKey.setText(prefs.getString("euler_api_key", ""))
         binding.etTiktokUser.setText(prefs.getString("tiktok_username", ""))
+        binding.etCmdRequest.setText(prefs.getString("cmd_request", "#req,#request,#lagu,#song"))
+        binding.etCmdSkip.setText(prefs.getString("cmd_skip", "#skip,#next,#lewat"))
+        binding.etCmdStop.setText(prefs.getString("cmd_stop", "#stop"))
+        binding.etCmdQueue.setText(prefs.getString("cmd_queue", "#queue,#antrian,#q"))
     }
 
-    private fun saveSettingsToPrefs(apiKey: String, username: String) {
-        getSharedPreferences("ytplayer_prefs", MODE_PRIVATE).edit()
+    private fun saveSettingsToPrefs(apiKey: String, username: String, cmdConfig: TikTokLiveManager.CommandConfig? = null) {
+        val editor = getSharedPreferences("ytplayer_prefs", MODE_PRIVATE).edit()
             .putString("euler_api_key", apiKey)
             .putString("tiktok_username", username)
-            .apply()
+        cmdConfig?.let {
+            editor.putString("cmd_request", it.requestPrefixes.joinToString(","))
+            editor.putString("cmd_skip", it.skipPrefixes.joinToString(","))
+            editor.putString("cmd_stop", it.stopPrefixes.joinToString(","))
+            editor.putString("cmd_queue", it.queuePrefixes.joinToString(","))
+        }
+        editor.apply()
     }
-
-    // ── Sync UI with service state ────────────────────────────────────────────
 
     @SuppressLint("SetTextI18n")
     private fun syncUi() {
         val svc = service ?: return
         val state = svc.getStateMap()
 
-        // Now playing
         val songJson  = state["current_song"] as? String
         val isPlaying = state["is_playing"] as? Boolean ?: false
         val isPaused  = state["is_paused"]  as? Boolean ?: false
@@ -241,28 +261,31 @@ class MainActivity : AppCompatActivity() {
         binding.tvQueueCount.text = "Queue: $qCount"
         binding.btnShuffle.text   = if (shuffle) "🔀 ON" else "🔀 OFF"
 
-        // Status indicators
         binding.tvTiktokStatus.text  = if (tiktokOk) "🟢 TikTok Live" else "🔴 TikTok Live"
-        binding.tvYtdlpStatus.text   = if (ytdlpOk) "🟢 yt-dlp ready" else "🟡 yt-dlp downloading…"
+        binding.btnSaveSettings.text = if (tiktokOk) "🔌 DISCONNECT" else "💾 Save & Connect"
+        binding.btnSaveSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(
+            if (tiktokOk) ContextCompat.getColor(this, R.color.red) 
+            else ContextCompat.getColor(this, R.color.orange)
+        )
+
+        binding.tvYtdlpStatus.text   = if (ytdlpOk) "🟢 yt-dlp ready" else "🔴 yt-dlp missing"
         binding.btnOverlay.text = if (svc.overlayVisible) "Hide Overlay" else "Show Overlay"
 
-        // Queue list
         queueAdapter.submitList(svc.getQueue())
     }
 
     private fun addChatLine(line: String) {
         val tv = binding.tvChatLog
-        val current = tv.text.toString()
-        val lines = current.lines().takeLast(30)
-        tv.text = (lines + line).joinToString("\n")
+        val currentText = tv.text.toString()
+        val lines = if (currentText.isEmpty()) emptyList() else currentText.lines()
+        val newLines = (lines + line).takeLast(50)
+        tv.text = newLines.joinToString("\n")
         binding.scrollChat.post { binding.scrollChat.fullScroll(View.FOCUS_DOWN) }
     }
 
     private fun fmt(sec: Int) = "%d:%02d".format(sec / 60, sec % 60)
     private fun snack(msg: String) = Snackbar.make(binding.root, msg, Snackbar.LENGTH_SHORT).show()
 }
-
-// ── Queue RecyclerView Adapter ────────────────────────────────────────────────
 
 class QueueAdapter(
     private val onRemove: (Int) -> Unit,
