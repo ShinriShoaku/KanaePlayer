@@ -1,0 +1,15 @@
+# Java heap dumps
+*.hprof
+
+# Android Studio builds & caches
+.gradle/
+build/
+app/build/
+Captures/
+.idea/workspace.xml
+.idea/libraries/
+local.properties# Project exclude paths
+/.gradle/
+/app/build/
+/app/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/
+/build/

@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  overlay_layout.xml
+  Floating overlay that sits on top of all other apps.
+  The root LinearLayout acts as the drag handle.
+  Width is fixed at 300dp so it doesn't cover the whole screen.
+-->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="300dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/overlay_bg"
+    android:elevation="16dp"
+    android:padding="0dp">
+
+    <!-- ─── Header / drag handle ──────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="36dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/overlay_header"
+        android:paddingStart="10dp"
+        android:paddingEnd="6dp">
+
+        <!-- Live dot -->
+        <View
+            android:id="@+id/overlay_live_dot"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:background="@drawable/dot_red"
+            android:layout_marginEnd="6dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="YT Player"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <!-- Queue badge -->
+        <TextView
+            android:id="@+id/overlay_queue_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Q: 0"
+            android:textColor="#FFCC80"
+            android:textSize="11sp"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Close button -->
+        <ImageButton
+            android:id="@+id/overlay_btn_close"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#FFFFFF"
+            android:contentDescription="Close overlay" />
+    </LinearLayout>
+
+    <!-- ─── Song title ────────────────────────────────────────────── -->
+    <TextView
+        android:id="@+id/overlay_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="– Nothing playing –"
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:maxLines="2"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:singleLine="true"
+        android:scrollHorizontally="true"
+        android:focusable="true"
+        android:focusableInTouchMode="true"
+        android:padding="10dp"
+        android:paddingBottom="4dp" />
+
+    <!-- ─── Progress bar ─────────────────────────────────────────── -->
+    <ProgressBar
+        android:id="@+id/overlay_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:max="100"
+        android:progress="0"
+        android:progressTint="@color/orange"
+        android:progressBackgroundTint="#444444" />
+
+    <!-- ─── Time + Controls ──────────────────────────────────────── -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="10dp"
+        android:paddingEnd="6dp">
+
+        <TextView
+            android:id="@+id/overlay_time"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="0:00 / 0:00"
+            android:textColor="#AAAAAA"
+            android:textSize="11sp" />
+
+        <!-- Play/Pause -->
+        <ImageButton
+            android:id="@+id/overlay_btn_play_pause"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_media_play"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/orange"
+            android:contentDescription="Play/Pause"
+            android:layout_marginEnd="4dp" />
+
+        <!-- Skip -->
+        <ImageButton
+            android:id="@+id/overlay_btn_skip"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:src="@android:drawable/ic_media_next"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#AAAAAA"
+            android:contentDescription="Skip" />
+    </LinearLayout>
+
+</LinearLayout>
