@@ -11,7 +11,8 @@ Aplikasi ini merupakan evolusi dari `main.py` (FastAPI + yt-dlp + mpv) yang seka
 - **TikTok Live Integration**: Terhubung ke live chat TikTok menggunakan **EulerStream API**.
 - **Chat Command System**: Penonton live bisa berinteraksi melalui perintah chat (`#req`, `#skip`, dll) yang dapat dikustomisasi.
 - **Floating Overlay**: Menampilkan informasi lagu (Playing Overlay) dan daftar antrian (Queue Overlay) di atas aplikasi lain.
-- **YouTube Anti-Bot Bypass**: Menggunakan `PoTokenGenerator` (WebView-based) dan `NewPipeDownloader` kustom untuk menghindari blokir YouTube (Error 403/Sign-in required).
+- **YouTube Anti-Bot Bypass**: Menggunakan `PoTokenGenerator` (WebView-based) dan `NewPipeDownloader` kustom untuk menghindari blokir YouTube (Error 403/Sign-in required) po_token berasal didapat
+  ytdlnis.
 - **Background Playback**: Berjalan sebagai Foreground Service agar musik tetap berputar meskipun layar mati atau saat membuka aplikasi lain.
 - **Shuffle & Queue Management**: Mendukung mode acak dan pengelolaan antrian lagu secara real-time.
 
