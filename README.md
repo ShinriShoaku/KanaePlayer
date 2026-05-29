@@ -38,7 +38,6 @@ Aplikasi ini merupakan evolusi dari `main.py` (FastAPI + yt-dlp + mpv) yang seka
 ### 1. Kebutuhan Sistem
 - **Minimum SDK**: 26 (Android 8.0 Oreo)
 - **Target SDK**: 35
-- **Android Studio**: Hedgehog / Ladybug atau lebih baru.
 
 ### 2. Konfigurasi API Key
 1. Dapatkan API Key dari [EulerStream](https://eulerstream.com).
@@ -56,12 +55,13 @@ Aplikasi membutuhkan izin berikut untuk berfungsi:
 
 ## Perintah TikTok Chat (Commands)
 
-| Perintah | Deskripsi | Contoh |
-|---|---|---|
+| Perintah           | Deskripsi                                       | Contoh                                        |
+|--------------------|-------------------------------------------------|-----------------------------------------------|
 | `#req <judul/URL>` | Menambahkan lagu ke antrian via judul atau link | `#req Lathi` atau `#req https://youtu.be/...` |
-| `#skip` / `#next` | Melewati lagu yang sedang diputar | `#skip` |
-| `#stop` | Menghentikan pemutaran musik | `#stop` |
-| `#queue` / `#q` | Melihat daftar antrian lagu | `#queue` |
+| `#skip` / `#next`  | Melewati lagu yang sedang diputar               | `#skip`                                       |
+| `#stop`            | Menghentikan pemutaran musik                    | `#stop`                                       |
+| `#queue` / `#q`    | Melihat daftar antrian lagu                     | `#queue`                                      |
+| `#clear` / `#cm`   | Menghapus antrian lagu                          | `#cm 1 atau #cm noah-menghapus jejakmu.`      |
 
 *Prefix perintah dapat dikonfigurasi sesuka hati melalui menu Settings di dalam aplikasi (misal: ganti `#req` menjadi `#lagu`).*
 
@@ -85,14 +85,6 @@ Aplikasi membutuhkan izin berikut untuk berfungsi:
 
 ---
 
-## Build & Run
-
-1. Clone repository ini.
-2. Buka di Android Studio.
-3. Tunggu Gradle Sync selesai.
-4. Hubungkan perangkat Android dan klik **Run**.
-
----
 
 ## Disclaimer
 Projek ini dibuat untuk keperluan edukasi. Pastikan Anda mematuhi kebijakan penggunaan (ToS) dari platform terkait (YouTube/TikTok).
