@@ -10,4 +10,13 @@
         <item name="android:windowBackground">@color/bg_dark</item>
         <item name="android:navigationBarColor">@color/bg_dark</item>
     </style>
+    <style name="Theme.Canvas" parent="Theme.MaterialComponents.NoActionBar">
+        <!-- Jendela transparan penuh -->
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <!-- Tanpa dim, supaya layar di belakang tetap terlihat -->
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
 </resources>
