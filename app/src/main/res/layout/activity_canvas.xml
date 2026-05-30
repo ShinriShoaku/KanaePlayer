@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  activity_canvas.xml
+  Transparent fullscreen activity.
+  Control bar at top (Edit/Lock toggle + Close).
+  Two overlay widgets (player + queue) positioned with FrameLayout.
+  In EDIT mode: widgets are draggable.
+  In LOCKED mode: widgets are fixed (FLAG_NOT_TOUCHABLE on each view).
+
+  Required in AndroidManifest.xml:
+    <activity android:name=".canvas.CanvasActivity"
+              android:theme="@style/Theme.Canvas"
+              android:exported="false" />
+
+  Required in themes.xml:
+    <style name="Theme.Canvas" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowFullscreen">true</item>
+    </style>
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/canvas_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/canvas_default">
+
+    <!-- ── CONTROL BAR (top) ───────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/canvas_control_bar"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:background="#CC1A1A2E"
+        android:gravity="center_vertical"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:elevation="8dp"
+        android:layout_gravity="top">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🎨 Canvas Overlay"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold"
+            android:textSize="15sp" />
+
+        <!-- Hint label (shown in edit mode) -->
+        <TextView
+            android:id="@+id/canvas_hint"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Drag widget to position"
+            android:textColor="#FFCC80"
+            android:textSize="11sp"
+            android:layout_marginEnd="10dp" />
+
+        <!-- Edit / Lock toggle -->
+        <Button
+            android:id="@+id/canvas_btn_toggle_lock"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="💾 Simpan &amp; Kunci"
+            android:textSize="12sp"
+            android:backgroundTint="@color/orange"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Close canvas -->
+        <Button
+            android:id="@+id/canvas_btn_close"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="✕"
+            android:textSize="13sp"
+            android:backgroundTint="#555555" />
+
+    </LinearLayout>
+
+    <!-- ── PLAYER OVERLAY WIDGET ───────────────────────────────────────── -->
+    <!--
+      Positioned at runtime via FrameLayout.LayoutParams (x/y from saved prefs).
+      The include uses the same overlay_layout.xml for visual consistency.
+    -->
+    <include
+        android:id="@+id/canvas_player_widget"
+        layout="@layout/overlay_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="80dp" />
+
+    <!-- ── QUEUE OVERLAY WIDGET ────────────────────────────────────────── -->
+    <include
+        android:id="@+id/canvas_queue_widget"
+        layout="@layout/overlay_queue_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="200dp" />
+
+</FrameLayout>

@@ -19,16 +19,17 @@ import kotlinx.coroutines.*
 class PlayerForegroundService : Service() {
 
     companion object {
-        private const val TAG = "PlayerService"
+        private const val TAG              = "PlayerService"
         private const val NOTIF_CHANNEL_ID = "yt_player_channel"
-        private const val NOTIF_ID = 1001
-        private const val MAX_QUEUE = 50
-        private const val PREFS_NAME = "ytplayer_prefs"
+        private const val NOTIF_ID         = 1001
+        private const val MAX_QUEUE        = 50
+        private const val PREFS_NAME       = "ytplayer_prefs"
 
-        const val ACTION_PLAY_PAUSE = "ame.project.ytplayer.PLAY_PAUSE"
-        const val ACTION_SKIP       = "ame.project.ytplayer.SKIP"
-        const val ACTION_STOP       = "ame.project.ytplayer.STOP"
+        const val ACTION_PLAY_PAUSE   = "ame.project.ytplayer.PLAY_PAUSE"
+        const val ACTION_SKIP         = "ame.project.ytplayer.SKIP"
+        const val ACTION_STOP         = "ame.project.ytplayer.STOP"
         const val ACTION_SHOW_OVERLAY = "ame.project.ytplayer.SHOW_OVERLAY"
+        const val ACTION_CANVAS_MODE  = "ame.project.ytplayer.CANVAS_MODE"
 
         const val BROADCAST_STATE = "ame.project.ytplayer.STATE_UPDATE"
         const val BROADCAST_CHAT  = "ame.project.ytplayer.CHAT_UPDATE"
@@ -42,21 +43,28 @@ class PlayerForegroundService : Service() {
     private lateinit var overlayManager: OverlayManager
     private lateinit var queueOverlayManager: QueueOverlayManager
 
-    private val queue = ArrayDeque<Song>()
-    private var currentSong: Song? = null
-    private var isPlaying = false
-    private var isPaused  = false
-    private var positionMs = 0L
-    private var durationMs = 0L
+    private val queue       = ArrayDeque<Song>()
+    private var currentSong: Song?  = null
+    private var isPlaying   = false
+    private var isPaused    = false
+    private var positionMs  = 0L
+    private var durationMs  = 0L
     private var shuffleMode = false
     private var tiktokConnected = false
 
-    private var apiKey = ""
+    private var apiKey        = ""
     private var tiktokUsername = ""
-    private var commandConfig = TikTokLiveManager.CommandConfig()
+    private var commandConfig  = TikTokLiveManager.CommandConfig()
+
+    // ── Canvas mode state ─────────────────────────────────────────────
+    private var canvasModeEnabled = false
+    private var canvasPlayerX     = 16
+    private var canvasPlayerY     = 100
+    private var canvasQueueX      = 16
+    private var canvasQueueY      = 440
 
     private val prefs by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
-    private val gson = Gson()
+    private val gson  = Gson()
 
     inner class LocalBinder : Binder() {
         fun getService(): PlayerForegroundService = this@PlayerForegroundService
@@ -64,6 +72,7 @@ class PlayerForegroundService : Service() {
     private val binder = LocalBinder()
     override fun onBind(intent: Intent): IBinder = binder
 
+    // ─────────────────────────────────────────────────────────────────
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
@@ -77,8 +86,7 @@ class PlayerForegroundService : Service() {
             p.onComplete = ::onSongComplete
             p.onError    = { err -> Log.e(TAG, "Player error: $err"); playNext() }
             p.onProgress = { pos, dur ->
-                positionMs = pos
-                durationMs = dur
+                positionMs = pos; durationMs = dur
                 overlayManager.updateSong(currentSong, pos, dur)
             }
             p.init()
@@ -88,8 +96,8 @@ class PlayerForegroundService : Service() {
         ytDlp = YtDlpHelper(this)
 
         overlayManager = OverlayManager(
-            context   = this,
-            scope     = serviceScope,
+            context     = this,
+            scope       = serviceScope,
             onPlayPause = ::togglePlayPause,
             onSkip      = ::playNext,
             onClose     = { }
@@ -101,19 +109,12 @@ class PlayerForegroundService : Service() {
             onRemove = { pos -> removeFromQueue(pos) }
         )
 
-        tiktokManager = TikTokLiveManager(apiKey, tiktokUsername, serviceScope).also { t ->
-            t.setCommandConfig(commandConfig)
-            t.onChat         = ::handleTikTokChat
-            t.onConnected    = { tiktokConnected = true; overlayManager.setLiveStatus(true); broadcastState() }
-            t.onDisconnected = { tiktokConnected = false; overlayManager.setLiveStatus(false); broadcastState() }
-            t.onError        = { Log.w(TAG, "TikTok error: $it") }
-        }
+        tiktokManager = buildTikTokManager()
 
-        if (tiktokUsername.isNotBlank() && apiKey.isNotBlank()) {
-            tiktokManager.connect()
-        }
-
-        Log.d(TAG, "Service ready. ytdlp=${ytDlp.isInstalled}")
+        // ── BUG FIX: Do NOT auto-connect on service start.
+        //    The user must click "Save & Connect" explicitly.
+        //    (Previously: if (tiktokUsername.isNotBlank() && apiKey.isNotBlank()) tiktokManager.connect())
+        Log.d(TAG, "Service ready. ytdlp=${ytDlp.isInstalled}. Auto-connect disabled.")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -121,7 +122,16 @@ class PlayerForegroundService : Service() {
             ACTION_PLAY_PAUSE   -> togglePlayPause()
             ACTION_SKIP         -> playNext()
             ACTION_STOP         -> stopPlayer()
-            ACTION_SHOW_OVERLAY -> overlayManager.show()
+            ACTION_SHOW_OVERLAY -> showOverlay()
+            ACTION_CANVAS_MODE  -> {
+                val enable = intent.getBooleanExtra("enabled", false)
+                val px = intent.getIntExtra("player_x", canvasPlayerX)
+                val py = intent.getIntExtra("player_y", canvasPlayerY)
+                val qx = intent.getIntExtra("queue_x",  canvasQueueX)
+                val qy = intent.getIntExtra("queue_y",  canvasQueueY)
+                if (enable) enableCanvasMode(px, py, qx, qy)
+                else        disableCanvasMode()
+            }
         }
         return START_STICKY
     }
@@ -136,21 +146,36 @@ class PlayerForegroundService : Service() {
         super.onDestroy()
     }
 
+    // ── Settings ──────────────────────────────────────────────────────
     private fun loadPrefs() {
-        apiKey          = prefs.getString("euler_api_key", "") ?: ""
-        tiktokUsername  = prefs.getString("tiktok_username", "") ?: ""
-        shuffleMode     = prefs.getBoolean("shuffle_mode", false)
+        apiKey         = prefs.getString("euler_api_key", "")     ?: ""
+        tiktokUsername = prefs.getString("tiktok_username", "")   ?: ""
+        shuffleMode    = prefs.getBoolean("shuffle_mode", false)
+        canvasPlayerX  = prefs.getInt("canvas_px", 16)
+        canvasPlayerY  = prefs.getInt("canvas_py", 100)
+        canvasQueueX   = prefs.getInt("canvas_qx", 16)
+        canvasQueueY   = prefs.getInt("canvas_qy", 440)
 
         commandConfig = TikTokLiveManager.CommandConfig(
-            requestPrefixes = prefs.getString("cmd_request", "#req,#request,#lagu,#song")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: listOf("#req","#request","#lagu","#song"),
-            skipPrefixes    = prefs.getString("cmd_skip", "#skip,#next,#lewat")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: listOf("#skip","#next","#lewat"),
-            stopPrefixes    = prefs.getString("cmd_stop", "#stop")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: listOf("#stop"),
-            queuePrefixes   = prefs.getString("cmd_queue", "#queue,#antrian,#q")?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() } ?: listOf("#queue","#antrian","#q")
+            requestPrefixes    = splitPref("cmd_request",    "#req,#request,#lagu,#song"),
+            skipPrefixes       = splitPref("cmd_skip",       "#skip,#next,#lewat"),
+            stopPrefixes       = splitPref("cmd_stop",       "#stop"),
+            queuePrefixes      = splitPref("cmd_queue",      "#queue,#antrian,#q"),
+            clearMusicPrefixes = splitPref("cmd_clear_music","#cm,#hapus")
         )
     }
 
-    fun saveSettings(apiKey: String, username: String, cmdConfig: TikTokLiveManager.CommandConfig? = null) {
+    private fun splitPref(key: String, default: String): List<String> =
+        (prefs.getString(key, default) ?: default)
+            .split(",").map { it.trim() }.filter { it.isNotBlank() }
+
+    fun saveSettings(
+        apiKey: String,
+        username: String,
+        cmdConfig: TikTokLiveManager.CommandConfig? = null
+    ) {
         if (apiKey.isBlank() && username.isBlank()) {
+            // Disconnect request
             tiktokManager.disconnect()
             tiktokConnected = false
             overlayManager.setLiveStatus(false)
@@ -158,40 +183,38 @@ class PlayerForegroundService : Service() {
             return
         }
 
-        this.apiKey = apiKey
+        this.apiKey        = apiKey
         this.tiktokUsername = username.removePrefix("@")
         prefs.edit()
             .putString("euler_api_key", this.apiKey)
             .putString("tiktok_username", this.tiktokUsername)
             .apply()
 
-        cmdConfig?.let { config ->
-            this.commandConfig = config
+        cmdConfig?.let { cfg ->
+            this.commandConfig = cfg
             prefs.edit()
-                .putString("cmd_request", config.requestPrefixes.joinToString(","))
-                .putString("cmd_skip", config.skipPrefixes.joinToString(","))
-                .putString("cmd_stop", config.stopPrefixes.joinToString(","))
-                .putString("cmd_queue", config.queuePrefixes.joinToString(","))
+                .putString("cmd_request",     cfg.requestPrefixes.joinToString(","))
+                .putString("cmd_skip",         cfg.skipPrefixes.joinToString(","))
+                .putString("cmd_stop",         cfg.stopPrefixes.joinToString(","))
+                .putString("cmd_queue",        cfg.queuePrefixes.joinToString(","))
+                .putString("cmd_clear_music",  cfg.clearMusicPrefixes.joinToString(","))
                 .apply()
         }
 
         tiktokManager.disconnect()
-        tiktokManager = TikTokLiveManager(this.apiKey, this.tiktokUsername, serviceScope).also { t ->
-            t.setCommandConfig(commandConfig)
-            t.onChat         = ::handleTikTokChat
-            t.onConnected    = { tiktokConnected = true; overlayManager.setLiveStatus(true); broadcastState() }
-            t.onDisconnected = { tiktokConnected = false; overlayManager.setLiveStatus(false); broadcastState() }
-            t.onError        = { Log.w(TAG, "TikTok error: $it") }
+        tiktokManager = buildTikTokManager()
+        if (this.tiktokUsername.isNotBlank() && this.apiKey.isNotBlank()) {
+            tiktokManager.connect()
         }
-        if (this.tiktokUsername.isNotBlank() && this.apiKey.isNotBlank()) tiktokManager.connect()
     }
 
-    fun addToQueue(youtubeUrl: String, requestedBy: String? = null): Boolean {
+    // ── Queue operations ──────────────────────────────────────────────
+    fun addToQueue(youtubeUrl: String, requestedBy: String? = null, fromChat: Boolean = false): Boolean {
         if (queue.size >= MAX_QUEUE) return false
         serviceScope.launch {
             val meta = ytDlp.fetchMetadata(youtubeUrl)
             val song = Song(
-                title       = meta?.title ?: youtubeUrl,
+                title       = meta?.title    ?: youtubeUrl,
                 youtubeUrl  = youtubeUrl,
                 thumbnail   = meta?.thumbnail,
                 duration    = meta?.duration ?: 0,
@@ -199,10 +222,17 @@ class PlayerForegroundService : Service() {
                 requestedBy = requestedBy
             )
             queue.addLast(song)
-            if (!isPlaying && currentSong == null) playNext()
-            else {
+            if (!isPlaying && currentSong == null) {
+                playNext()
+            } else {
                 broadcastState()
-                if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+                if (fromChat) {
+                    // Auto-show queue overlay when song requested via TikTok chat
+                    queueOverlayManager.autoShowIfNeeded(getQueue())
+                } else if (queueOverlayManager.isShowing) {
+                    queueOverlayManager.updateQueue(getQueue())
+                }
+                overlayManager.updateQueueCount(queue.size)
             }
         }
         return true
@@ -212,14 +242,41 @@ class PlayerForegroundService : Service() {
         if (index in queue.indices) {
             queue.removeAt(index)
             broadcastState()
-            if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+            syncQueueOverlay()
         }
+    }
+
+    /**
+     * Remove song at [position] (1-indexed, as used in the #cm command).
+     * Returns true if removal was successful.
+     */
+    fun clearMusicAt(position: Int): Boolean {
+        val idx = position - 1          // convert to 0-indexed
+        if (idx !in queue.indices) return false
+        queue.removeAt(idx)
+        broadcastState()
+        syncQueueOverlay()
+        return true
+    }
+
+    /**
+     * Remove the first song whose title contains [query] (case-insensitive).
+     * Returns the removed song title, or null if nothing matched.
+     */
+    fun clearMusicByTitle(query: String): String? {
+        val lower = query.lowercase().trim()
+        val idx   = queue.indexOfFirst { it.title.lowercase().contains(lower) }
+        if (idx == -1) return null
+        val removed = queue.removeAt(idx)
+        broadcastState()
+        syncQueueOverlay()
+        return removed.title
     }
 
     fun clearQueue() {
         queue.clear()
         broadcastState()
-        if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+        syncQueueOverlay()
     }
 
     fun moveInQueue(from: Int, to: Int) {
@@ -227,7 +284,7 @@ class PlayerForegroundService : Service() {
             val song = queue.removeAt(from)
             queue.add(to, song)
             broadcastState()
-            if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+            syncQueueOverlay()
         }
     }
 
@@ -239,6 +296,7 @@ class PlayerForegroundService : Service() {
         return shuffleMode
     }
 
+    // ── Playback ──────────────────────────────────────────────────────
     fun playSong(song: Song) {
         serviceScope.launch {
             currentSong = song
@@ -249,28 +307,25 @@ class PlayerForegroundService : Service() {
             overlayManager.setPlayingState(true)
             broadcastState()
 
-            val result = ytDlp.extractAudioUrl(song.youtubeUrl)
-            result.onSuccess { url ->
-                audioPlayer.play(url)
-            }.onFailure { err ->
-                Log.e(TAG, "extractAudioUrl failed: $err")
-                updateNotification("Error: ${err.message}")
-                playNext()
-            }
+            ytDlp.extractAudioUrl(song.youtubeUrl)
+                .onSuccess  { url -> audioPlayer.play(url) }
+                .onFailure  { err ->
+                    Log.e(TAG, "extractAudioUrl failed: $err")
+                    updateNotification("Error: ${err.message}")
+                    playNext()
+                }
         }
     }
 
     fun togglePlayPause() {
         when {
             isPlaying && !isPaused -> {
-                audioPlayer.pause()
-                isPaused = true
+                audioPlayer.pause(); isPaused = true
                 overlayManager.setPlayingState(false)
                 updateNotification("Paused: ${currentSong?.title}")
             }
             isPaused -> {
-                audioPlayer.resume()
-                isPaused = false
+                audioPlayer.resume(); isPaused = false
                 overlayManager.setPlayingState(true)
                 updateNotification(currentSong?.title ?: "Playing")
             }
@@ -281,37 +336,35 @@ class PlayerForegroundService : Service() {
 
     fun playNext() {
         audioPlayer.stop()
-        isPlaying = false
-        isPaused  = false
-        currentSong = null
+        isPlaying = false; isPaused = false; currentSong = null
 
         if (queue.isEmpty()) {
             updateNotification("Queue empty")
-            broadcastState()
-            if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+            overlayManager.updateSong(null, 0, 0)
+            broadcastState(); syncQueueOverlay()
             return
         }
-        val next = if (shuffleMode) queue.removeAt((queue.indices).random())
-        else queue.removeFirst()
+        val next = if (shuffleMode) queue.removeAt(queue.indices.random())
+                   else queue.removeFirst()
         playSong(next)
-        if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+        syncQueueOverlay()
     }
 
     fun stopPlayer() {
         audioPlayer.stop()
-        currentSong = null
-        isPlaying   = false
-        isPaused    = false
+        currentSong = null; isPlaying = false; isPaused = false
         overlayManager.setPlayingState(false)
+        overlayManager.updateSong(null, 0, 0)
         updateNotification("Stopped")
         broadcastState()
     }
 
     private fun onSongComplete() {
-        Log.d(TAG, "Song complete, playing next")
+        Log.d(TAG, "Song complete → playNext")
         playNext()
     }
 
+    // ── TikTok chat handler ───────────────────────────────────────────
     private fun handleTikTokChat(chat: TikTokChat) {
         Log.d(TAG, "[TikTok] @${chat.uniqueId}: ${chat.comment}")
         broadcastChat(chat)
@@ -320,57 +373,94 @@ class PlayerForegroundService : Service() {
             TikTokChat.CommandType.REQUEST -> {
                 val arg = chat.commandArg ?: return
                 val url = if (arg.contains("youtube.com") || arg.contains("youtu.be")) arg
-                else "ytsearch1:$arg"
-                addToQueue(url, requestedBy = "@${chat.uniqueId}")
+                          else "ytsearch1:$arg"
+                addToQueue(url, requestedBy = "@${chat.uniqueId}", fromChat = true)
             }
-            TikTokChat.CommandType.SKIP  -> playNext()
-            TikTokChat.CommandType.STOP  -> stopPlayer()
-            TikTokChat.CommandType.QUEUE -> broadcastState()
-            TikTokChat.CommandType.NONE  -> {}
+            TikTokChat.CommandType.SKIP        -> playNext()
+            TikTokChat.CommandType.STOP        -> stopPlayer()
+            TikTokChat.CommandType.QUEUE       -> broadcastState()
+            TikTokChat.CommandType.CLEAR_MUSIC -> {
+                val arg = chat.commandArg?.trim() ?: return
+
+                // Coba parse sebagai angka (posisi) dulu
+                val pos = arg.toIntOrNull()
+                if (pos != null) {
+                    // #cm 2 → hapus posisi ke-2
+                    val ok = clearMusicAt(pos)
+                    Log.d(TAG, "#cm posisi $pos → removed=$ok")
+                } else {
+                    // #cm judul lagu → cari berdasarkan judul (partial match)
+                    val removed = clearMusicByTitle(arg)
+                    Log.d(TAG, "#cm judul \"$arg\" → removed=${removed ?: "not found"}")
+                }
+            }
+            TikTokChat.CommandType.NONE -> { }
         }
     }
 
-    private fun createNotificationChannel() {
-        val channel = NotificationChannel(
-            NOTIF_CHANNEL_ID,
-            "YT Player",
-            NotificationManager.IMPORTANCE_LOW
-        ).apply { description = "YouTube TikTok Player" }
-        val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(channel)
+    // ── Canvas mode ───────────────────────────────────────────────────
+    /**
+     * Lock both overlays at saved positions so they cannot be moved/scaled.
+     * This is activated from [CanvasActivity] when user taps "Lock".
+     */
+    fun enableCanvasMode(px: Int, py: Int, qx: Int, qy: Int) {
+        canvasModeEnabled = true
+        canvasPlayerX = px; canvasPlayerY = py
+        canvasQueueX  = qx; canvasQueueY  = qy
+
+        // Persist positions
+        prefs.edit()
+            .putInt("canvas_px", px).putInt("canvas_py", py)
+            .putInt("canvas_qx", qx).putInt("canvas_qy", qy)
+            .apply()
+
+        // Show overlays (if not already) then lock them
+        if (!overlayManager.isShowing)     showOverlay()
+        if (!queueOverlayManager.isShowing) queueOverlayManager.show(getQueue())
+
+        overlayManager.setCanvasMode(locked = true, x = px, y = py)
+        queueOverlayManager.setCanvasMode(locked = true, x = qx, y = qy)
+
+        broadcastState()
     }
 
-    private fun buildNotification(text: String): Notification {
-        val openIntent = Intent(this, MainActivity::class.java).let {
-            PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_IMMUTABLE)
-        }
-        val playPauseIntent = Intent(this, PlayerForegroundService::class.java)
-            .setAction(ACTION_PLAY_PAUSE).let {
-                PendingIntent.getService(this, 1, it, PendingIntent.FLAG_IMMUTABLE)
-            }
-        val skipIntent = Intent(this, PlayerForegroundService::class.java)
-            .setAction(ACTION_SKIP).let {
-                PendingIntent.getService(this, 2, it, PendingIntent.FLAG_IMMUTABLE)
-            }
-
-        return NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle("YT TikTok Player")
-            .setContentText(text)
-            .setContentIntent(openIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .addAction(android.R.drawable.ic_media_play, "Play/Pause", playPauseIntent)
-            .addAction(android.R.drawable.ic_media_next, "Skip", skipIntent)
-            .build()
+    /** Unlock overlays – they become draggable again. */
+    fun disableCanvasMode() {
+        canvasModeEnabled = false
+        overlayManager.setCanvasMode(locked = false)
+        queueOverlayManager.setCanvasMode(locked = false)
+        broadcastState()
     }
 
-    private fun updateNotification(text: String) {
-        val nm = getSystemService(NotificationManager::class.java)
-        nm.notify(NOTIF_ID, buildNotification(text))
+    fun getCanvasState(): Map<String, Int> = mapOf(
+        "canvas_px" to canvasPlayerX,
+        "canvas_py" to canvasPlayerY,
+        "canvas_qx" to canvasQueueX,
+        "canvas_qy" to canvasQueueY
+    )
+
+    // ── Overlay passthrough ───────────────────────────────────────────
+    fun showOverlay()  {
+        overlayManager.show()
+        syncOverlayAll()
+    }
+    fun hideOverlay()  { overlayManager.hide() }
+    val overlayVisible get() = overlayManager.isShowing
+
+    private fun syncOverlayAll() {
+        overlayManager.updateSong(currentSong, positionMs, durationMs)
+        overlayManager.updateQueueCount(queue.size)
+        overlayManager.setLiveStatus(tiktokConnected)
+        overlayManager.setPlayingState(isPlaying && !isPaused)
     }
 
-    fun getStateMap(): Map<String, Any?> = mapOf<String, Any?>(
+    fun toggleQueueOverlay() {
+        if (queueOverlayManager.isShowing) queueOverlayManager.hide()
+        else queueOverlayManager.show(getQueue())
+    }
+
+    // ── State map (for MainActivity syncUi) ───────────────────────────
+    fun getStateMap(): Map<String, Any?> = mapOf(
         "current_song"     to currentSong?.let { gson.toJson(it) },
         "is_playing"       to isPlaying,
         "is_paused"        to isPaused,
@@ -379,9 +469,47 @@ class PlayerForegroundService : Service() {
         "duration_ms"      to durationMs,
         "shuffle_mode"     to shuffleMode,
         "tiktok_connected" to tiktokConnected,
-        "ytdlp_installed"  to ytDlp.isInstalled
+        "ytdlp_installed"  to ytDlp.isInstalled,
+        "canvas_mode"      to canvasModeEnabled
     )
 
+    // ── Notification ──────────────────────────────────────────────────
+    private fun createNotificationChannel() {
+        val ch = NotificationChannel(NOTIF_CHANNEL_ID, "YT Player",
+            NotificationManager.IMPORTANCE_LOW)
+            .apply { description = "YouTube TikTok Player" }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
+    }
+
+    private fun buildNotification(text: String): Notification {
+        val openPi = PendingIntent.getActivity(
+            this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val playPausePi = PendingIntent.getService(
+            this, 1,
+            Intent(this, PlayerForegroundService::class.java).setAction(ACTION_PLAY_PAUSE),
+            PendingIntent.FLAG_IMMUTABLE)
+        val skipPi = PendingIntent.getService(
+            this, 2,
+            Intent(this, PlayerForegroundService::class.java).setAction(ACTION_SKIP),
+            PendingIntent.FLAG_IMMUTABLE)
+
+        return NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_media_play)
+            .setContentTitle("Kanae Player")
+            .setContentText(text)
+            .setContentIntent(openPi)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
+            .addAction(android.R.drawable.ic_media_play, "Play/Pause", playPausePi)
+            .addAction(android.R.drawable.ic_media_next, "Skip", skipPi)
+            .build()
+    }
+
+    private fun updateNotification(text: String) {
+        getSystemService(NotificationManager::class.java).notify(NOTIF_ID, buildNotification(text))
+    }
+
+    // ── Broadcasts ────────────────────────────────────────────────────
     private fun broadcastState() {
         val intent = Intent(BROADCAST_STATE)
         getStateMap().forEach { (k, v) ->
@@ -396,21 +524,34 @@ class PlayerForegroundService : Service() {
     }
 
     private fun broadcastChat(chat: TikTokChat) {
-        val intent = Intent(BROADCAST_CHAT).apply {
+        sendBroadcast(Intent(BROADCAST_CHAT).apply {
             putExtra("unique_id", chat.uniqueId)
             putExtra("nickname",  chat.nickname)
             putExtra("comment",   chat.comment)
             putExtra("cmd_type",  chat.commandType.name)
+        })
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────
+    private fun syncQueueOverlay() {
+        if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
+        overlayManager.updateQueueCount(queue.size)
+    }
+
+    private fun buildTikTokManager(): TikTokLiveManager =
+        TikTokLiveManager(apiKey, tiktokUsername, serviceScope).also { t ->
+            t.setCommandConfig(commandConfig)
+            t.onChat         = ::handleTikTokChat
+            t.onConnected    = {
+                tiktokConnected = true
+                overlayManager.setLiveStatus(true)
+                broadcastState()
+            }
+            t.onDisconnected = {
+                tiktokConnected = false
+                overlayManager.setLiveStatus(false)
+                broadcastState()
+            }
+            t.onError = { Log.w(TAG, "TikTok error: $it") }
         }
-        sendBroadcast(intent)
-    }
-
-    fun showOverlay()  { overlayManager.show() }
-    fun hideOverlay()  { overlayManager.hide() }
-    val overlayVisible get() = overlayManager.isShowing
-
-    fun toggleQueueOverlay() {
-        if (queueOverlayManager.isShowing) queueOverlayManager.hide()
-        else queueOverlayManager.show(getQueue())
-    }
 }

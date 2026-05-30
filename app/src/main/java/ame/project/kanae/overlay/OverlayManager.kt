@@ -9,6 +9,7 @@ import android.os.Build
 import android.view.*
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import ame.project.kanae.R
@@ -29,64 +30,83 @@ class OverlayManager(
 
     private var rootView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
+    private var gestureHelper: OverlayGestureHelper? = null
 
-    private var tvTitle: TextView? = null
-    private var tvQueue: TextView? = null
-    private var tvTime: TextView? = null
+    // ── View references ───────────────────────────────────────────────
+    private var tvTitle: TextView?       = null
+    private var tvQueue: TextView?       = null
+    private var tvTime: TextView?        = null
     private var progressBar: ProgressBar? = null
-    private var dotLive: View? = null
+    private var dotLive: View?           = null
     private var btnPlayPause: ImageButton? = null
-    private var ivThumbnail: ImageView? = null
-    private var currentSongId: String? = null
+    private var ivThumbnail: ImageView?  = null
+    private var expandedSection: LinearLayout? = null
 
+    private var isExpanded      = false
+    private var currentSongId: String? = null
     private val http = OkHttpClient()
 
     var isShowing: Boolean = false
         private set
 
+    /** When true the overlay is fixed (canvas locked) – not draggable/resizable */
+    private var canvasLocked = false
+
+    // ─────────────────────────────────────────────────────────────────
     fun show() {
         if (isShowing) return
 
-        val themedContext = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
-        val inflater = LayoutInflater.from(themedContext)
-        val view = inflater.inflate(R.layout.overlay_layout, null)
-        rootView = view
+        val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
+        val view   = LayoutInflater.from(themed).inflate(R.layout.overlay_layout, null)
+        rootView   = view
 
-        tvTitle     = view.findViewById(R.id.overlay_title)
-        tvQueue     = view.findViewById(R.id.overlay_queue_count)
-        tvTime      = view.findViewById(R.id.overlay_time)
-        progressBar = view.findViewById(R.id.overlay_progress)
-        dotLive     = view.findViewById(R.id.overlay_live_dot)
-        btnPlayPause = view.findViewById(R.id.overlay_btn_play_pause)
-        ivThumbnail = view.findViewById(R.id.overlay_thumbnail)
+        // Bind view references
+        tvTitle       = view.findViewById(R.id.overlay_title)
+        tvTitle?.text = "- Nothing playing -"
+        tvQueue       = view.findViewById(R.id.overlay_queue_count)
+        tvTime        = view.findViewById(R.id.overlay_time)
+        progressBar   = view.findViewById(R.id.overlay_progress)
+        dotLive       = view.findViewById(R.id.overlay_live_dot)
+        btnPlayPause  = view.findViewById(R.id.overlay_btn_play_pause)
+        ivThumbnail   = view.findViewById(R.id.overlay_thumbnail)
+        expandedSection = view.findViewById(R.id.overlay_expanded_section)
 
-        btnPlayPause?.setOnClickListener { onPlayPause() }
-        view.findViewById<ImageButton>(R.id.overlay_btn_skip)?.setOnClickListener { onSkip() }
-        view.findViewById<ImageButton>(R.id.overlay_btn_close)?.setOnClickListener {
-            hide()
-            onClose()
+        // Wire control buttons (clicks dispatched by OverlayGestureHelper)
+        view.findViewById<ImageButton>(R.id.overlay_btn_play_pause)
+            .setOnClickListener { onPlayPause() }
+        view.findViewById<ImageButton>(R.id.overlay_btn_skip)
+            .setOnClickListener { onSkip() }
+        view.findViewById<ImageButton>(R.id.overlay_btn_close)
+            .setOnClickListener { hide(); onClose() }
+
+        // Disable Android's own view-tree clipping so rotated corners aren't cut off
+        if (view is ViewGroup) {
+            view.clipChildren  = false
+            view.clipToPadding = false
         }
 
-        val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-        else
-            @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
-
+        val type = overlayWindowType()
         val params = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             type,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            // FLAG_LAYOUT_NO_LIMITS lets the window grow past screen edges during rotation
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).also {
             it.gravity = Gravity.TOP or Gravity.START
-            it.x = 16
-            it.y = 100
+            it.x = 16; it.y = 100
         }
         layoutParams = params
 
-        val dragListener = OverlayDragListener(view, params, wm)
-        view.setOnTouchListener(dragListener)
+        // Gesture: drag + pinch-scale + rotate + tap-to-expand
+        gestureHelper = OverlayGestureHelper(
+            rootView    = view,
+            params      = params,
+            wm          = wm,
+            onSingleTap = ::toggleExpand
+        ).also { view.setOnTouchListener(it) }
 
         wm.addView(view, params)
         isShowing = true
@@ -94,28 +114,79 @@ class OverlayManager(
 
     fun hide() {
         if (!isShowing) return
-        rootView?.let { wm.removeView(it) }
-        rootView = null
-        isShowing = false
+        rootView?.let { runCatching { wm.removeView(it) } }
+        rootView    = null
+        isShowing   = false
+        isExpanded  = false
         currentSongId = null
     }
 
+    // ── Expand / collapse animated ────────────────────────────────────
+    private fun toggleExpand() {
+        val section = expandedSection ?: return
+        isExpanded  = !isExpanded
+
+        if (isExpanded) {
+            section.visibility = View.VISIBLE
+            section.alpha      = 0f
+            section.scaleY     = 0.8f
+            section.animate()
+                .alpha(1f).scaleY(1f)
+                .setDuration(220).start()
+        } else {
+            section.animate()
+                .alpha(0f).scaleY(0.8f)
+                .setDuration(180)
+                .withEndAction { section.visibility = View.GONE }
+                .start()
+        }
+        // Notify WM that size changed
+        rootView?.post {
+            layoutParams?.let { runCatching { wm.updateViewLayout(rootView, it) } }
+        }
+    }
+
+    // ── Canvas locked mode ────────────────────────────────────────────
+    /**
+     * Move overlay to ([x], [y]) and optionally lock it so it cannot be
+     * dragged, scaled, or rotated.
+     */
+    fun setCanvasMode(locked: Boolean, x: Int = 0, y: Int = 0) {
+        canvasLocked = locked
+        gestureHelper?.locked = locked
+
+        val params = layoutParams ?: return
+        val view   = rootView    ?: return
+
+        if (locked) {
+            params.x = x; params.y = y
+            params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                           WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                           WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        } else {
+            params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                           WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        }
+        runCatching { wm.updateViewLayout(view, params) }
+    }
+
+    // ── Data updates ──────────────────────────────────────────────────
     fun updateSong(song: Song?, positionMs: Long, durationMs: Long) {
         if (!isShowing) return
 
         if (song?.id != currentSongId) {
             currentSongId = song?.id
-            tvTitle?.text = song?.title ?: "– Nothing playing –"
+            tvTitle?.text  = song?.title ?: "- Nothing playing -"
             tvTitle?.alpha = 0f
-            tvTitle?.animate()?.alpha(1f)?.setDuration(350)?.start()
+            tvTitle?.animate()?.alpha(1f)?.setDuration(300)?.start()
             updateThumbnail(song?.thumbnail)
         }
 
         val progress = if (durationMs > 0) (positionMs * 100 / durationMs).toInt() else 0
         progressBar?.progress = progress
 
-        val posSec  = (positionMs / 1000).toInt()
-        val durSec  = (durationMs / 1000).toInt()
+        val posSec = (positionMs / 1000).toInt()
+        val durSec = (durationMs / 1000).toInt()
         tvTime?.text = "${fmt(posSec)} / ${fmt(durSec)}"
     }
 
@@ -134,51 +205,42 @@ class OverlayManager(
             if (isPlaying) android.R.drawable.ic_media_pause
             else android.R.drawable.ic_media_play
         )
+        // Pulsing thumbnail animation while playing
         ivThumbnail?.let { iv ->
             (iv.tag as? AnimatorSet)?.cancel()
             if (isPlaying) {
-                val scaleX = ObjectAnimator.ofFloat(iv, "scaleX", 1.0f, 1.08f).apply {
-                    repeatCount = ObjectAnimator.INFINITE
-                    repeatMode = ObjectAnimator.REVERSE
+                val sx = ObjectAnimator.ofFloat(iv, "scaleX", 1f, 1.07f).apply {
+                    repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE
                 }
-                val scaleY = ObjectAnimator.ofFloat(iv, "scaleY", 1.0f, 1.08f).apply {
-                    repeatCount = ObjectAnimator.INFINITE
-                    repeatMode = ObjectAnimator.REVERSE
+                val sy = ObjectAnimator.ofFloat(iv, "scaleY", 1f, 1.07f).apply {
+                    repeatCount = ObjectAnimator.INFINITE; repeatMode = ObjectAnimator.REVERSE
                 }
-                val set = AnimatorSet().apply {
-                    playTogether(scaleX, scaleY)
-                    duration = 2000
+                AnimatorSet().also { set ->
+                    set.playTogether(sx, sy); set.duration = 2000; iv.tag = set; set.start()
                 }
-                iv.tag = set
-                set.start()
             } else {
                 iv.animate().scaleX(1f).scaleY(1f).setDuration(200).start()
             }
         }
     }
 
+    // ── Private helpers ───────────────────────────────────────────────
     private fun updateThumbnail(url: String?) {
         ivThumbnail ?: return
         if (url.isNullOrBlank()) {
-            ivThumbnail?.setImageResource(android.R.drawable.ic_media_play)
-            return
+            ivThumbnail?.setImageResource(android.R.drawable.ic_media_play); return
         }
         scope.launch(Dispatchers.IO) {
             try {
-                val req = Request.Builder().url(url).build()
+                val req  = Request.Builder().url(url).build()
                 val resp = http.newCall(req).execute()
-                val bmp = resp.body?.byteStream()?.use { BitmapFactory.decodeStream(it) }
+                val bmp  = resp.body?.byteStream()?.use { BitmapFactory.decodeStream(it) }
                 withContext(Dispatchers.Main) {
-                    ivThumbnail?.setImageBitmap(bmp)
-                    ivThumbnail?.alpha = 0f
-                    ivThumbnail?.scaleX = 0.8f
-                    ivThumbnail?.scaleY = 0.8f
-                    ivThumbnail?.animate()
-                        ?.alpha(1f)
-                        ?.scaleX(1f)
-                        ?.scaleY(1f)
-                        ?.setDuration(400)
-                        ?.start()
+                    ivThumbnail?.apply {
+                        setImageBitmap(bmp)
+                        alpha = 0f; scaleX = 0.85f; scaleY = 0.85f
+                        animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(350).start()
+                    }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
@@ -188,36 +250,12 @@ class OverlayManager(
         }
     }
 
-    private fun fmt(sec: Int): String = "%d:%02d".format(sec / 60, sec % 60)
-}
+    private fun fmt(sec: Int) = "%d:%02d".format(sec / 60, sec % 60)
 
-internal class OverlayDragListener(
-    private val view: View,
-    private val params: WindowManager.LayoutParams,
-    private val wm: WindowManager
-) : View.OnTouchListener {
-
-    private var initX = 0
-    private var initY = 0
-    private var touchX = 0f
-    private var touchY = 0f
-
-    override fun onTouch(v: View, event: MotionEvent): Boolean {
-        when (event.action) {
-            MotionEvent.ACTION_DOWN -> {
-                initX = params.x
-                initY = params.y
-                touchX = event.rawX
-                touchY = event.rawY
-                return true
-            }
-            MotionEvent.ACTION_MOVE -> {
-                params.x = initX + (event.rawX - touchX).toInt()
-                params.y = initY + (event.rawY - touchY).toInt()
-                wm.updateViewLayout(view, params)
-                return true
-            }
-        }
-        return false
-    }
+    @Suppress("DEPRECATION")
+    private fun overlayWindowType() =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+        else
+            WindowManager.LayoutParams.TYPE_PHONE
 }

@@ -9,5 +9,13 @@ data class TikTokChat(
     val commandType: CommandType = CommandType.NONE,
     val commandArg: String? = null
 ) {
-    enum class CommandType { NONE, REQUEST, SKIP, STOP, QUEUE }
+    enum class CommandType {
+        NONE,
+        REQUEST,
+        SKIP,
+        STOP,
+        QUEUE,
+        /** #cm <position>  →  commandArg = "1", "2", etc. (1-indexed) */
+        CLEAR_MUSIC
+    }
 }

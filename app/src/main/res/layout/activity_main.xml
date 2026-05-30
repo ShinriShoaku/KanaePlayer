@@ -21,6 +21,7 @@ android:fillViewport="true">
         android:textStyle="bold"
         android:layout_marginBottom="12dp" />
 
+    <!-- Status row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -46,11 +47,14 @@ android:fillViewport="true">
             android:textSize="13sp" />
     </LinearLayout>
 
-    <androidx.cardview.widget.CardView
+    <!-- Now Playing card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardBackgroundColor="@color/card_bg"
         app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
         android:layout_marginBottom="12dp">
 
         <LinearLayout
@@ -98,8 +102,9 @@ android:fillViewport="true">
                 android:layout_marginTop="4dp" />
 
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
+    <!-- Playback controls -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -134,6 +139,7 @@ android:fillViewport="true">
             android:backgroundTint="@color/red" />
     </LinearLayout>
 
+    <!-- Overlay controls row 1 -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -158,13 +164,31 @@ android:fillViewport="true">
             android:backgroundTint="@color/purple" />
     </LinearLayout>
 
-    <Button
-        android:id="@+id/btnShuffle"
+    <!-- Overlay controls row 2: Shuffle + Canvas -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="🔀 OFF"
-        android:backgroundTint="@color/card_bg"
-        android:layout_marginBottom="4dp" />
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+
+        <Button
+            android:id="@+id/btnShuffle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🔀 OFF"
+            android:backgroundTint="@color/card_bg"
+            android:layout_marginEnd="6dp" />
+
+        <!-- NEW: Canvas mode button -->
+        <Button
+            android:id="@+id/btnCanvas"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🎨 Canvas"
+            android:backgroundTint="@color/canvas_default" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvOverlayWarning"
@@ -186,11 +210,14 @@ android:fillViewport="true">
         android:visibility="gone"
         android:layout_marginBottom="8dp" />
 
-    <androidx.cardview.widget.CardView
+    <!-- Add to Queue card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardBackgroundColor="@color/card_bg"
         app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
         android:layout_marginBottom="12dp">
 
         <LinearLayout
@@ -243,13 +270,16 @@ android:fillViewport="true">
             </LinearLayout>
 
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <androidx.cardview.widget.CardView
+    <!-- Queue list card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardBackgroundColor="@color/card_bg"
         app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
         android:layout_marginBottom="12dp">
 
         <LinearLayout
@@ -287,13 +317,16 @@ android:fillViewport="true">
                 android:nestedScrollingEnabled="false" />
 
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <androidx.cardview.widget.CardView
+    <!-- Chat log card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardBackgroundColor="@color/card_bg"
         app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
         android:layout_marginBottom="12dp">
 
         <LinearLayout
@@ -326,13 +359,16 @@ android:fillViewport="true">
                     android:fontFamily="monospace" />
             </ScrollView>
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <androidx.cardview.widget.CardView
+    <!-- Settings card -->
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardBackgroundColor="@color/card_bg"
         app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
         android:layout_marginBottom="24dp">
 
         <LinearLayout
@@ -379,13 +415,14 @@ android:fillViewport="true">
                 android:id="@+id/etTiktokUser"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="@yourtiktokname"
+                android:hint="yourtiktokname"
                 android:inputType="text"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_secondary"
                 android:backgroundTint="@color/orange"
                 android:layout_marginBottom="10dp" />
 
+            <!-- Command prefixes section -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -399,7 +436,7 @@ android:fillViewport="true">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Request (e.g. #req,#request,#lagu)"
+                android:text="Request song (e.g. #req,#request,#lagu)"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
             <EditText
@@ -447,7 +484,7 @@ android:fillViewport="true">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Queue (e.g. #queue)"
+                android:text="Show Queue (e.g. #queue)"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
             <EditText
@@ -455,6 +492,23 @@ android:fillViewport="true">
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="#queue,#antrian,#q"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_secondary"
+                android:backgroundTint="@color/orange"
+                android:layout_marginBottom="6dp" />
+
+            <!-- NEW: Clear music by position command prefix -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Clear Music by Position (e.g. #cm 1, #cm 2)"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp" />
+            <EditText
+                android:id="@+id/etCmdClearMusic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="#cm,#hapus"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_secondary"
                 android:backgroundTint="@color/orange"
@@ -468,7 +522,7 @@ android:fillViewport="true">
                 android:backgroundTint="@color/orange" />
 
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
 </LinearLayout>
 </ScrollView>

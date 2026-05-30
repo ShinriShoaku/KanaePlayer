@@ -21,10 +21,12 @@ class TikTokLiveManager(
     }
 
     data class CommandConfig(
-        val requestPrefixes: List<String> = listOf("#req", "#request", "#lagu", "#song"),
-        val skipPrefixes: List<String> = listOf("#skip", "#next", "#lewat"),
-        val stopPrefixes: List<String> = listOf("#stop"),
-        val queuePrefixes: List<String> = listOf("#queue", "#antrian", "#q")
+        val requestPrefixes: List<String>    = listOf("#req", "#request", "#lagu", "#song"),
+        val skipPrefixes: List<String>       = listOf("#skip", "#next", "#lewat"),
+        val stopPrefixes: List<String>       = listOf("#stop"),
+        val queuePrefixes: List<String>      = listOf("#queue", "#antrian", "#q"),
+        /** #cm 1, #cm 2 … clear song at that queue position */
+        val clearMusicPrefixes: List<String> = listOf("#cm", "#hapus")
     )
 
     var onChat: ((TikTokChat) -> Unit)? = null
@@ -75,7 +77,7 @@ class TikTokLiveManager(
 
         wsConnection = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WS onOpen. Response: ${response.message}")
+                Log.d(TAG, "WS onOpen")
                 isConnected = true
                 scope.launch(Dispatchers.Main) { onConnected?.invoke() }
             }
@@ -104,15 +106,13 @@ class TikTokLiveManager(
         try {
             val obj = gson.fromJson(text, JsonObject::class.java)
 
-            // 1. Check for Bundled Messages format: { "messages": [ { "type": "...", "data": { ... } } ] }
+            // 1. Bundled: { "messages": [ { "type": "...", "data": {...} } ] }
             if (obj.has("messages") && obj["messages"].isJsonArray) {
-                val messages = obj.getAsJsonArray("messages")
-                messages.forEach { el ->
+                obj.getAsJsonArray("messages").forEach { el ->
                     if (!el.isJsonObject) return@forEach
                     val msgObj = el.asJsonObject
                     val type = msgObj["type"]?.asString ?: ""
                     val data = msgObj["data"]?.asJsonObject ?: return@forEach
-
                     when (type) {
                         "WebcastChatMessage", "chat", "comment", "message" -> {
                             val chat = buildChat(data) ?: return@forEach
@@ -129,7 +129,7 @@ class TikTokLiveManager(
                 return
             }
 
-            // 2. Check for Legacy Wrapped format: { "event": "chat", "data": { ... } }
+            // 2. Legacy wrapped: { "event": "chat", "data": {...} }
             if (obj.has("event") && obj.has("data") && obj["data"].isJsonObject) {
                 val event = obj["event"].asString
                 val data = obj["data"].asJsonObject
@@ -146,7 +146,7 @@ class TikTokLiveManager(
                 return
             }
 
-            // 3. Check for Flat format: { "type": "chat", "comment": "..." }
+            // 3. Flat: { "type": "chat", "comment": "..." }
             val type = (obj["type"] ?: obj["event"])?.asString
             when (type) {
                 "chat", "comment", "message", "WebcastChatMessage" -> {
@@ -168,7 +168,6 @@ class TikTokLiveManager(
         pollJob = scope.launch(Dispatchers.IO) {
             isConnected = true
             withContext(Dispatchers.Main) { onConnected?.invoke() }
-
             while (isActive) {
                 fetchChatHttp()
                 delay(POLL_INTERVAL_MS)
@@ -187,45 +186,35 @@ class TikTokLiveManager(
                 .build()
 
             client.newCall(request).execute().use { resp ->
-                if (!resp.isSuccessful) {
-                    Log.e(TAG, "fetchChatHttp unsuccessful: ${resp.code} ${resp.message}")
-                    return
-                }
+                if (!resp.isSuccessful) return
                 val body = resp.body?.string() ?: return
-                // Check if it's an array or object
-                val json = gson.fromJson(body, com.google.gson.JsonElement::class.java)
-                val arr = if (json.isJsonArray) {
-                    json.asJsonArray
-                } else if (json.isJsonObject) {
-                    val obj = json.asJsonObject
-                    when {
-                        obj.has("messages") && obj["messages"].isJsonArray -> obj.getAsJsonArray("messages")
-                        obj.has("data") && obj["data"].isJsonArray -> obj.getAsJsonArray("data")
-                        obj.has("chats") && obj["chats"].isJsonArray -> obj.getAsJsonArray("chats")
-                        else -> null
+                val json = gson.fromJson(body, JsonElement::class.java)
+                val arr = when {
+                    json.isJsonArray -> json.asJsonArray
+                    json.isJsonObject -> json.asJsonObject.let { o ->
+                        when {
+                            o.has("messages") && o["messages"].isJsonArray -> o.getAsJsonArray("messages")
+                            o.has("data") && o["data"].isJsonArray -> o.getAsJsonArray("data")
+                            o.has("chats") && o["chats"].isJsonArray -> o.getAsJsonArray("chats")
+                            else -> null
+                        }
                     }
-                } else {
-                    null
+                    else -> null
                 } ?: return
 
                 arr.forEach { el ->
                     if (!el.isJsonObject) return@forEach
                     val obj = el.asJsonObject
-                    val msgId = obj["id"]?.asString 
-                        ?: obj["msgId"]?.asString 
-                        ?: obj["msg_id"]?.asString 
-                        ?: obj["unique_id"]?.asString // Fallback to something if no ID
+                    val msgId = obj["id"]?.asString
+                        ?: obj["msgId"]?.asString
+                        ?: obj["msg_id"]?.asString
                         ?: ""
-                    
                     if (msgId.isNotEmpty() && msgId in lastChatIds) return@forEach
                     if (msgId.isNotEmpty()) lastChatIds.add(msgId)
-
                     if (lastChatIds.size > 200) {
-                        val lastList = lastChatIds.toList().takeLast(100)
-                        lastChatIds.clear()
-                        lastChatIds.addAll(lastList)
+                        val keep = lastChatIds.toList().takeLast(100)
+                        lastChatIds.clear(); lastChatIds.addAll(keep)
                     }
-
                     val chat = buildChat(obj) ?: return@forEach
                     scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
                 }
@@ -236,20 +225,19 @@ class TikTokLiveManager(
     }
 
     private fun buildChat(data: JsonObject): TikTokChat? {
-        Log.d(TAG, "Building chat from: $data")
         return try {
             val uniqueId = data["uniqueId"]?.asString
                 ?: data["unique_id"]?.asString
                 ?: data["user"]?.asJsonObject?.get("uniqueId")?.asString
                 ?: data["user"]?.asJsonObject?.get("unique_id")?.asString
-                ?: data["nickname"]?.asString // Fallback to nickname as ID
+                ?: data["nickname"]?.asString
                 ?: return null
-            
-            val nickname = data["nickname"]?.asString 
+
+            val nickname = data["nickname"]?.asString
                 ?: data["user"]?.asJsonObject?.get("nickname")?.asString
                 ?: uniqueId
-            
-            val comment  = data["comment"]?.asString
+
+            val comment = data["comment"]?.asString
                 ?: data["message"]?.asString
                 ?: data["text"]?.asString
                 ?: data["content"]?.asString
@@ -259,9 +247,9 @@ class TikTokLiveManager(
             val (cmdType, cmdArg) = parseCommand(comment)
 
             TikTokChat(
-                uniqueId = uniqueId,
-                nickname = nickname,
-                comment  = comment,
+                uniqueId    = uniqueId,
+                nickname    = nickname,
+                comment     = comment,
                 commandType = cmdType,
                 commandArg  = cmdArg
             )
@@ -270,16 +258,36 @@ class TikTokLiveManager(
         }
     }
 
+    /**
+     * Parses the chat comment text into a [TikTokChat.CommandType] + optional argument.
+     *
+     * New #cm command:
+     *   "#cm 1"  → CLEAR_MUSIC, arg = "1"
+     *   "#cm 3"  → CLEAR_MUSIC, arg = "3"
+     */
     private fun parseCommand(text: String): Pair<TikTokChat.CommandType, String?> {
         val lower = text.lowercase().trim()
+
+        // REQUEST (must extract arg = everything after prefix)
         commandConfig.requestPrefixes.forEach { prefix ->
             if (lower.startsWith(prefix)) {
-                return TikTokChat.CommandType.REQUEST to text.substring(prefix.length).trim()
+                val arg = text.substring(prefix.length).trim()
+                return TikTokChat.CommandType.REQUEST to arg.ifBlank { null }
             }
         }
-        commandConfig.skipPrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.SKIP to null }
-        commandConfig.stopPrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.STOP to null }
+
+        // CLEAR_MUSIC: #cm <number>  (e.g. "#cm 2")
+        commandConfig.clearMusicPrefixes.forEach { prefix ->
+            if (lower.startsWith(prefix)) {
+                val arg = text.substring(prefix.length).trim()
+                return TikTokChat.CommandType.CLEAR_MUSIC to arg.ifBlank { null }
+            }
+        }
+
+        commandConfig.skipPrefixes.forEach  { if (lower.startsWith(it)) return TikTokChat.CommandType.SKIP  to null }
+        commandConfig.stopPrefixes.forEach  { if (lower.startsWith(it)) return TikTokChat.CommandType.STOP  to null }
         commandConfig.queuePrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.QUEUE to null }
+
         return TikTokChat.CommandType.NONE to null
     }
 }
