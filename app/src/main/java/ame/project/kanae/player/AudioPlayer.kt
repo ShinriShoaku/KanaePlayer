@@ -109,7 +109,7 @@ class AudioPlayer(
         progressJob = scope.launch(Dispatchers.Main) {
             while (isActive) {
                 onProgress?.invoke(currentPositionMs, durationMs)
-                delay(1000)
+                delay(500)
             }
         }
     }

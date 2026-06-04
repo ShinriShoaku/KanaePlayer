@@ -23,5 +23,6 @@
     <color name="overlay_bg">#CC12121F</color>
 
     <color name="canvas_default">#4A4A8A</color>
+    <color name="lyrics_default">#5C4D8A</color>
 
 </resources>
