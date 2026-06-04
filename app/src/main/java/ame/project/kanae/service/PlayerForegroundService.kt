@@ -9,6 +9,7 @@ import com.google.gson.Gson
 import ame.project.kanae.MainActivity
 import ame.project.kanae.model.Song
 import ame.project.kanae.model.TikTokChat
+import ame.project.kanae.overlay.LyricsOverlayManager
 import ame.project.kanae.overlay.OverlayManager
 import ame.project.kanae.overlay.QueueOverlayManager
 import ame.project.kanae.player.AudioPlayer
@@ -25,11 +26,12 @@ class PlayerForegroundService : Service() {
         private const val MAX_QUEUE        = 50
         private const val PREFS_NAME       = "ytplayer_prefs"
 
-        const val ACTION_PLAY_PAUSE   = "ame.project.ytplayer.PLAY_PAUSE"
-        const val ACTION_SKIP         = "ame.project.ytplayer.SKIP"
-        const val ACTION_STOP         = "ame.project.ytplayer.STOP"
-        const val ACTION_SHOW_OVERLAY = "ame.project.ytplayer.SHOW_OVERLAY"
-        const val ACTION_CANVAS_MODE  = "ame.project.ytplayer.CANVAS_MODE"
+        const val ACTION_PLAY_PAUSE    = "ame.project.ytplayer.PLAY_PAUSE"
+        const val ACTION_SKIP          = "ame.project.ytplayer.SKIP"
+        const val ACTION_STOP          = "ame.project.ytplayer.STOP"
+        const val ACTION_SHOW_OVERLAY  = "ame.project.ytplayer.SHOW_OVERLAY"
+        const val ACTION_CANVAS_MODE   = "ame.project.ytplayer.CANVAS_MODE"
+        const val ACTION_LYRICS_TOGGLE = "ame.project.ytplayer.LYRICS_TOGGLE"
 
         const val BROADCAST_STATE = "ame.project.ytplayer.STATE_UPDATE"
         const val BROADCAST_CHAT  = "ame.project.ytplayer.CHAT_UPDATE"
@@ -42,6 +44,7 @@ class PlayerForegroundService : Service() {
     private lateinit var tiktokManager: TikTokLiveManager
     private lateinit var overlayManager: OverlayManager
     private lateinit var queueOverlayManager: QueueOverlayManager
+    private lateinit var lyricsOverlayManager: LyricsOverlayManager
 
     private val queue       = ArrayDeque<Song>()
     private var currentSong: Song?  = null
@@ -78,7 +81,18 @@ class PlayerForegroundService : Service() {
         Log.d(TAG, "onCreate")
 
         createNotificationChannel()
-        startForeground(NOTIF_ID, buildNotification("Starting…"))
+        //startForeground(NOTIF_ID, buildNotification("Starting…"))
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIF_ID,
+                buildNotification("Starting…"),
+                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            )
+        } else {
+            startForeground(NOTIF_ID, buildNotification("Starting…"))
+        }
+
 
         loadPrefs()
 
@@ -86,8 +100,15 @@ class PlayerForegroundService : Service() {
             p.onComplete = ::onSongComplete
             p.onError    = { err -> Log.e(TAG, "Player error: $err"); playNext() }
             p.onProgress = { pos, dur ->
-                positionMs = pos; durationMs = dur
-                overlayManager.updateSong(currentSong, pos, dur)
+                positionMs = pos
+                if (dur > 0) durationMs = dur
+                
+                overlayManager.updateSong(currentSong, positionMs, durationMs)
+                // Sync lyrics cue to current playback position
+                if (lyricsOverlayManager.isShowing) {
+                    lyricsOverlayManager.updatePosition(positionMs)
+                }
+                broadcastState()
             }
             p.init()
         }
@@ -109,6 +130,12 @@ class PlayerForegroundService : Service() {
             onRemove = { pos -> removeFromQueue(pos) }
         )
 
+        lyricsOverlayManager = LyricsOverlayManager(
+            context       = this,
+            scope         = serviceScope,
+            preferredLang = loadPreferredLyricsLang()
+        )
+
         tiktokManager = buildTikTokManager()
 
         // ── BUG FIX: Do NOT auto-connect on service start.
@@ -119,11 +146,12 @@ class PlayerForegroundService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PLAY_PAUSE   -> togglePlayPause()
-            ACTION_SKIP         -> playNext()
-            ACTION_STOP         -> stopPlayer()
-            ACTION_SHOW_OVERLAY -> showOverlay()
-            ACTION_CANVAS_MODE  -> {
+            ACTION_PLAY_PAUSE    -> togglePlayPause()
+            ACTION_SKIP          -> playNext()
+            ACTION_STOP          -> stopPlayer()
+            ACTION_SHOW_OVERLAY  -> overlayManager.show()
+            ACTION_LYRICS_TOGGLE -> toggleLyricsOverlay()
+            ACTION_CANVAS_MODE   -> {
                 val enable = intent.getBooleanExtra("enabled", false)
                 val px = intent.getIntExtra("player_x", canvasPlayerX)
                 val py = intent.getIntExtra("player_y", canvasPlayerY)
@@ -142,6 +170,7 @@ class PlayerForegroundService : Service() {
         audioPlayer.release()
         overlayManager.hide()
         queueOverlayManager.hide()
+        lyricsOverlayManager.hide()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -215,7 +244,7 @@ class PlayerForegroundService : Service() {
             val meta = ytDlp.fetchMetadata(youtubeUrl)
             val song = Song(
                 title       = meta?.title    ?: youtubeUrl,
-                youtubeUrl  = youtubeUrl,
+                youtubeUrl  = meta?.videoUrl ?: youtubeUrl,
                 thumbnail   = meta?.thumbnail,
                 duration    = meta?.duration ?: 0,
                 channel     = meta?.channel,
@@ -300,12 +329,19 @@ class PlayerForegroundService : Service() {
     fun playSong(song: Song) {
         serviceScope.launch {
             currentSong = song
+            positionMs  = 0L
+            durationMs  = song.duration * 1000L
             isPlaying   = true
             isPaused    = false
             updateNotification(song.title)
             overlayManager.updateSong(song, 0, song.duration * 1000L)
             overlayManager.setPlayingState(true)
             broadcastState()
+
+            // Load lyrics for new song (non-blocking, runs in background)
+            if (lyricsOverlayManager.isShowing) {
+                lyricsOverlayManager.loadForSong(song)
+            }
 
             ytDlp.extractAudioUrl(song.youtubeUrl)
                 .onSuccess  { url -> audioPlayer.play(url) }
@@ -337,10 +373,10 @@ class PlayerForegroundService : Service() {
     fun playNext() {
         audioPlayer.stop()
         isPlaying = false; isPaused = false; currentSong = null
+        positionMs = 0L; durationMs = 0L
 
         if (queue.isEmpty()) {
             updateNotification("Queue empty")
-            overlayManager.updateSong(null, 0, 0)
             broadcastState(); syncQueueOverlay()
             return
         }
@@ -353,6 +389,7 @@ class PlayerForegroundService : Service() {
     fun stopPlayer() {
         audioPlayer.stop()
         currentSong = null; isPlaying = false; isPaused = false
+        positionMs = 0L; durationMs = 0L
         overlayManager.setPlayingState(false)
         overlayManager.updateSong(null, 0, 0)
         updateNotification("Stopped")
@@ -372,6 +409,21 @@ class PlayerForegroundService : Service() {
         when (chat.commandType) {
             TikTokChat.CommandType.REQUEST -> {
                 val arg = chat.commandArg ?: return
+
+                // NEW: Limit song requests (Max 3 per user)
+                val cleanOwner = tiktokUsername.trim().removePrefix("@")
+                val isOwner    = chat.uniqueId.equals(cleanOwner, ignoreCase = true)
+                val isAdmin    = isOwner || chat.uniqueId.equals("admin", ignoreCase = true)
+
+                if (!isAdmin) {
+                    val userReq = "@${chat.uniqueId}"
+                    val count   = queue.count { it.requestedBy == userReq }
+                    if (count >= 3) {
+                        Log.d(TAG, "[TikTok] Request denied: $userReq already has $count songs in queue")
+                        return
+                    }
+                }
+
                 val url = if (arg.contains("youtube.com") || arg.contains("youtu.be")) arg
                           else "ytsearch1:$arg"
                 addToQueue(url, requestedBy = "@${chat.uniqueId}", fromChat = true)
@@ -415,11 +467,13 @@ class PlayerForegroundService : Service() {
             .apply()
 
         // Show overlays (if not already) then lock them
-        if (!overlayManager.isShowing)     showOverlay()
+        if (!overlayManager.isShowing)      overlayManager.show()
         if (!queueOverlayManager.isShowing) queueOverlayManager.show(getQueue())
 
         overlayManager.setCanvasMode(locked = true, x = px, y = py)
         queueOverlayManager.setCanvasMode(locked = true, x = qx, y = qy)
+        if (lyricsOverlayManager.isShowing)
+            lyricsOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 440)
 
         broadcastState()
     }
@@ -429,8 +483,13 @@ class PlayerForegroundService : Service() {
         canvasModeEnabled = false
         overlayManager.setCanvasMode(locked = false)
         queueOverlayManager.setCanvasMode(locked = false)
+        if (lyricsOverlayManager.isShowing)
+            lyricsOverlayManager.setCanvasMode(locked = false)
         broadcastState()
     }
+
+    private fun loadPreferredLyricsLang(): String =
+        prefs.getString("lyrics_lang", "id") ?: "id"
 
     fun getCanvasState(): Map<String, Int> = mapOf(
         "canvas_px" to canvasPlayerX,
@@ -440,37 +499,42 @@ class PlayerForegroundService : Service() {
     )
 
     // ── Overlay passthrough ───────────────────────────────────────────
-    fun showOverlay()  {
-        overlayManager.show()
-        syncOverlayAll()
-    }
+    fun showOverlay()  { overlayManager.show() }
     fun hideOverlay()  { overlayManager.hide() }
     val overlayVisible get() = overlayManager.isShowing
-
-    private fun syncOverlayAll() {
-        overlayManager.updateSong(currentSong, positionMs, durationMs)
-        overlayManager.updateQueueCount(queue.size)
-        overlayManager.setLiveStatus(tiktokConnected)
-        overlayManager.setPlayingState(isPlaying && !isPaused)
-    }
 
     fun toggleQueueOverlay() {
         if (queueOverlayManager.isShowing) queueOverlayManager.hide()
         else queueOverlayManager.show(getQueue())
     }
 
+    // ── Lyrics overlay ────────────────────────────────────────────────
+    fun toggleLyricsOverlay() {
+        if (lyricsOverlayManager.isShowing) {
+            lyricsOverlayManager.hide()
+        } else {
+            lyricsOverlayManager.show()
+            // If a song is already playing, immediately start fetching lyrics
+            currentSong?.let { lyricsOverlayManager.loadForSong(it) }
+        }
+        broadcastState()
+    }
+
+    val lyricsOverlayVisible get() = lyricsOverlayManager.isShowing
+
     // ── State map (for MainActivity syncUi) ───────────────────────────
     fun getStateMap(): Map<String, Any?> = mapOf(
-        "current_song"     to currentSong?.let { gson.toJson(it) },
-        "is_playing"       to isPlaying,
-        "is_paused"        to isPaused,
-        "queue_count"      to queue.size,
-        "position_ms"      to positionMs,
-        "duration_ms"      to durationMs,
-        "shuffle_mode"     to shuffleMode,
-        "tiktok_connected" to tiktokConnected,
-        "ytdlp_installed"  to ytDlp.isInstalled,
-        "canvas_mode"      to canvasModeEnabled
+        "current_song"      to currentSong?.let { gson.toJson(it) },
+        "is_playing"        to isPlaying,
+        "is_paused"         to isPaused,
+        "queue_count"       to queue.size,
+        "position_ms"       to positionMs,
+        "duration_ms"       to durationMs,
+        "shuffle_mode"      to shuffleMode,
+        "tiktok_connected"  to tiktokConnected,
+        "ytdlp_installed"   to ytDlp.isInstalled,
+        "canvas_mode"       to canvasModeEnabled,
+        "lyrics_visible"    to lyricsOverlayManager.isShowing
     )
 
     // ── Notification ──────────────────────────────────────────────────

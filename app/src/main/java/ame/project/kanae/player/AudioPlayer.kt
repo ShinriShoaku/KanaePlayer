@@ -98,8 +98,12 @@ class AudioPlayer(
     /** Release resources – call from Service.onDestroy. */
     fun release() {
         stopProgressUpdates()
+        player?.stop()
         player?.release()
         player = null
+        onComplete = null
+        onError = null
+        onProgress = null
     }
 
     // ── Progress ticker ───────────────────────────────────────────────────────
@@ -109,7 +113,7 @@ class AudioPlayer(
         progressJob = scope.launch(Dispatchers.Main) {
             while (isActive) {
                 onProgress?.invoke(currentPositionMs, durationMs)
-                delay(500)
+                delay(500) // kasih delay :v
             }
         }
     }

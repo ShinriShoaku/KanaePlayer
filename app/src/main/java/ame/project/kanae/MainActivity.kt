@@ -92,14 +92,20 @@ class MainActivity : AppCompatActivity() {
             addAction(PlayerForegroundService.BROADCAST_STATE)
             addAction(PlayerForegroundService.BROADCAST_CHAT)
         }
-        registerReceiver(stateReceiver, filter, RECEIVER_EXPORTED)
+        //registerReceiver(stateReceiver, filter, RECEIVER_EXPORTED)
+
+        ContextCompat.registerReceiver(this, stateReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
 
         checkPermissions()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        if (serviceBound) { unbindService(connection); serviceBound = false }
+        if (serviceBound) {
+            unbindService(connection)
+            serviceBound = false
+            service = null
+        }
         unregisterReceiver(stateReceiver)
     }
 
@@ -194,6 +200,15 @@ class MainActivity : AppCompatActivity() {
             svc.toggleQueueOverlay()
         }
 
+        // ── Lyrics overlay ─────────────────────────────────────────────
+        binding.btnLyricsOverlay.setOnClickListener {
+            val svc = service ?: return@setOnClickListener
+            if (!Settings.canDrawOverlays(this)) {
+                requestOverlayPermission(); return@setOnClickListener
+            }
+            svc.toggleLyricsOverlay()
+        }
+
         // ── Canvas mode ────────────────────────────────────────────────
         // Jika canvas sudah ON → klik tombol langsung OFF (disable canvas mode).
         // Jika canvas OFF → buka CanvasActivity untuk atur posisi lalu lock.
@@ -211,6 +226,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.btnGrantOverlay.setOnClickListener { requestOverlayPermission() }
+
+        // ── Lyrics language quick-pick ─────────────────────────────────
+        binding.btnLangId.setOnClickListener {
+            binding.etLyricsLang.setText("id")
+            saveLyricsLang("id")
+            snack("Lyrics language: Indonesian")
+        }
+        binding.btnLangEn.setOnClickListener {
+            binding.etLyricsLang.setText("en")
+            saveLyricsLang("en")
+            snack("Lyrics language: English")
+        }
 
         // ── Save & Connect / Disconnect ────────────────────────────────
         binding.btnSaveSettings.setOnClickListener {
@@ -233,6 +260,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             val cmdConfig = buildCommandConfig()
+            val lyricsLang = binding.etLyricsLang.text.toString().trim().ifBlank { "id" }
+            saveLyricsLang(lyricsLang)
             svc.saveSettings(apiKey, username, cmdConfig)
             saveSettingsToPrefs(apiKey, username, cmdConfig)
             snack("Settings saved – connecting TikTok Live…")
@@ -253,6 +282,12 @@ class MainActivity : AppCompatActivity() {
         binding.etCmdStop.setText(p.getString("cmd_stop",          "#stop"))
         binding.etCmdQueue.setText(p.getString("cmd_queue",        "#queue,#antrian,#q"))
         binding.etCmdClearMusic.setText(p.getString("cmd_clear_music", "#cm,#hapus"))
+        binding.etLyricsLang.setText(p.getString("lyrics_lang", "id"))
+    }
+
+    private fun saveLyricsLang(lang: String) {
+        getSharedPreferences("ytplayer_prefs", MODE_PRIVATE)
+            .edit().putString("lyrics_lang", lang).apply()
     }
 
     private fun saveSettingsToPrefs(
@@ -309,7 +344,9 @@ class MainActivity : AppCompatActivity() {
         val posSec = (posMs / 1000).toInt()
         val durSec = (durMs / 1000).toInt()
         binding.tvProgress.text = "${fmt(posSec)} / ${fmt(durSec)}"
-        binding.progressBar.progress = if (durMs > 0) (posMs * 100 / durMs).toInt() else 0
+        
+        val progress = if (durMs > 0) ((posMs * 100) / durMs).toInt().coerceIn(0, 100) else 0
+        binding.progressBar.progress = progress
 
         binding.btnPlayPause.text = if (isPlaying && !isPaused) "⏸ Pause" else "▶ Play"
         binding.tvQueueCount.text = "Queue: $qCount"
@@ -325,6 +362,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.tvYtdlpStatus.text   = if (ytdlpOk) "🟢 yt-dlp ready" else "🔴 yt-dlp missing"
         binding.btnOverlay.text      = if (svc.overlayVisible) "Hide Overlay" else "Show Overlay"
+
+        // Lyrics overlay button
+        val lyricsOn = state["lyrics_visible"] as? Boolean ?: false
+        binding.btnLyricsOverlay.text = if (lyricsOn) "🎤 Lyrics ON  ✕" else "🎤 Lyrics"
+        binding.btnLyricsOverlay.backgroundTintList =
+            android.content.res.ColorStateList.valueOf(
+                if (lyricsOn) ContextCompat.getColor(this, R.color.orange)
+                else          ContextCompat.getColor(this, R.color.lyrics_default)
+            )
 
         // Canvas button: teks dan warna mencerminkan status ON/OFF
         binding.btnCanvas.text = if (canvas) "🎨 Canvas ON  ✕" else "🎨 Canvas"

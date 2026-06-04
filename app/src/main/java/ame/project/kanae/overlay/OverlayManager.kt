@@ -115,9 +115,10 @@ class OverlayManager(
     fun hide() {
         if (!isShowing) return
         rootView?.let { runCatching { wm.removeView(it) } }
-        rootView    = null
-        isShowing   = false
-        isExpanded  = false
+        rootView      = null
+        gestureHelper = null
+        isShowing     = false
+        isExpanded    = false
         currentSongId = null
     }
 
