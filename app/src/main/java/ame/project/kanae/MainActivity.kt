@@ -15,8 +15,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.Gson
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import ame.project.kanae.canvas.CanvasActivity
 import ame.project.kanae.databinding.ActivityMainBinding
 import ame.project.kanae.model.Song
@@ -81,6 +90,8 @@ class MainActivity : AppCompatActivity() {
         setupRecyclerView()
         setupButtons()
         loadSavedSettings()          // populate fields ONLY — do not connect
+
+        checkForUpdates()
 
         startForegroundService(Intent(this, PlayerForegroundService::class.java))
         bindService(
@@ -227,6 +238,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.btnGrantOverlay.setOnClickListener { requestOverlayPermission() }
 
+        binding.btnFeedback.setOnClickListener { showFeedbackDialog() }
+
         // ── Lyrics language quick-pick ─────────────────────────────────
         binding.btnLangId.setOnClickListener {
             binding.etLyricsLang.setText("id")
@@ -319,6 +332,84 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    // ── Update Checker ───────────────────────────────────────────────
+    private data class UpdateInfo(
+        val versionCode: Int,
+        val versionName: String,
+        val updateMessage: String
+    )
+
+    private fun checkForUpdates() {
+        Log.d("UpdateCheck", "Checking for updates...")
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val client = OkHttpClient()
+                val request = Request.Builder()
+                    .url("https://raw.githubusercontent.com/ShinriShoaku/KanaePlayer/master/version.json")
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    Log.d("UpdateCheck", "Response code: ${response.code}")
+                    if (!response.isSuccessful) {
+                        Log.e("UpdateCheck", "Failed to fetch version info: ${response.message}")
+                        return@launch
+                    }
+                    val body = response.body?.string() ?: return@launch
+                    Log.d("UpdateCheck", "JSON Body: $body")
+                    val updateInfo = Gson().fromJson(body, UpdateInfo::class.java)
+
+                    val packageInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageManager.getPackageInfo(packageName, 0)
+                    }
+
+                    val currentVersionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        packageInfo.longVersionCode
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageInfo.versionCode.toLong()
+                    }
+                    val currentVersionName = packageInfo.versionName ?: ""
+
+                    Log.d("UpdateCheck", "Current: $currentVersionCode ($currentVersionName), Remote: ${updateInfo.versionCode} (${updateInfo.versionName})")
+
+                    val isNewerCode = updateInfo.versionCode > currentVersionCode
+                    val isDifferentName = (updateInfo.versionCode.toLong() == currentVersionCode && updateInfo.versionName != currentVersionName)
+
+                    if (isNewerCode || isDifferentName) {
+                        withContext(Dispatchers.Main) {
+                            showUpdateDialog(updateInfo)
+                        }
+                    } else {
+                        Log.d("UpdateCheck", "App is up to date.")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("UpdateCheck", "Error: ${e.message}", e)
+            }
+        }
+    }
+
+    private fun showUpdateDialog(info: UpdateInfo) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Update Baru Tersedia!")
+            .setIcon(R.mipmap.ic_launcher)
+            .setMessage("Versi ${info.versionName} sudah tersedia.\n\nUpdate kali ini:\n${info.updateMessage}")
+            .setPositiveButton("Update Sekarang") { _, _ ->
+                val url = "https://github.com/ShinriShoaku/KanaePlayer/releases"
+                try {
+                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                } catch (_: Exception) {
+                    snack("Gagal membuka browser")
+                }
+            }
+            .setNegativeButton("Nanti", null)
+            .setCancelable(false)
+            .show()
+    }
+
     // ── Sync UI from service state ────────────────────────────────────
     @SuppressLint("SetTextI18n")
     private fun syncUi() {
@@ -391,6 +482,72 @@ class MainActivity : AppCompatActivity() {
         }
         tv.text = (lines + line).takeLast(50).joinToString("\n")
         binding.scrollChat.post { binding.scrollChat.fullScroll(View.FOCUS_DOWN) }
+    }
+
+    private fun showFeedbackDialog() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            val marginPx = (16 * resources.displayMetrics.density).toInt()
+            setPadding(marginPx, marginPx, marginPx, marginPx)
+        }
+
+        val etUser = EditText(this).apply {
+            hint = "Username"
+            setText(binding.etTiktokUser.text.toString().trim())
+            setSingleLine(true)
+        }
+        val etMsg = EditText(this).apply {
+            hint = "Pesan feedback atau bug..."
+            minLines = 3
+            gravity = android.view.Gravity.TOP
+        }
+
+        layout.addView(etUser)
+        layout.addView(etMsg)
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Kirim Feedback")
+            .setView(layout)
+            .setPositiveButton("Kirim") { _, _ ->
+                val user = etUser.text.toString().trim().ifBlank { "Unknown" }
+                val feedback = etMsg.text.toString().trim()
+                if (feedback.isNotEmpty()) {
+                    sendFeedback(user, feedback)
+                } else {
+                    snack("Feedback tidak boleh kosong")
+                }
+            }
+            .setNegativeButton("Batal", null)
+            .show()
+    }
+
+    private fun sendFeedback(username: String, feedback: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val url = "https://script.google.com/macros/s/AKfycbzZbHEo56-_zHnfl1VnthnNaMIBVJK78RtRosRqKbTDTR1KqD2DVrAbsxxJhkKSSlQB/exec"
+                val json = """{"username": "$username", "feedback": "$feedback"}"""
+                val body = json.toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                val request = Request.Builder()
+                    .url(url)
+                    .post(body)
+                    .build()
+
+                OkHttpClient().newCall(request).execute().use { response ->
+                    withContext(Dispatchers.Main) {
+                        if (response.isSuccessful) {
+                            snack("Feedback terkirim, terima kasih!")
+                        } else {
+                            snack("Gagal mengirim feedback: ${response.code}")
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    snack("Error: ${e.message}")
+                }
+            }
+        }
     }
 
     private fun fmt(sec: Int) = "%d:%02d".format(sec / 60, sec % 60)
