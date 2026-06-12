@@ -197,9 +197,25 @@ class OverlayGestureHelper(
     /** Capture original unscaled dimensions from the laid-out view (once). */
     private fun captureOrigSize() {
         if (origW > 0 || rootView.width == 0) return
-        // Undo any current scale to get the "natural" size
         origW = (rootView.width  / currentScale).toInt().coerceAtLeast(1)
         origH = (rootView.height / currentScale).toInt().coerceAtLeast(1)
+    }
+
+    /**
+     * Updates the base dimensions when content size changes dynamically.
+     * This ensures scaling/rotation remains accurate while keeping the
+     * user's current zoom level (currentScale).
+     */
+    fun updateBaseSize(wPx: Int, hPx: Int) {
+        // If the change is negligible, ignore it to prevent flickering
+        if (abs(origW - wPx) < 5 && abs(origH - hPx) < 5) return
+
+        origW = wPx
+        origH = hPx
+        
+        // Refresh the window bounds to accommodate new content size 
+        // while maintaining the user's rotation and scale.
+        updateWindowBounds()
     }
 
     private fun tryUpdate() {

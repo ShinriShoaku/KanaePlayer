@@ -1,622 +1,779 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
-android:background="@color/bg_dark"
-android:fillViewport="true">
-
-<LinearLayout
+<!--
+  activity_main.xml — Kanae Player redesign
+  Modern dark theme with clearer section hierarchy.
+  All existing view IDs are preserved for binary compatibility with MainActivity.kt
+-->
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="16dp">
+    android:layout_height="match_parent"
+    android:background="#0F0F1A"
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="🎵 Kanae Player"
-        android:textSize="22sp"
-        android:textColor="@color/orange"
-        android:textStyle="bold"
-        android:layout_marginBottom="12dp" />
-
-    <!-- Status row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="8dp">
+        android:orientation="vertical"
+        android:padding="14dp">
 
-        <TextView
-            android:id="@+id/tvTiktokStatus"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="⚫ TikTok Live"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/tvYtdlpStatus"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="⚫ yt-dlp"
-            android:textColor="@color/text_secondary"
-            android:textSize="13sp" />
-
+        <!-- ══════════════════════════════════════════
+             HEADER
+        ══════════════════════════════════════════ -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@color/transparent"
-            android:id="@+id/btnFeedback"
-            android:layout_height="wrap_content">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:text="feedback"
-                android:alpha="0.7"
-                android:background="@color/transparent"
-                android:textColor="@color/white"
-                android:layout_height="wrap_content"/>
-
-            <ImageButton
-
-                android:layout_width="28dp"
-                android:layout_height="25dp"
-                android:scaleY="0.6"
-                android:scaleX="0.6"
-                android:src="@android:drawable/ic_dialog_email"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="Feedback"
-                app:tint="@color/orange" />
-        </LinearLayout>
-
-
-    </LinearLayout>
-
-    <!-- Now Playing card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        android:layout_marginBottom="12dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="NOW PLAYING"
-                android:textColor="@color/orange"
-                android:textSize="11sp"
-                android:letterSpacing="0.1" />
-
-            <TextView
-                android:id="@+id/tvNowPlaying"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="– Nothing playing –"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:maxLines="2"
-                android:ellipsize="end"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="8dp" />
-
-            <ProgressBar
-                android:id="@+id/progressBar"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="6dp"
-                android:max="100"
-                android:progress="0"
-                android:progressTint="@color/orange" />
-
-            <TextView
-                android:id="@+id/tvProgress"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="0:00 / 0:00"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp"
-                android:layout_marginTop="4dp" />
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- Playback controls -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp"
-        android:gravity="center">
-
-        <Button
-            android:id="@+id/btnPlayPause"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="▶ Play"
-            android:backgroundTint="@color/orange"
-            android:layout_marginEnd="6dp" />
-
-        <Button
-            android:id="@+id/btnSkip"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="⏭ Skip"
-            android:backgroundTint="@color/purple"
-            android:layout_marginEnd="6dp" />
-
-        <Button
-            android:id="@+id/btnStop"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="⏹ Stop"
-            android:backgroundTint="@color/red" />
-    </LinearLayout>
-
-    <!-- Overlay controls row 1 -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="4dp">
-
-        <Button
-            android:id="@+id/btnOverlay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Playing Overlay"
-            android:backgroundTint="@color/teal"
-            android:layout_marginEnd="6dp" />
-
-        <Button
-            android:id="@+id/btnQueueOverlay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Queue Overlay"
-            android:backgroundTint="@color/purple" />
-    </LinearLayout>
-
-    <!-- Overlay controls row 2: Lyrics + Canvas -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="4dp">
-
-        <Button
-            android:id="@+id/btnLyricsOverlay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🎤 Lyrics"
-            android:backgroundTint="@color/lyrics_default"
-            android:layout_marginEnd="6dp" />
-
-        <Button
-            android:id="@+id/btnCanvas"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🎨 Canvas"
-            android:backgroundTint="@color/canvas_default" />
-    </LinearLayout>
-
-    <!-- Overlay controls row 3: Shuffle -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="4dp">
-
-        <Button
-            android:id="@+id/btnShuffle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="🔀 OFF"
-            android:backgroundTint="@color/card_bg" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvOverlayWarning"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="⚠️ Overlay permission required for floating window"
-        android:textColor="@color/yellow"
-        android:textSize="12sp"
-        android:visibility="gone"
-        android:layout_marginTop="4dp" />
-
-    <Button
-        android:id="@+id/btnGrantOverlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Grant Overlay Permission"
-        android:backgroundTint="@color/yellow"
-        android:textColor="@color/bg_dark"
-        android:visibility="gone"
-        android:layout_marginBottom="8dp" />
-
-    <!-- Add to Queue card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        android:layout_marginBottom="12dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="ADD TO QUEUE"
-                android:textColor="@color/orange"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="6dp" />
-
-            <EditText
-                android:id="@+id/etYoutubeUrl"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="YouTube URL or search query"
-                android:inputType="textUri"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange" />
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
 
             <LinearLayout
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="8dp">
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-                <Button
-                    android:id="@+id/btnAddToQueue"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="+ Add to Queue"
-                    android:backgroundTint="@color/orange"
-                    android:layout_marginEnd="6dp" />
-
-                <Button
-                    android:id="@+id/btnClearQueue"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Clear All"
-                    android:backgroundTint="@color/red" />
-            </LinearLayout>
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- Queue list card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        android:layout_marginBottom="12dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal">
                 <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="QUEUE"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:letterSpacing="0.1" />
-                <TextView
-                    android:id="@+id/tvQueueCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Queue: 0"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
+                    android:text="🎵 Kanae Player"
+                    android:textSize="22sp"
+                    android:textColor="#FF9800"
+                    android:textStyle="bold" />
+
+                <!-- Status pills row -->
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="4dp">
+
+                    <TextView
+                        android:id="@+id/tvTiktokStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚫ TikTok"
+                        android:textColor="#888"
+                        android:textSize="11sp"
+                        android:background="#1A1A2E"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"
+                        android:layout_marginEnd="6dp" />
+
+                    <TextView
+                        android:id="@+id/tvYtdlpStatus"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚫ yt-dlp"
+                        android:textColor="#888"
+                        android:textSize="11sp"
+                        android:background="#1A1A2E"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp" />
+
+                </LinearLayout>
             </LinearLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvQueue"
-                android:layout_width="match_parent"
-                android:layout_height="280dp"
-                android:layout_marginTop="8dp"
-                android:nestedScrollingEnabled="false" />
-
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
-
-    <!-- Chat log card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        android:layout_marginBottom="12dp">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:layout_width="match_parent"
+            <!-- Feedback button -->
+            <LinearLayout
+                android:id="@+id/btnFeedback"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="TIKTOK LIVE CHAT"
-                android:textColor="@color/orange"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="6dp" />
-
-            <ScrollView
-                android:id="@+id/scrollChat"
-                android:layout_width="match_parent"
-                android:layout_height="160dp">
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:background="@android:color/transparent"
+                android:padding="6dp">
 
                 <TextView
-                    android:id="@+id/tvChatLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="feedback"
+                    android:textColor="#666688"
+                    android:textSize="11sp"
+                    android:layout_marginEnd="2dp" />
+
+                <ImageButton
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:scaleX="1"
+                    android:scaleY="0.8"
+                    android:src="@android:drawable/ic_dialog_email"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Feedback"
+                    app:tint="#FF9800" />
+
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Overlay permission warning (hidden by default) -->
+        <TextView
+            android:id="@+id/tvOverlayWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚠️  Butuh izin overlay untuk floating window"
+            android:textColor="#FFD600"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp" />
+
+        <Button
+            android:id="@+id/btnGrantOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Berikan Izin Overlay"
+            android:backgroundTint="#FFD600"
+            android:textColor="#0F0F1A"
+            android:textStyle="bold"
+            android:visibility="gone"
+            android:layout_marginBottom="10dp" />
+
+        <!-- ══════════════════════════════════════════
+             NOW PLAYING card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="6dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="@color/white"
-                    android:textSize="12sp"
-                    android:fontFamily="monospace" />
-            </ScrollView>
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                    android:text="▶  NOW PLAYING"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="8dp" />
 
-    <!-- Settings card -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/card_bg"
-        app:cardCornerRadius="12dp"
-        android:layout_marginBottom="24dp">
+                <TextView
+                    android:id="@+id/tvNowPlaying"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="– Nothing playing –"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:layout_marginBottom="12dp" />
 
-        <LinearLayout
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:max="100"
+                    android:progress="0"
+                    android:progressTint="#FF9800"
+                    android:progressBackgroundTint="#2A2A3E"
+                    android:layout_marginBottom="6dp" />
+
+                <TextView
+                    android:id="@+id/tvProgress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="0:00 / 0:00"
+                    android:textColor="#666688"
+                    android:textSize="12sp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════════════════════════════
+             PLAYBACK CONTROLS card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="SETTINGS"
-                android:textColor="@color/orange"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
-                android:layout_marginBottom="8dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="EulerStream API Key"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/etApiKey"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="eulerstream_api_key_here"
-                android:inputType="textPassword"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="10dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="TikTok Username"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/etTiktokUser"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="yourtiktokname"
-                android:inputType="text"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="10dp" />
-
-            <!-- NEW: Lyrics language preference -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="LYRICS SETTINGS"
-                android:textColor="@color/orange"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
-                android:layout_marginTop="12dp"
-                android:layout_marginBottom="6dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Preferred lyrics language (e.g. id, en, ja)"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="10dp">
+                android:orientation="vertical"
+                android:padding="14dp">
 
-                <EditText
-                    android:id="@+id/etLyricsLang"
-                    android:layout_width="0dp"
+                <TextView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:hint="id"
-                    android:inputType="text"
-                    android:maxLength="5"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:backgroundTint="@color/orange"
-                    android:layout_marginEnd="8dp" />
+                    android:text="🎛  KONTROL"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="10dp" />
 
-                <!-- Quick-pick chips -->
-                <Button
-                    android:id="@+id/btnLangId"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:text="ID"
-                    android:textSize="11sp"
-                    android:backgroundTint="#3D5AFE"
-                    android:layout_marginEnd="4dp" />
+                <!-- Play / Skip / Stop -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
 
+                    <Button
+                        android:id="@+id/btnPlayPause"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="▶ Play"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#000"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnSkip"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="⏭ Skip"
+                        android:backgroundTint="#7C4DFF"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnStop"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="⏹ Stop"
+                        android:backgroundTint="#F44336" />
+
+                </LinearLayout>
+
+                <!-- Shuffle (full width) -->
                 <Button
-                    android:id="@+id/btnLangEn"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:text="EN"
-                    android:textSize="11sp"
-                    android:backgroundTint="#00897B" />
+                    android:id="@+id/btnShuffle"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:text="🔀 Shuffle OFF"
+                    android:backgroundTint="#252538"
+                    android:textColor="#AAAACC"
+                    android:textSize="13sp" />
 
             </LinearLayout>
+        </androidx.cardview.widget.CardView>
 
-            <!-- COMMAND PREFIXES SECTION -->
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="COMMAND PREFIXES (comma separated)"
-                android:textColor="@color/orange"
-                android:textSize="11sp"
-                android:letterSpacing="0.1"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="6dp" />
+        <!-- ══════════════════════════════════════════
+             OVERLAY CONTROLS card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="12dp">
 
-            <TextView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Request song (e.g. #req,#request,#lagu)"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-            <EditText
-                android:id="@+id/etCmdRequest"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="#req,#request,#lagu,#song"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="6dp" />
+                android:orientation="vertical"
+                android:padding="14dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Skip (e.g. #skip,#next)"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-            <EditText
-                android:id="@+id/etCmdSkip"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="#skip,#next,#lewat"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="6dp" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🪟  OVERLAY"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="10dp" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Stop (e.g. #stop)"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-            <EditText
-                android:id="@+id/etCmdStop"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="#stop"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="6dp" />
+                <!-- Row 1: Playing + Queue -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="6dp">
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Show Queue (e.g. #queue)"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-            <EditText
-                android:id="@+id/etCmdQueue"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="#queue,#antrian,#q"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="6dp" />
+                    <Button
+                        android:id="@+id/btnOverlay"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="🎵 Player"
+                        android:backgroundTint="#00897B"
+                        android:layout_marginEnd="6dp" />
 
-            <!-- NEW: Clear music by position command prefix -->
-            <TextView
+                    <Button
+                        android:id="@+id/btnQueueOverlay"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="📋 Queue"
+                        android:backgroundTint="#7C4DFF" />
+
+                </LinearLayout>
+
+                <!-- Row 2: Lyrics + Canvas -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="6dp">
+
+                    <Button
+                        android:id="@+id/btnLyricsOverlay"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="🎤 Lyrics"
+                        android:backgroundTint="@color/lyrics_default"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnCanvas"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="🎨 Canvas"
+                        android:backgroundTint="@color/canvas_default" />
+
+                </LinearLayout>
+
+                <!-- Row 3: Saweria (full width, highlighted) -->
+                <Button
+                    android:id="@+id/btnSaweriaOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:text="🪙  Saweria Overlay"
+                    android:backgroundTint="#B8860B"
+                    android:textColor="#FFFFFF"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════════════════════════════
+             ADD TO QUEUE card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Clear Music by Position (e.g. #cm 1, #cm 2)"
-                android:textColor="@color/text_secondary"
-                android:textSize="12sp" />
-            <EditText
-                android:id="@+id/etCmdClearMusic"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="➕  TAMBAH KE ANTRIAN"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="10dp" />
+
+                <EditText
+                    android:id="@+id/etYoutubeUrl"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="YouTube URL atau kata kunci pencarian"
+                    android:inputType="textUri"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="10dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <Button
+                        android:id="@+id/btnAddToQueue"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="+ Tambah"
+                        android:backgroundTint="#FF9800"
+                        android:textColor="#000"
+                        android:textStyle="bold"
+                        android:layout_marginEnd="6dp" />
+
+                    <Button
+                        android:id="@+id/btnClearQueue"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="🗑 Hapus Semua"
+                        android:backgroundTint="#F44336" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════════════════════════════
+             QUEUE LIST card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="#cm,#hapus"
-                android:textColor="@color/text_primary"
-                android:textColorHint="@color/text_secondary"
-                android:backgroundTint="@color/orange"
-                android:layout_marginBottom="10dp" />
+                android:orientation="vertical"
+                android:padding="14dp">
 
-            <Button
-                android:id="@+id/btnSaveSettings"
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="📋  ANTRIAN"
+                        android:textColor="#FF9800"
+                        android:textSize="10sp"
+                        android:letterSpacing="0.15" />
+
+                    <TextView
+                        android:id="@+id/tvQueueCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0 lagu"
+                        android:textColor="#666688"
+                        android:textSize="12sp"
+                        android:background="#252538"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp" />
+
+                </LinearLayout>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvQueue"
+                    android:layout_width="match_parent"
+                    android:layout_height="280dp"
+                    android:nestedScrollingEnabled="false" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════════════════════════════
+             TIKTOK LIVE CHAT card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="💾 Save &amp; Connect"
-                android:backgroundTint="@color/orange" />
+                android:orientation="vertical"
+                android:padding="14dp">
 
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="💬  TIKTOK LIVE CHAT"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="8dp" />
 
-</LinearLayout>
+                <ScrollView
+                    android:id="@+id/scrollChat"
+                    android:layout_width="match_parent"
+                    android:layout_height="160dp"
+                    android:background="#12121F"
+                    android:padding="8dp">
+
+                    <TextView
+                        android:id="@+id/tvChatLog"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textColor="#CCCCDD"
+                        android:textSize="12sp"
+                        android:fontFamily="monospace" />
+
+                </ScrollView>
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- ══════════════════════════════════════════
+             SETTINGS card
+        ══════════════════════════════════════════ -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="#1A1A2E"
+            app:cardCornerRadius="16dp"
+            app:cardElevation="4dp"
+            android:layout_marginBottom="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="⚙️  PENGATURAN"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="14dp" />
+
+                <!-- EulerStream API Key -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="EulerStream API Key"
+                    android:textColor="#AAAACC"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etApiKey"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="eulerstream_api_key_here"
+                    android:inputType="textPassword"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- TikTok Username -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="TikTok Username"
+                    android:textColor="#AAAACC"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etTiktokUser"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="yourtiktokname"
+                    android:inputType="text"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Request Limit per User -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Limit Request per User"
+                    android:textColor="#AAAACC"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/etRequestLimit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="3"
+                    android:inputType="number"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- LYRICS SETTINGS -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🎤  PENGATURAN LIRIK"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Bahasa lirik pilihan (contoh: id, en, ja)"
+                    android:textColor="#666688"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="4dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <EditText
+                        android:id="@+id/etLyricsLang"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="id"
+                        android:inputType="text"
+                        android:maxLength="5"
+                        android:textColor="#FFFFFF"
+                        android:textColorHint="#444466"
+                        android:backgroundTint="#FF9800"
+                        android:layout_marginEnd="8dp" />
+
+                    <Button
+                        android:id="@+id/btnLangId"
+                        android:layout_width="52dp"
+                        android:layout_height="36dp"
+                        android:text="ID"
+                        android:textSize="12sp"
+                        android:backgroundTint="#3D5AFE"
+                        android:layout_marginEnd="4dp" />
+
+                    <Button
+                        android:id="@+id/btnLangEn"
+                        android:layout_width="52dp"
+                        android:layout_height="36dp"
+                        android:text="EN"
+                        android:textSize="12sp"
+                        android:backgroundTint="#00897B" />
+
+                </LinearLayout>
+
+                <!-- COMMAND PREFIXES -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="🗨️  PREFIX PERINTAH (pisahkan dengan koma)"
+                    android:textColor="#FF9800"
+                    android:textSize="10sp"
+                    android:letterSpacing="0.15"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Request lagu"
+                    android:textColor="#666688"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="2dp" />
+                <EditText
+                    android:id="@+id/etCmdRequest"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="#req,#request,#lagu,#song"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Skip"
+                    android:textColor="#666688"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="2dp" />
+                <EditText
+                    android:id="@+id/etCmdSkip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="#skip,#next,#lewat"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Stop"
+                    android:textColor="#666688"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="2dp" />
+                <EditText
+                    android:id="@+id/etCmdStop"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="#stop"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Lihat antrian"
+                    android:textColor="#666688"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="2dp" />
+                <EditText
+                    android:id="@+id/etCmdQueue"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="#queue,#antrian,#q"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hapus lagu berdasar posisi (contoh: #cm 1)"
+                    android:textColor="#666688"
+                    android:textSize="12sp"
+                    android:layout_marginBottom="2dp" />
+                <EditText
+                    android:id="@+id/etCmdClearMusic"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="#cm,#hapus"
+                    android:textColor="#FFFFFF"
+                    android:textColorHint="#444466"
+                    android:backgroundTint="#FF9800"
+                    android:layout_marginBottom="14dp" />
+
+                <!-- Save & Connect -->
+                <Button
+                    android:id="@+id/btnSaveSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="50dp"
+                    android:text="💾  Simpan &amp; Hubungkan"
+                    android:backgroundTint="#FF9800"
+                    android:textColor="#000000"
+                    android:textStyle="bold"
+                    android:textSize="15sp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+    </LinearLayout>
 </ScrollView>

@@ -42,7 +42,11 @@
             android:exported="false"
             android:launchMode="singleTop"
             android:screenOrientation="fullUser" />
-
+        <activity
+            android:name=".saweria.SaweriaSettingsActivity"
+            android:label="Saweria Overlay"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
         <!-- ─── Foreground Service ────────────────────────────── -->
         <service
             android:name=".service.PlayerForegroundService"

@@ -43,6 +43,7 @@ class TikTokLiveManager(
     private var pollJob: Job? = null
     private var lastChatIds = mutableSetOf<String>()
     private var commandConfig = CommandConfig()
+    private var connectTime = 0L
 
     fun setCommandConfig(config: CommandConfig) {
         commandConfig = config
@@ -78,6 +79,7 @@ class TikTokLiveManager(
         wsConnection = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 Log.d(TAG, "WS onOpen")
+                connectTime = System.currentTimeMillis()
                 isConnected = true
                 scope.launch(Dispatchers.Main) { onConnected?.invoke() }
             }
@@ -115,6 +117,7 @@ class TikTokLiveManager(
                     val data = msgObj["data"]?.asJsonObject ?: return@forEach
                     when (type) {
                         "WebcastChatMessage", "chat", "comment", "message" -> {
+                            if (System.currentTimeMillis() - connectTime < 5000) return@forEach
                             val chat = buildChat(data) ?: return@forEach
                             scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
                         }
@@ -135,6 +138,7 @@ class TikTokLiveManager(
                 val data = obj["data"].asJsonObject
                 when (event) {
                     "chat", "comment", "message", "WebcastChatMessage" -> {
+                        if (System.currentTimeMillis() - connectTime < 5000) return
                         val msg = buildChat(data) ?: return
                         scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                     }
@@ -150,6 +154,7 @@ class TikTokLiveManager(
             val type = (obj["type"] ?: obj["event"])?.asString
             when (type) {
                 "chat", "comment", "message", "WebcastChatMessage" -> {
+                    if (System.currentTimeMillis() - connectTime < 5000) return
                     val msg = buildChat(obj) ?: return
                     scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                 }
@@ -166,6 +171,7 @@ class TikTokLiveManager(
     private fun startHttpPolling() {
         pollJob?.cancel()
         pollJob = scope.launch(Dispatchers.IO) {
+            connectTime = System.currentTimeMillis()
             isConnected = true
             withContext(Dispatchers.Main) { onConnected?.invoke() }
             while (isActive) {
@@ -216,6 +222,7 @@ class TikTokLiveManager(
                         lastChatIds.clear(); lastChatIds.addAll(keep)
                     }
                     val chat = buildChat(obj) ?: return@forEach
+                    if (System.currentTimeMillis() - connectTime < 5000) return@forEach
                     scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
                 }
             }
