@@ -4,6 +4,7 @@ import android.app.*
 import android.content.Intent
 import android.os.*
 import android.util.Log
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.google.gson.Gson
 import ame.project.kanae.MainActivity
@@ -56,6 +57,7 @@ class PlayerForegroundService : Service() {
     private var durationMs  = 0L
     private var shuffleMode = false
     private var tiktokConnected = false
+    private var tiktokConnecting = false
     private var requestLimit  = 3
 
     private var apiKey        = ""
@@ -233,6 +235,7 @@ class PlayerForegroundService : Service() {
             // Disconnect request
             tiktokManager.disconnect()
             tiktokConnected = false
+            tiktokConnecting = false
             overlayManager.setLiveStatus(false)
             broadcastState()
             return
@@ -261,21 +264,31 @@ class PlayerForegroundService : Service() {
         tiktokManager.disconnect()
         tiktokManager = buildTikTokManager()
         if (this.tiktokUsername.isNotBlank() && this.apiKey.isNotBlank()) {
+            tiktokConnecting = true
+            broadcastState()
             tiktokManager.connect()
         }
     }
 
     // ── Queue operations ──────────────────────────────────────────────
-    fun addToQueue(youtubeUrl: String, requestedBy: String? = null, fromChat: Boolean = false): Boolean {
+    fun addToQueue(youtubeUrl: String, requestedBy: String? = null): Boolean {
         if (queue.size >= MAX_QUEUE) return false
         serviceScope.launch {
             val meta = ytDlp.fetchMetadata(youtubeUrl)
+            if (meta == null) {
+                Log.w(TAG, "Gagal mendapatkan metadata untuk: $youtubeUrl")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@PlayerForegroundService, "Music tidak ditemukan", Toast.LENGTH_SHORT).show()
+                }
+                return@launch
+            }
+
             val song = Song(
-                title       = meta?.title    ?: youtubeUrl,
-                youtubeUrl  = meta?.videoUrl ?: youtubeUrl,
-                thumbnail   = meta?.thumbnail,
-                duration    = meta?.duration ?: 0,
-                channel     = meta?.channel,
+                title       = meta.title,
+                youtubeUrl  = meta.videoUrl,
+                thumbnail   = meta.thumbnail,
+                duration    = meta.duration,
+                channel     = meta.channel,
                 requestedBy = requestedBy
             )
             queue.addLast(song)
@@ -283,10 +296,7 @@ class PlayerForegroundService : Service() {
                 playNext()
             } else {
                 broadcastState()
-                if (fromChat) {
-                    // Auto-show queue overlay when song requested via TikTok chat
-                    queueOverlayManager.autoShowIfNeeded(getQueue())
-                } else if (queueOverlayManager.isShowing) {
+                if (queueOverlayManager.isShowing) {
                     queueOverlayManager.updateQueue(getQueue())
                 }
                 overlayManager.updateQueueCount(queue.size)
@@ -438,15 +448,13 @@ class PlayerForegroundService : Service() {
             chatOverlayManager.addChat(chat.nickname, chat.comment)
         }
 
+        val isAdmin = isAdmin(chat.uniqueId)
+
         when (chat.commandType) {
             TikTokChat.CommandType.REQUEST -> {
                 val arg = chat.commandArg ?: return
 
                 // NEW: Limit song requests (Customizable per user)
-                val cleanOwner = tiktokUsername.trim().removePrefix("@")
-                val isOwner    = chat.uniqueId.equals(cleanOwner, ignoreCase = true)
-                val isAdmin    = isOwner || chat.uniqueId.equals("admin", ignoreCase = true)
-
                 if (!isAdmin) {
                     val userReq = "@${chat.uniqueId}"
                     val count   = queue.count { it.requestedBy == userReq }
@@ -458,12 +466,13 @@ class PlayerForegroundService : Service() {
 
                 val url = if (arg.contains("youtube.com") || arg.contains("youtu.be")) arg
                           else "ytsearch1:$arg"
-                addToQueue(url, requestedBy = "@${chat.uniqueId}", fromChat = true)
+                addToQueue(url, requestedBy = "@${chat.uniqueId}")
             }
-            TikTokChat.CommandType.SKIP        -> playNext()
-            TikTokChat.CommandType.STOP        -> stopPlayer()
-            TikTokChat.CommandType.QUEUE       -> broadcastState()
+            TikTokChat.CommandType.SKIP        -> if (isAdmin) playNext()
+            TikTokChat.CommandType.STOP        -> if (isAdmin) stopPlayer()
+            TikTokChat.CommandType.QUEUE       -> if (isAdmin) broadcastState()
             TikTokChat.CommandType.CLEAR_MUSIC -> {
+                if (!isAdmin) return
                 val arg = chat.commandArg?.trim() ?: return
 
                 // Coba parse sebagai angka (posisi) dulu
@@ -480,6 +489,15 @@ class PlayerForegroundService : Service() {
             }
             TikTokChat.CommandType.NONE -> { }
         }
+    }
+
+    private fun isAdmin(uniqueId: String): Boolean {
+        val cleanOwner = tiktokUsername.trim().removePrefix("@")
+        if (uniqueId.equals(cleanOwner, ignoreCase = true)) return true
+        if (uniqueId.equals("admin", ignoreCase = true)) return true
+
+        val authorized = prefs.getString("authorized_users", "") ?: ""
+        return authorized.split(",").any { it.trim().equals(uniqueId, ignoreCase = true) }
     }
 
     // ── Canvas mode ───────────────────────────────────────────────────
@@ -563,7 +581,11 @@ class PlayerForegroundService : Service() {
         if (chatOverlayManager.isShowing) {
             chatOverlayManager.hide()
         } else {
-            chatOverlayManager.show()
+            val x = prefs.getInt("chat_x", 16)
+            val y = prefs.getInt("chat_y", 500)
+            val scale = prefs.getFloat("chat_scale", 1f)
+            val width = prefs.getInt("chat_width", 300)
+            chatOverlayManager.show(x, y, scale, width)
         }
         broadcastState()
     }
@@ -590,20 +612,22 @@ class PlayerForegroundService : Service() {
 
     val chatOverlayVisible get() = chatOverlayManager.isShowing
 
-    fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float) {
+    fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
         // Save to prefs for persistence
         prefs.edit()
             .putInt("${key}_x", x)
             .putInt("${key}_y", y)
             .putFloat("${key}_scale", scale)
+            .putInt("${key}_width", width)
+            .putInt("${key}_height", height)
             .apply()
 
         // Apply immediately if overlay is showing
         when (key) {
-            "player" -> if (overlayManager.isShowing) overlayManager.applyConfig(x, y, scale)
-            "queue"  -> if (queueOverlayManager.isShowing) queueOverlayManager.applyConfig(x, y, scale)
-            "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(x, y, scale)
-            "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(x, y, scale)
+            "player" -> if (overlayManager.isShowing) overlayManager.applyConfig(x, y, scale, width, height)
+            "queue"  -> if (queueOverlayManager.isShowing) queueOverlayManager.applyConfig(x, y, scale, width, height)
+            "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(x, y, scale, width, height)
+            "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(x, y, scale, width)
         }
     }
 
@@ -617,6 +641,7 @@ class PlayerForegroundService : Service() {
         "duration_ms"       to durationMs,
         "shuffle_mode"      to shuffleMode,
         "tiktok_connected"  to tiktokConnected,
+        "tiktok_connecting" to tiktokConnecting,
         "request_limit"     to requestLimit,
         "ytdlp_installed"   to ytDlp.isInstalled,
         "canvas_mode"       to canvasModeEnabled,
@@ -686,6 +711,15 @@ class PlayerForegroundService : Service() {
         })
     }
 
+    private fun broadcastSystemChat(message: String) {
+        sendBroadcast(Intent(BROADCAST_CHAT).apply {
+            putExtra("unique_id", "system")
+            putExtra("nickname",  "System")
+            putExtra("comment",   message)
+            putExtra("cmd_type",  "NONE")
+        })
+    }
+
     // ── Private helpers ───────────────────────────────────────────────
     private fun syncQueueOverlay() {
         if (queueOverlayManager.isShowing) queueOverlayManager.updateQueue(getQueue())
@@ -708,14 +742,23 @@ class PlayerForegroundService : Service() {
             }
             t.onConnected    = {
                 tiktokConnected = true
+                tiktokConnecting = false
                 overlayManager.setLiveStatus(true)
+                broadcastSystemChat("Connected to TikTok Live @$tiktokUsername")
                 broadcastState()
             }
             t.onDisconnected = {
                 tiktokConnected = false
+                tiktokConnecting = false
                 overlayManager.setLiveStatus(false)
+                broadcastSystemChat("Disconnected from TikTok Live")
                 broadcastState()
             }
-            t.onError = { Log.w(TAG, "TikTok error: $it") }
+            t.onError = { 
+                Log.w(TAG, "TikTok error: $it")
+                tiktokConnecting = false
+                broadcastSystemChat("Error: $it")
+                broadcastState()
+            }
         }
 }

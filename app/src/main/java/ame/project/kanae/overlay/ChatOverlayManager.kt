@@ -30,12 +30,17 @@ class ChatOverlayManager(
     private var displayDurationMs: Long = 6000
     private val handler = Handler(Looper.getMainLooper())
     private var isTransparent = true
+    private var isDummyActive = false
+    private var currentTextScale: Float = 1f
 
     var isShowing: Boolean = false
         private set
 
-    fun show() {
+    fun show(x: Int = 16, y: Int = 500, scale: Float = 1f, width: Int = 300) {
         if (isShowing) return
+        
+        this.overlayWidth = width
+        this.currentTextScale = scale
 
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val view = LayoutInflater.from(themed).inflate(R.layout.overlay_chat_layout, null)
@@ -44,22 +49,29 @@ class ChatOverlayManager(
 
         updateBackground()
 
+        // Reset scaling on the root view itself - we will scale text instead
+        view.pivotX = 0f
+        view.pivotY = 0f
+        view.scaleX = 1f
+        view.scaleY = 1f
+
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
         else
             WindowManager.LayoutParams.TYPE_PHONE
 
+        val baseW = overlayWidth.dp
         val params = WindowManager.LayoutParams(
-            overlayWidth.dp,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            baseW,
+            WindowManager.LayoutParams.WRAP_CONTENT, // Start with wrap_content
             type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).also {
             it.gravity = Gravity.TOP or Gravity.START
-            it.x = 16
-            it.y = 500
+            it.x = x
+            it.y = y
         }
         layoutParams = params
 
@@ -68,13 +80,37 @@ class ChatOverlayManager(
             params = params,
             wm = wm,
             onSingleTap = null
-        ).also { view.setOnTouchListener(it) }
+        ).also { 
+            it.currentScale = 1f // Visual scale remains 1
+            it.updateBaseSize(baseW, 100) 
+            view.setOnTouchListener(it) 
+        }
 
         wm.addView(view, params)
         isShowing = true
 
+        // Force initial size sync
+        view.post {
+            if (isShowing) {
+                syncWindowSize()
+            }
+        }
+
         // Add placeholder text to help positioning
-        addChat("System", "Chat Overlay Active (Drag me!)")
+        addDummyChat()
+    }
+
+    private fun addDummyChat() {
+        if (!isShowing) return
+        isDummyActive = true
+        addChat("System", "Chat Overlay Active (Drag me!)", isDummy = true)
+    }
+
+    private fun clearDummyChat() {
+        if (!isDummyActive) return
+        val container = chatContainer ?: return
+        container.removeAllViews()
+        isDummyActive = false
     }
 
     fun hide() {
@@ -103,9 +139,14 @@ class ChatOverlayManager(
             R.drawable.overlay_bg)
     }
 
-    fun addChat(nickname: String, message: String, color: Int = 0xFFFFCC00.toInt()) {
+    fun addChat(nickname: String, message: String, color: Int = 0xFFFFCC00.toInt(), isDummy: Boolean = false) {
         if (!isShowing) return
         val container = chatContainer ?: return
+
+        // If a real chat comes in and dummy is active, clear the dummy first
+        if (!isDummy && isDummyActive) {
+            clearDummyChat()
+        }
 
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val chatView = LayoutInflater.from(themed).inflate(R.layout.item_chat_bubble, container, false)
@@ -113,26 +154,35 @@ class ChatOverlayManager(
         val tvNick = chatView.findViewById<TextView>(R.id.tv_username)
         tvNick.text = nickname
         tvNick.setTextColor(color)
+        tvNick.textSize = 12f * currentTextScale
 
-        chatView.findViewById<TextView>(R.id.tv_message).text = message
+        val tvMsg = chatView.findViewById<TextView>(R.id.tv_message)
+        tvMsg.text = message
+        tvMsg.textSize = 12f * currentTextScale
 
         // Fade in animation
         chatView.alpha = 0f
+        // Add new chat at the bottom for normal flow
         container.addView(chatView)
         chatView.animate().alpha(1f).setDuration(300).start()
+        
+        // Update window size to accommodate new message
+        syncWindowSize()
 
-        // Check max lines
+        // Check max lines - remove oldest which is at the top (index 0)
         if (container.childCount > maxLines) {
             val oldest = container.getChildAt(0)
             removeChatWithAnimation(container, oldest)
         }
 
         // Auto hide after set duration
-        handler.postDelayed({
-            if (chatView.parent != null) {
-                removeChatWithAnimation(container, chatView)
-            }
-        }, displayDurationMs)
+        if (!isDummy) {
+            handler.postDelayed({
+                if (chatView.parent != null) {
+                    removeChatWithAnimation(container, chatView)
+                }
+            }, displayDurationMs)
+        }
     }
 
     private fun removeChatWithAnimation(container: LinearLayout, view: View) {
@@ -142,6 +192,7 @@ class ChatOverlayManager(
             .setListener(object : AnimatorListenerAdapter() {
                 override fun onAnimationEnd(animation: Animator) {
                     container.removeView(view)
+                    syncWindowSize() // Update window size after removal
                 }
             })
             .start()
@@ -159,6 +210,13 @@ class ChatOverlayManager(
         this.overlayWidth = widthDp
         val params = layoutParams ?: return
         val view = rootView ?: return
+        
+        // Update root view internal layout params as well
+        view.layoutParams?.let { 
+            it.width = widthDp.dp
+            view.layoutParams = it
+        }
+
         params.width = widthDp.dp
         runCatching { wm.updateViewLayout(view, params) }
     }
@@ -166,13 +224,87 @@ class ChatOverlayManager(
     private val Int.dp: Int
         get() = (this * context.resources.displayMetrics.density).toInt()
 
-    fun applyConfig(x: Int, y: Int, scale: Float) {
+    private fun syncWindowSize() {
+        val view = rootView ?: return
+        val params = layoutParams ?: return
+        
+        val baseW = overlayWidth.dp
+        
+        // Sync root view layout params width
+        view.layoutParams?.let {
+            if (it.width != baseW) {
+                it.width = baseW
+                view.layoutParams = it
+            }
+        }
+
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val baseH = view.measuredHeight
+
+        params.width = baseW
+        params.height = baseH
+        
+        gestureHelper?.updateBaseSize(baseW, baseH)
+        runCatching { wm.updateViewLayout(view, params) }
+    }
+
+    fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0) {
         val params = layoutParams ?: return
         val view = rootView ?: return
+        
         params.x = x
         params.y = y
-        view.scaleX = scale
-        view.scaleY = scale
+        this.currentTextScale = scale
+
+        // Reset visual scale - we use text scaling now
+        view.pivotX = 0f
+        view.pivotY = 0f
+        view.scaleX = 1f
+        view.scaleY = 1f
+        
+        // Update window size agar mencakup seluruh layout
+        val dp = context!!.resources.displayMetrics.density
+        val baseW = if (width > 0) {
+            this.overlayWidth = width
+            (width * dp).toInt()
+        } else {
+            overlayWidth.dp
+        }
+        
+        // Sync root view layout params width
+        view.layoutParams?.let {
+            it.width = baseW
+            view.layoutParams = it
+        }
+
+        // Apply scale to ALL existing messages
+        val container = chatContainer
+        if (container != null) {
+            for (i in 0 until container.childCount) {
+                val child = container.getChildAt(i)
+                child.findViewById<TextView>(R.id.tv_username)?.textSize = 12f * scale
+                child.findViewById<TextView>(R.id.tv_message)?.textSize = 12f * scale
+            }
+        }
+
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val baseH = view.measuredHeight
+
+        params.width = baseW
+        params.height = baseH
+        
+        // Sinkronkan ke gesture helper
+        gestureHelper?.let {
+            it.currentScale = 1f
+            it.updateBaseSize(baseW, baseH)
+        }
+
         runCatching { wm.updateViewLayout(view, params) }
     }
 

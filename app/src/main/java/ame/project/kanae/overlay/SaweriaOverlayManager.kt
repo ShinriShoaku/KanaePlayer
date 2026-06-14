@@ -134,7 +134,7 @@ class SaweriaOverlayManager(
         else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
 
         val params = WindowManager.LayoutParams(
-            widthPx, heightPx, type,
+            (widthPx * savedScale).toInt(), (heightPx * savedScale).toInt(), type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).also { 
@@ -151,6 +151,8 @@ class SaweriaOverlayManager(
             showAdjuster(widget)
         })
         
+        root.pivotX = 0f
+        root.pivotY = 0f
         root.scaleX = savedScale
         root.scaleY = savedScale
         gesture.currentScale = savedScale
@@ -199,8 +201,10 @@ class SaweriaOverlayManager(
         skA.progress = currAlpha; tvA.text = "BG Opacity: ${(currAlpha * 100 / 255)}%"
 
         val update = {
-            entry.params.width = (currW * dp).toInt()
-            entry.params.height = (currH * dp).toInt()
+            entry.params.width = (currW * dp * currS).toInt()
+            entry.params.height = (currH * dp * currS).toInt()
+            entry.root.pivotX = 0f
+            entry.root.pivotY = 0f
             entry.root.scaleX = currS
             entry.root.scaleY = currS
             entry.gesture.currentScale = currS

@@ -1,5 +1,5 @@
 {
   "versionCode": 7,
-  "versionName": "7.4.0",
-  "updateMessage": "add: Chat overlay, yt-dlp fallback!"
+  "versionName": "7.5.0",
+  "updateMessage": "Chat Overlay Improvements (Bug Fixes), Authorizer User (New Feature)"
 }

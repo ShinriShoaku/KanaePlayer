@@ -30,6 +30,8 @@ class TikTokLiveManager(
     )
 
     var onChat: ((TikTokChat) -> Unit)? = null
+    var onLike: ((String, String, Int) -> Unit)? = null
+    var onGift: ((String, String, String, Int) -> Unit)? = null
     var onConnected: (() -> Unit)? = null
     var onDisconnected: (() -> Unit)? = null
     var onError: ((String) -> Unit)? = null
@@ -44,14 +46,22 @@ class TikTokLiveManager(
     private var lastChatIds = mutableSetOf<String>()
     private var commandConfig = CommandConfig()
     private var connectTime = 0L
+    private var isConnectCallbackTriggered = false
 
     fun setCommandConfig(config: CommandConfig) {
         commandConfig = config
     }
 
     fun connect() {
+        if (isConnected) {
+            Log.d(TAG, "Already connected or connecting...")
+            return
+        }
+        isConnectCallbackTriggered = false
         if (tiktokUsername.isBlank() || apiKey.isBlank()) {
-            onError?.invoke("TikTok username or EulerStream API key is empty")
+            scope.launch(Dispatchers.Main) {
+                onError?.invoke("TikTok username or EulerStream API key is empty")
+            }
             return
         }
         Log.d(TAG, "Connecting to EulerStream for @$tiktokUsername")
@@ -62,14 +72,33 @@ class TikTokLiveManager(
         wsConnection?.close(1000, "User disconnected")
         wsConnection = null
         pollJob?.cancel()
+        pollJob = null
         isConnected = false
-        onDisconnected?.invoke()
+        isConnectCallbackTriggered = false
+        scope.launch(Dispatchers.Main) { onDisconnected?.invoke() }
         Log.d(TAG, "Disconnected")
+    }
+
+    /**
+     * Panggil ini saat Manager benar-benar tidak akan digunakan lagi
+     * (misal di onDestroy) untuk mencegah memory leak.
+     */
+    fun release() {
+        disconnect()
+        onChat = null
+        onLike = null
+        onGift = null
+        onConnected = null
+        onDisconnected = null
+        onError = null
+        lastChatIds.clear()
     }
 
     private fun connectWebSocket() {
         val cleanUsername = tiktokUsername.trim().removePrefix("@")
-        val url = "$WS_URL?apiKey=${apiKey.trim()}&uniqueId=$cleanUsername"
+        // Tambahkan timestamp untuk menghindari cache/sticky session di server
+        val url = "$WS_URL?apiKey=${apiKey.trim()}&uniqueId=$cleanUsername&t=${System.currentTimeMillis()}"
+        
         Log.d(TAG, "WS Connecting to: $url")
         val request = Request.Builder()
             .url(url)
@@ -78,28 +107,59 @@ class TikTokLiveManager(
 
         wsConnection = client.newWebSocket(request, object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
-                Log.d(TAG, "WS onOpen")
+                Log.d(TAG, "WS Connection Opened (Initializing...)")
                 connectTime = System.currentTimeMillis()
                 isConnected = true
-                scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                // JANGAN panggil onConnected di sini agar UI tetap di state "Connecting"
+                // sampai kita dapat konfirmasi room sukses dibuka.
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d(TAG, "WS Message: $text")
+                // Log.v(TAG, "WS Msg: $text") // Very noisy, but useful for debugging
                 parseWsMessage(text)
             }
 
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.w(TAG, "WS failure: ${t.message}. Falling back to HTTP polling.")
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WS closing: $code / $reason")
+                webSocket.close(1000, null)
                 isConnected = false
-                onError?.invoke("WebSocket failed: ${t.message}. Using HTTP polling.")
+                if (code != 1000) {
+                    scope.launch(Dispatchers.Main) { 
+                        onError?.invoke("WS Closing ($code): $reason")
+                    }
+                }
+            }
+
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                val errorMsg = t.message ?: "Unknown error"
+                Log.w(TAG, "WS failure: $errorMsg. Falling back to HTTP polling.")
+                isConnected = false
+                scope.launch(Dispatchers.Main) { 
+                    onError?.invoke("WebSocket Error: $errorMsg. Switching to HTTP...") 
+                }
                 startHttpPolling()
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
                 Log.d(TAG, "WS closed: $code $reason")
+                val wasConnected = isConnectCallbackTriggered
                 isConnected = false
-                onDisconnected?.invoke()
+                isConnectCallbackTriggered = false
+                
+                if (code == 1011 || code == 1006) {
+                    Log.w(TAG, "WS Error 1011/1006 - Room not found or not Live. Falling back to HTTP.")
+                    scope.launch(Dispatchers.Main) { 
+                        onError?.invoke("Room tidak ditemukan (1011). Mencoba HTTP Polling...") 
+                    }
+                    startHttpPolling()
+                } else if (code != 1000) {
+                    scope.launch(Dispatchers.Main) { 
+                        onError?.invoke("WS Closed ($code): $reason")
+                        onDisconnected?.invoke()
+                    }
+                } else {
+                    scope.launch(Dispatchers.Main) { onDisconnected?.invoke() }
+                }
             }
         })
     }
@@ -121,8 +181,20 @@ class TikTokLiveManager(
                             val chat = buildChat(data) ?: return@forEach
                             scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
                         }
+                        "WebcastLikeMessage", "like" -> {
+                            val (uniqueId, nickname) = getUserInfo(data)
+                            val count = data["likeCount"]?.asInt ?: 1
+                            scope.launch(Dispatchers.Main) { onLike?.invoke(nickname, uniqueId, count) }
+                        }
+                        "WebcastGiftMessage", "gift" -> {
+                            val (uniqueId, nickname) = getUserInfo(data)
+                            val giftName = data["giftName"]?.asString ?: "Gift"
+                            val count = data["repeatCount"]?.asInt ?: 1
+                            scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count) }
+                        }
                         "roomInfo", "connect_success", "roomUser", "tiktok.connect" -> {
-                            if (!isConnected) {
+                            if (!isConnectCallbackTriggered) {
+                                isConnectCallbackTriggered = true
                                 isConnected = true
                                 scope.launch(Dispatchers.Main) { onConnected?.invoke() }
                             }
@@ -142,9 +214,23 @@ class TikTokLiveManager(
                         val msg = buildChat(data) ?: return
                         scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                     }
+                    "like", "WebcastLikeMessage" -> {
+                        val (uniqueId, nickname) = getUserInfo(data)
+                        val count = data["likeCount"]?.asInt ?: 1
+                        scope.launch(Dispatchers.Main) { onLike?.invoke(nickname, uniqueId, count) }
+                    }
+                    "gift", "WebcastGiftMessage" -> {
+                        val (uniqueId, nickname) = getUserInfo(data)
+                        val giftName = data["giftName"]?.asString ?: "Gift"
+                        val count = data["repeatCount"]?.asInt ?: 1
+                        scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count) }
+                    }
                     "connect_success", "roomUser" -> {
-                        isConnected = true
-                        scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                        if (!isConnectCallbackTriggered) {
+                            isConnectCallbackTriggered = true
+                            isConnected = true
+                            scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                        }
                     }
                 }
                 return
@@ -159,8 +245,11 @@ class TikTokLiveManager(
                     scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                 }
                 "connect_success", "roomUser" -> {
-                    isConnected = true
-                    scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                    if (!isConnectCallbackTriggered) {
+                        isConnectCallbackTriggered = true
+                        isConnected = true
+                        scope.launch(Dispatchers.Main) { onConnected?.invoke() }
+                    }
                 }
             }
         } catch (e: Exception) {
@@ -173,6 +262,7 @@ class TikTokLiveManager(
         pollJob = scope.launch(Dispatchers.IO) {
             connectTime = System.currentTimeMillis()
             isConnected = true
+            isConnectCallbackTriggered = true
             withContext(Dispatchers.Main) { onConnected?.invoke() }
             while (isActive) {
                 fetchChatHttp()
@@ -229,6 +319,17 @@ class TikTokLiveManager(
         } catch (e: Exception) {
             Log.e(TAG, "fetchChatHttp error: ${e.message}")
         }
+    }
+
+    private fun getUserInfo(data: JsonObject): Pair<String, String> {
+        val uObj = data["user"]?.asJsonObject
+        val uniqueId = uObj?.get("uniqueId")?.asString 
+            ?: data["uniqueId"]?.asString 
+            ?: "User"
+        val nickname = uObj?.get("nickname")?.asString 
+            ?: data["nickname"]?.asString 
+            ?: uniqueId
+        return uniqueId to nickname
     }
 
     private fun buildChat(data: JsonObject): TikTokChat? {

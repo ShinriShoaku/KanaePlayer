@@ -191,7 +191,28 @@ class OverlayGestureHelper(
         
         // Refresh the window bounds to accommodate new content size 
         // while maintaining the user's rotation and scale.
-        updateWindowBounds()
+        // We use a specialized version for dynamic size updates to avoid jumping
+        updateWindowBoundsNoCenter()
+    }
+
+    private fun updateWindowBoundsNoCenter() {
+        if (origW <= 0 || origH <= 0) return
+
+        val scaledW = origW * currentScale
+        val scaledH = origH * currentScale
+
+        val rad  = Math.toRadians(currentRotation.toDouble())
+        val cosA = abs(cos(rad)).toFloat()
+        val sinA = abs(sin(rad)).toFloat()
+
+        val margin = 12
+        val newW = (scaledW * cosA + scaledH * sinA).toInt() + margin
+        val newH = (scaledW * sinA + scaledH * cosA).toInt() + margin
+
+        params.width  = newW
+        params.height = newH
+
+        tryUpdate()
     }
 
     private fun tryUpdate() {

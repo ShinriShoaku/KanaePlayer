@@ -194,14 +194,34 @@ class OverlayManager(
         runCatching { wm.updateViewLayout(view, params) }
     }
 
-    fun applyConfig(x: Int, y: Int, scale: Float) {
+    fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
         val params = layoutParams ?: return
         val view   = rootView    ?: return
         
         params.x = x
         params.y = y
+        
+        // Pivot di pojok kiri atas
+        view.pivotX = 0f
+        view.pivotY = 0f
         view.scaleX = scale
         view.scaleY = scale
+
+        // Hitung ukuran dasar (1.0x)
+        view.measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED)
+        val baseW = view.measuredWidth
+        val baseH = view.measuredHeight
+
+        // Update ukuran jendela agar tidak terpotong
+        params.width  = if (width > 0) (width * context!!.resources.displayMetrics.density * scale).toInt() 
+                        else (baseW * scale).toInt()
+        params.height = if (height > 0) (height * context!!.resources.displayMetrics.density * scale).toInt() 
+                        else (baseH * scale).toInt()
+
+        gestureHelper?.let {
+            it.currentScale = scale
+            it.updateBaseSize(baseW, baseH)
+        }
 
         runCatching { wm.updateViewLayout(view, params) }
     }

@@ -48,6 +48,12 @@
             android:label="Saweria Overlay"
             android:theme="@style/Theme.YTTikTokPlayer"
             android:exported="false" />
+
+        <activity
+            android:name=".AdminListActivity"
+            android:label="Authorized Users"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
         <!-- ─── Foreground Service ────────────────────────────── -->
         <service
             android:name=".service.PlayerForegroundService"

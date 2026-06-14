@@ -22,15 +22,17 @@ import ame.project.kanae.model.Song
  * - Displays at most [MAX_VISIBLE_ITEMS] items to keep the overlay manageable.
  */
 class QueueOverlayManager(
-    private val context: Context,
+    context: Context,
     private val onPlay: (Int) -> Unit,
-    private val onRemove: (Int) -> Unit
+    private val onRemove: (Int) -> Unit,
+    private val onClose: () -> Unit
 ) {
+    private val context = context.applicationContext
     companion object {
         private const val MAX_VISIBLE_ITEMS = 8
     }
 
-    private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+    private val wm = this.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     private var rootView: View?              = null
     private var layoutParams: WindowManager.LayoutParams? = null
@@ -66,7 +68,7 @@ class QueueOverlayManager(
         }
 
         view.findViewById<ImageButton>(R.id.overlay_queue_close)
-            .setOnClickListener { hide() }
+            .setOnClickListener { hide(); onClose() }
 
         // Disable view-tree clipping so rotated corners are not cut off
         if (view is ViewGroup) {
@@ -103,9 +105,18 @@ class QueueOverlayManager(
 
     fun hide() {
         if (!isShowing) return
-        rootView?.let { runCatching { wm.removeView(it) } }
-        rootView  = null
-        isShowing = false
+        rootView?.let { 
+            it.setOnTouchListener(null)
+            runCatching { wm.removeView(it) } 
+        }
+        rootView      = null
+        layoutParams  = null
+        gestureHelper = null
+        tvEmpty       = null
+        tvBadge       = null
+        rvQueue       = null
+        adapter       = null
+        isShowing     = false
     }
 
     /**
@@ -154,6 +165,41 @@ class QueueOverlayManager(
             params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         }
+        runCatching { wm.updateViewLayout(view, params) }
+    }
+
+    fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
+        val params = layoutParams ?: return
+        val view   = rootView    ?: return
+
+        params.x = x
+        params.y = y
+        
+        // Pivot di pojok kiri atas
+        view.pivotX = 0f
+        view.pivotY = 0f
+        view.scaleX = scale
+        view.scaleY = scale
+
+        // Hitung ukuran dasar (1.0x)
+        val dp = context!!.resources.displayMetrics.density
+        val baseW = if (width > 0) (width * dp).toInt() else (300 * dp).toInt()
+        
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val baseH = if (height > 0) (height * dp).toInt() else view.measuredHeight
+
+        // Update ukuran jendela
+        params.width  = (baseW * scale).toInt()
+        params.height = (baseH * scale).toInt()
+
+        gestureHelper?.let {
+            it.currentScale = scale
+            it.updateBaseSize(baseW, baseH)
+        }
+
         runCatching { wm.updateViewLayout(view, params) }
     }
 
