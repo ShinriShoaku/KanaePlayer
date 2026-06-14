@@ -12,8 +12,9 @@ android {
         minSdk 26
         targetSdk 35
         versionCode 7
-        versionName "7.0.0"
+        versionName "7.4.0"
         ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -59,7 +60,11 @@ dependencies {
     // ── NewPipe Extractor ─────────────────────────────────────────────────────
     // Pengganti yt-dlp — pure Java, extract YouTube stream URL langsung
     // Tidak butuh binary, tidak ada SELinux issue
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.26.2'
+    implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.26.3'
+
+    // fallback
+    implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'
+
 
     // ── OkHttp (HTTP client + WebSocket untuk EulerStream) ────────────────────
     implementation 'com.squareup.okhttp3:okhttp:5.3.2'
@@ -77,4 +82,9 @@ dependencies {
 
     // ── Preference ────────────────────────────────────────────────────────────
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // ── Testing ───────────────────────────────────────────────────────────────
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
 }

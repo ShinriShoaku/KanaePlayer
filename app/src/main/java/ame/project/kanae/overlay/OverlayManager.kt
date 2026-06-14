@@ -19,14 +19,15 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 class OverlayManager(
-    private val context: Context,
+    context: Context,
     private val scope: CoroutineScope,
     private val onPlayPause: () -> Unit,
     private val onSkip: () -> Unit,
     private val onClose: () -> Unit
 ) {
+    private val context = context.applicationContext
     private val wm: WindowManager =
-        context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        this.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
     private var rootView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
@@ -114,9 +115,31 @@ class OverlayManager(
 
     fun hide() {
         if (!isShowing) return
-        rootView?.let { runCatching { wm.removeView(it) } }
+        
+        // Cancel thumbnail pulsing animation
+        ivThumbnail?.let { iv ->
+            (iv.tag as? AnimatorSet)?.cancel()
+            iv.tag = null
+        }
+
+        rootView?.let { 
+            it.setOnTouchListener(null)
+            runCatching { wm.removeView(it) } 
+        }
+        
         rootView      = null
+        layoutParams  = null
         gestureHelper = null
+        
+        tvTitle       = null
+        tvQueue       = null
+        tvTime        = null
+        progressBar   = null
+        dotLive       = null
+        btnPlayPause  = null
+        ivThumbnail   = null
+        expandedSection = null
+
         isShowing     = false
         isExpanded    = false
         currentSongId = null
@@ -168,6 +191,18 @@ class OverlayManager(
             params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         }
+        runCatching { wm.updateViewLayout(view, params) }
+    }
+
+    fun applyConfig(x: Int, y: Int, scale: Float) {
+        val params = layoutParams ?: return
+        val view   = rootView    ?: return
+        
+        params.x = x
+        params.y = y
+        view.scaleX = scale
+        view.scaleY = scale
+
         runCatching { wm.updateViewLayout(view, params) }
     }
 

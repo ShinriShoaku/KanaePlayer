@@ -1,5 +1,5 @@
 {
   "versionCode": 7,
-  "versionName": "7.0.0",
-  "updateMessage": "add: Saweria Overlay System, limit request music"
+  "versionName": "7.4.0",
+  "updateMessage": "add: Chat overlay, yt-dlp fallback!"
 }

@@ -89,31 +89,7 @@ class OverlayGestureHelper(
 
             // ── movement ──────────────────────────────────────────────
             MotionEvent.ACTION_MOVE -> {
-                if (isMultiTouch && event.pointerCount >= 2) {
-                    hasMoved = true
-
-                    // ── scale ─────────────────────────────────────────
-                    val dist = pinchDist(event)
-                    if (lastPinchDist > 0f) {
-                        currentScale =
-                            (currentScale * dist / lastPinchDist).coerceIn(0.35f, 4f)
-                    }
-                    lastPinchDist = dist
-
-                    // ── rotate ────────────────────────────────────────
-                    val angle = pinchAngle(event)
-                    currentRotation += angle - lastPinchAngle
-                    lastPinchAngle  = angle
-
-                    // Apply transform to view
-                    rootView.scaleX    = currentScale
-                    rootView.scaleY    = currentScale
-                    rootView.rotation  = currentRotation
-
-                    // ── KEY FIX: expand / shrink window to bounding box
-                    updateWindowBounds()
-
-                } else if (!isMultiTouch) {
+                if (!isMultiTouch) {
                     // ── single-finger drag ────────────────────────────
                     val dx = event.rawX - rawDownX
                     val dy = event.rawY - rawDownY

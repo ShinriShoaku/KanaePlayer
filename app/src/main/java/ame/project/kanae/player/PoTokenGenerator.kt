@@ -9,6 +9,7 @@ import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import kotlinx.coroutines.CompletableDeferred
@@ -21,15 +22,52 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
+/**
+ * PoTokenGenerator v9
+ *
+ * Perbaikan dari v8 (BREAKING FIXES):
+ *
+ *  1. ENDPOINT FIX — Challenge fetch dari jnn-pa.googleapis.com (bukan HTML parse).
+ *     Endpoint: POST https://jnn-pa.googleapis.com/$rpc/google.internal.waa.v1.Waa/Create
+ *     Body: JSON array ["<requestKey>"]
+ *     Content-Type: application/json+protobuf
+ *
+ *  2. INTEGRITY TOKEN FIX — GenerateIT juga dari jnn-pa (bukan att/get).
+ *     Endpoint: POST https://jnn-pa.googleapis.com/$rpc/google.internal.waa.v1.Waa/GenerateIT
+ *     Body: JSON array ["<requestKey>", "<botguardResponse>"]
+ *     Response: JSON array [integrityToken, estimatedTtlSecs, mintRefreshThreshold, ...]
+ *
+ *  3. CHALLENGE PARSE FIX — Response adalah array yang perlu di-descramble (base64 decode + +97).
+ *     Format response: [[messageId, [script], [url], interpreterHash, program, globalName, ...]]
+ *     atau [null, "<scrambled_base64>"]
+ *
+ *  4. MINT FIX — identifier (visitorData) harus di-encode sebagai UTF-8 bytes saat mint,
+ *     bukan dikirim sebagai raw string.
+ *
+ *  5. SELF-TEST — generate() memiliki built-in diagnostic untuk masing-masing step.
+ *
+ *  Referensi: bgutils-js v3.2.0 (LuanRT/BgUtils)
+ */
 class PoTokenGenerator(private val context: Context) {
 
     companion object {
         private const val TAG = "PoTokenGenerator"
-        private const val ATT_GET_URL = "https://www.youtube.com/youtubei/v1/att/get?key="
-        private const val INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+
+        // Request key untuk BotGuard — dipakai di semua request ke jnn-pa
+        // Ini adalah public key yang digunakan YouTube web client
+        private const val REQUEST_KEY = "O43z0dpjhgX20SCx4KAo"
+
+        // jnn-pa Google API base — bukan YouTube langsung
+        private const val WAA_BASE = "https://jnn-pa.googleapis.com/\$rpc/google.internal.waa.v1.Waa"
+        private const val CREATE_URL  = "$WAA_BASE/Create"
+        private const val GENERATE_IT_URL = "$WAA_BASE/GenerateIT"
+
+        // API key untuk jnn-pa (berbeda dengan Innertube key)
+        private const val GOOG_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw"
+
         private const val USER_AGENT =
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-                    "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+            "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
     }
 
     private val http = OkHttpClient.Builder()
@@ -42,353 +80,586 @@ class PoTokenGenerator(private val context: Context) {
 
     data class PoTokenResult(val visitorData: String, val poToken: String)
 
-    suspend fun generate(videoId: String, visitorData: String): PoTokenResult? = withContext(Dispatchers.IO) {
-        try {
-            Log.d(TAG, "Starting PoToken generation for video: $videoId")
+    // ─────────────────────────────────────────────────────────────────────────
+    // PUBLIC: generate() dengan step-by-step diagnostic
+    // ─────────────────────────────────────────────────────────────────────────
 
-            // 1. Fetch challenge data dari HTML watch page (lebih reliable daripada API untuk video diblok)
-            val challengeData = fetchChallengeDataFromHtml(videoId)
-                ?: fetchChallengeDataFromApi(videoId, visitorData)
-                ?: run { Log.w(TAG, "Could not fetch challenge data"); return@withContext null }
+    suspend fun generate(videoId: String, visitorData: String): PoTokenResult? =
+        withContext(Dispatchers.IO) {
+            Log.i(TAG, "══ PoToken Generation START (videoId=$videoId) ══")
+            Log.d(TAG, "  visitorData: ${visitorData.take(20)}...")
 
-            val program = challengeData.get("program")?.asString
-            Log.d(TAG, "Fetched challenge data, program length: ${program?.length ?: 0}")
-
-            // 2. Fetch integrity token
-            val integrityToken = fetchIntegrityToken(visitorData) ?: run {
-                Log.w(TAG, "Could not fetch integrity token"); return@withContext null
+            // ── Step 1: Fetch challenge dari jnn-pa ─────────────────────────
+            Log.d(TAG, "Step 1: Fetching BotGuard challenge dari jnn-pa...")
+            val challengeData = fetchChallenge()
+            if (challengeData == null) {
+                Log.e(TAG, "Step 1 FAIL: Could not fetch challenge data")
+                return@withContext null
             }
-            Log.d(TAG, "Fetched integrity token: ${integrityToken.take(20)}...")
+            val program = challengeData.get("program")?.asString ?: ""
+            val globalName = challengeData.get("globalName")?.asString ?: ""
+            val interpreterJs = challengeData.get("interpreterJavascript")?.asString ?: ""
+            Log.d(TAG, "Step 1 OK: program=${program.take(30)}..., globalName=$globalName, jsLen=${interpreterJs.length}")
 
-            // 3. Jalankan BotGuard + obtainPoToken dalam satu sesi WebView
-            val base64PoToken = generateInWebView(challengeData, integrityToken, visitorData) ?: run {
-                Log.w(TAG, "WebView PoToken generation failed"); return@withContext null
-            }
-
-            Log.d(TAG, "Generated PoToken: ${base64PoToken.take(30)}...")
-            return@withContext PoTokenResult(visitorData, base64PoToken)
-
-        } catch (e: Exception) {
-            Log.e(TAG, "Generation failed: ${e.message}", e)
-            null
-        }
-    }
-
-    // ── Challenge dari HTML watch page ──────────────────────────────────────
-
-    private fun fetchChallengeDataFromHtml(videoId: String): JsonObject? {
-        return try {
-            val req = Request.Builder()
-                .url("https://www.youtube.com/watch?v=$videoId&bpctr=9999999999&has_verified=1")
-                .header("User-Agent", USER_AGENT)
-                .header("Accept-Language", "en-US,en;q=0.9")
-                .header("Cookie", "CONSENT=YES+cb.20210328-17-p0.en+FX+{}")
-                .build()
-
-            val resp = http.newCall(req).execute()
-            Log.d(TAG, "HTML fetch code: ${resp.code} for $videoId")
-            val html = resp.body?.string() ?: return null
-
-            // Strategy 1: Search for botguardData directly with flexible regex
-            val bgRegex = Regex("""\"botguardData\"\s*:\s*(\{.*?"program"\s*:\s*\"[^\"]+\".*?\})""", RegexOption.DOT_MATCHES_ALL)
-            bgRegex.find(html)?.let { match ->
-                try {
-                    val jsonStr = match.groupValues[1]
-                    val obj = parseLenient(jsonStr)
-                    if (!obj.get("program")?.asString.isNullOrEmpty()) {
-                        Log.d(TAG, "Challenge found via Strategy 1 (Regex)")
-                        return obj
-                    }
-                } catch (e: Exception) {
-                    Log.d(TAG, "Regex botguardData parse failed: ${e.message}")
-                }
+            if (program.isBlank() || globalName.isBlank() || interpreterJs.isBlank()) {
+                Log.e(TAG, "Step 1 FAIL: challenge data incomplete (program/globalName/interpreterJs kosong)")
+                return@withContext null
             }
 
-            // Strategy 2: Extract ytInitialPlayerResponse using balanced brace matching
-            val startTokens = listOf(
-                "var ytInitialPlayerResponse = ",
-                "window[\"ytInitialPlayerResponse\"] = ",
-                "ytInitialPlayerResponse = ",
-                "ytcfg.set("
+            // ── Step 2: Jalankan BotGuard di WebView ────────────────────────
+            Log.d(TAG, "Step 2: Running BotGuard VM di WebView...")
+            val botguardResponse = runBotGuardInWebView(challengeData)
+            if (botguardResponse == null) {
+                Log.e(TAG, "Step 2 FAIL: BotGuard VM tidak menghasilkan response")
+                return@withContext null
+            }
+            Log.d(TAG, "Step 2 OK: botguardResponse=${botguardResponse.take(30)}...")
+
+            // ── Step 3: Fetch integrity token dari jnn-pa ───────────────────
+            Log.d(TAG, "Step 3: Fetching integrity token dari jnn-pa...")
+            val integrityTokenData = fetchIntegrityToken(botguardResponse)
+            if (integrityTokenData == null) {
+                Log.e(TAG, "Step 3 FAIL: Could not fetch integrity token")
+                return@withContext null
+            }
+            val integrityToken = integrityTokenData.get("integrityToken")?.asString ?: ""
+            val estimatedTtl = integrityTokenData.get("estimatedTtlSecs")?.asLong ?: 0L
+            Log.d(TAG, "Step 3 OK: integrityToken=${integrityToken.take(20)}..., ttl=${estimatedTtl}s")
+
+            if (integrityToken.isBlank()) {
+                Log.e(TAG, "Step 3 FAIL: integrityToken kosong")
+                return@withContext null
+            }
+
+            // ── Step 4: Mint PoToken di WebView ─────────────────────────────
+            Log.d(TAG, "Step 4: Minting PoToken (identifier=visitorData)...")
+            val poToken = mintPoTokenInWebView(
+                challengeData = challengeData,
+                integrityToken = integrityToken,
+                identifier = visitorData
             )
-            for (token in startTokens) {
-                val index = html.indexOf(token)
-                if (index == -1) continue
-
-                val jsonStart = index + token.length
-                val jsonStr = extractBalancedJson(html, jsonStart) ?: continue
-
-                try {
-                    val root = parseLenient(jsonStr)
-                    
-                    // If it was ytcfg.set, the data is likely deeper
-                    val actualData = if (token == "ytcfg.set(") {
-                        root.get("PLAYER_VARS")?.asJsonObject?.get("embedded_player_response")?.asString?.let {
-                            parseLenient(it)
-                        } ?: root
-                    } else root
-
-                    val res = actualData.get("playerAttestationRenderer")?.asJsonObject
-                        ?.get("botguardData")?.asJsonObject
-                        ?: actualData.get("attestation")?.asJsonObject
-                            ?.get("playerAttestationRenderer")?.asJsonObject
-                            ?.get("botguardData")?.asJsonObject
-
-                    if (res != null && !res.get("program")?.asString.isNullOrEmpty()) {
-                        Log.d(TAG, "Challenge found via Strategy 2 (Balanced HTML: $token)")
-                        return res
-                    }
-                } catch (e: Exception) {}
+            if (poToken == null) {
+                Log.e(TAG, "Step 4 FAIL: Mint PoToken gagal")
+                return@withContext null
             }
-            // Strategy 3: Direct "botguardData" search and balanced extraction
-            val bgMarker = "\"botguardData\""
-            var lastIndex = 0
-            while (true) {
-                val found = html.indexOf(bgMarker, lastIndex)
-                if (found == -1) break
-                
-                // Backtrack to find the start of the object { "botguardData": ... }
-                val objStart = html.lastIndexOf("{", found)
-                if (objStart != -1) {
-                    val jsonStr = extractBalancedJson(html, objStart)
-                    if (jsonStr != null) {
-                        try {
-                            val obj = parseLenient(jsonStr)
-                            val res = if (obj.has("botguardData")) obj.get("botguardData").asJsonObject else obj
-                            if (res.has("program") && !res.get("program").asString.isNullOrEmpty()) {
-                                Log.d(TAG, "Challenge found via Strategy 3 (Direct Marker)")
-                                return res
-                            }
-                        } catch (e: Exception) {}
-                    }
-                }
-                lastIndex = found + bgMarker.length
-            }
-            null
-        } catch (e: Exception) {
-            Log.w(TAG, "HTML challenge fetch failed: ${e.message}")
-            null
+            Log.i(TAG, "Step 4 OK: poToken=${poToken.take(30)}...")
+            Log.i(TAG, "══ PoToken Generation SUCCESS ══")
+
+            PoTokenResult(visitorData, poToken)
         }
-    }
 
-    private fun extractBalancedJson(html: String, start: Int): String? {
-        var firstBrace = -1
-        for (i in start until html.length) {
-            if (html[i] == '{') { firstBrace = i; break }
-            if (html[i] == '<' || html[i] == ';') return null // Early exit if we hit next tag
-        }
-        if (firstBrace == -1) return null
+    // ─────────────────────────────────────────────────────────────────────────
+    // Step 1: Fetch challenge dari jnn-pa.googleapis.com/Create
+    // ─────────────────────────────────────────────────────────────────────────
 
-        var balance = 0
-        var inString = false
-        var escaped = false
-
-        for (i in firstBrace until html.length) {
-            val c = html[i]
-            if (escaped) {
-                escaped = false
-                continue
-            }
-            if (c == '\\') {
-                escaped = true
-                continue
-            }
-            if (c == '"') {
-                inString = !inString
-                continue
-            }
-            if (!inString) {
-                if (c == '{') balance++
-                else if (c == '}') {
-                    balance--
-                    if (balance == 0) return html.substring(firstBrace, i + 1)
-                }
-            }
-        }
-        return null
-    }
-
-    private fun parseLenient(json: String): JsonObject {
-        val reader = com.google.gson.stream.JsonReader(java.io.StringReader(json))
-        reader.isLenient = true
-        return JsonParser.parseReader(reader).asJsonObject
-    }
-
-    // ── Fallback: Challenge dari API (kalau video tidak diblok) ──────────
-
-    private fun fetchChallengeDataFromApi(videoId: String, visitorData: String): JsonObject? {
+    /**
+     * POST https://jnn-pa.googleapis.com/$rpc/google.internal.waa.v1.Waa/Create
+     * Body: ["O43z0dpjhgX20SCx4KAo"]
+     * Content-Type: application/json+protobuf
+     *
+     * Response adalah JSON array:
+     *   - Format 1: [[messageId, [script], [url], hash, program, globalName, ...]]
+     *   - Format 2: [null, "<scrambled_base64>"] → perlu di-descramble
+     *
+     * Returns JsonObject dengan field: program, globalName, interpreterJavascript
+     */
+    private fun fetchChallenge(): JsonObject? {
         return try {
-            val body = """
-                {
-                  "context": {
-                    "client": {
-                      "clientName": "WEB_EMBEDDED_PLAYER",
-                      "clientVersion": "1.20241021.01.00",
-                      "hl": "en",
-                      "gl": "US",
-                      "visitorData": "$visitorData"
-                    }
-                  },
-                  "videoId": "$videoId",
-                  "playbackContext": {
-                    "contentPlaybackContext": {
-                      "signatureTimestamp": 20436
-                    }
-                  }
-                }
-            """.trimIndent()
-
+            val payload = gson.toJson(listOf(REQUEST_KEY))
             val req = Request.Builder()
-                .url("https://www.youtube.com/youtubei/v1/player?key=$INNERTUBE_KEY")
-                .post(body.toRequestBody("application/json".toMediaType()))
+                .url(CREATE_URL)
+                .post(payload.toRequestBody("application/json+protobuf".toMediaType()))
+                .header("x-goog-api-key", GOOG_API_KEY)
+                .header("x-user-agent", "grpc-web-javascript/0.1")
                 .header("User-Agent", USER_AGENT)
-                .header("Content-Type", "application/json")
-                .header("X-Goog-Visitor-Id", visitorData)
+                .header("Content-Type", "application/json+protobuf")
                 .build()
 
             val resp = http.newCall(req).execute()
-            val json = resp.body?.string() ?: return null
-            val reader = com.google.gson.stream.JsonReader(java.io.StringReader(json))
-            reader.isLenient = true
-            val root = JsonParser.parseReader(reader).asJsonObject
+            Log.d(TAG, "  Create response code: ${resp.code}")
 
-            val res = root.get("playerAttestationRenderer")?.asJsonObject
-                ?.get("botguardData")?.asJsonObject
-                ?: root.get("attestation")?.asJsonObject
-                    ?.get("playerAttestationRenderer")?.asJsonObject
-                    ?.get("botguardData")?.asJsonObject
-
-            if (res != null && !res.get("program")?.asString.isNullOrEmpty()) {
-                Log.d(TAG, "Challenge found via Strategy 3 (API)")
-                return res
+            if (!resp.isSuccessful) {
+                Log.e(TAG, "  Create HTTP error: ${resp.code}")
+                return null
             }
-            null
+
+            val body = resp.body?.string() ?: return null
+            Log.d(TAG, "  Create response: ${body.take(200)}")
+
+            parseChallengeResponse(body)
         } catch (e: Exception) {
-            Log.w(TAG, "API challenge fetch failed: ${e.message}")
+            Log.e(TAG, "  fetchChallenge exception: ${e.message}", e)
             null
         }
     }
 
-    // ── Integrity Token ─────────────────────────────────────────────────────
-
-    private fun fetchIntegrityToken(visitorData: String): String? {
+    /**
+     * Parse challenge response dari jnn-pa.
+     * Sesuai dengan challengeFetcher.js dari bgutils-js.
+     */
+    private fun parseChallengeResponse(rawJson: String): JsonObject? {
         return try {
-            val body = """
-                {
-                  "context": {
-                    "client": {
-                      "clientName": "WEB",
-                      "clientVersion": "1.20241021.01.00",
-                      "hl": "en",
-                      "gl": "US",
-                      "visitorData": "$visitorData"
-                    }
-                  }
-                }
-            """.trimIndent()
-
-            val req = Request.Builder()
-                .url("$ATT_GET_URL$INNERTUBE_KEY")
-                .post(body.toRequestBody("application/json".toMediaType()))
-                .header("User-Agent", USER_AGENT)
-                .header("Content-Type", "application/json")
-                .header("X-Goog-Visitor-Id", visitorData)
-                .header("Origin", "https://www.youtube.com")
-                .header("Referer", "https://www.youtube.com/")
-                .build()
-
-            val resp = http.newCall(req).execute()
-            val json = resp.body?.string() ?: return null
-            val reader = com.google.gson.stream.JsonReader(java.io.StringReader(json))
+            val reader = com.google.gson.stream.JsonReader(java.io.StringReader(rawJson))
             reader.isLenient = true
-            val root = JsonParser.parseReader(reader).asJsonObject
+            val outer = JsonParser.parseReader(reader).asJsonArray
 
-            val token = root.get("integrityToken")?.asString
-                ?: root.get("integrityTokenId")?.asString
-                ?: root.get("integrityToken")?.asJsonObject?.get("token")?.asString
-                ?: root.getAsJsonObject("response")?.get("integrityToken")?.asString
-                ?: root.get("attestation")?.asJsonObject?.get("playerAttestationRenderer")?.asJsonObject?.get("integrityToken")?.asString
+            // Cek format response
+            var challengeArray: JsonArray? = null
 
-            if (token.isNullOrBlank()) {
-                Log.w(TAG, "integrityToken empty in response: $json")
+            if (outer.size() > 1 && outer[1].isJsonPrimitive && outer[1].asJsonPrimitive.isString) {
+                // Format 2: [null, "<scrambled>"] → descramble
+                val scrambled = outer[1].asString
+                val descrambled = descramble(scrambled)
+                Log.d(TAG, "  Descrambled challenge: ${descrambled?.take(100)}")
+                if (descrambled != null) {
+                    val inner = JsonParser.parseString(descrambled)
+                    challengeArray = if (inner.isJsonArray) inner.asJsonArray else null
+                }
+            } else if (outer.size() > 0 && outer[0].isJsonArray) {
+                // Format 1: [[...]]
+                challengeArray = outer[0].asJsonArray
             }
-            token
+
+            if (challengeArray == null) {
+                Log.e(TAG, "  Could not determine challenge array from: ${rawJson.take(200)}")
+                return null
+            }
+
+            // challengeArray = [messageId, wrappedScript, wrappedUrl, interpreterHash, program, globalName, ...]
+            // index:              0          1              2           3                4        5
+            if (challengeArray.size() < 6) {
+                Log.e(TAG, "  Challenge array too short: ${challengeArray.size()} elements")
+                return null
+            }
+
+            val program = challengeArray[4]?.asString ?: ""
+            val globalName = challengeArray[5]?.asString ?: ""
+
+            // wrappedScript adalah array, ambil string pertama yang tidak null
+            val interpreterJs = if (challengeArray[1].isJsonArray) {
+                challengeArray[1].asJsonArray
+                    .firstOrNull { !it.isJsonNull && it.isJsonPrimitive && it.asString.isNotBlank() }
+                    ?.asString ?: ""
+            } else {
+                challengeArray[1]?.asString ?: ""
+            }
+
+            Log.d(TAG, "  Parsed: globalName=$globalName, programLen=${program.length}, jsLen=${interpreterJs.length}")
+
+            JsonObject().apply {
+                addProperty("program", program)
+                addProperty("globalName", globalName)
+                addProperty("interpreterJavascript", interpreterJs)
+            }
         } catch (e: Exception) {
-            Log.w(TAG, "Integrity token fetch failed: ${e.message}")
+            Log.e(TAG, "  parseChallengeResponse error: ${e.message}", e)
             null
         }
     }
 
-    // ── WebView: BotGuard + obtainPoToken dalam satu sesi ─────────────────
+    /**
+     * Descramble challenge: base64 decode, lalu setiap byte + 97.
+     * Sesuai dengan descramble() di challengeFetcher.js.
+     */
+    private fun descramble(scrambled: String): String? {
+        return try {
+            // Convert base64url ke base64 standar
+            val std = scrambled
+                .replace('-', '+')
+                .replace('_', '/')
+                .replace('.', '=')
+            val bytes = Base64.decode(std, Base64.DEFAULT)
+            // Setiap byte + 97
+            String(bytes.map { (it + 97).toByte() }.toByteArray(), Charsets.UTF_8)
+        } catch (e: Exception) {
+            Log.e(TAG, "  descramble error: ${e.message}")
+            null
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Step 2: Jalankan BotGuard di WebView → ambil botguardResponse
+    // ─────────────────────────────────────────────────────────────────────────
 
     @SuppressLint("SetJavaScriptEnabled")
-    private suspend fun generateInWebView(
-        challengeData: JsonObject,
-        integrityToken: String,
-        identifier: String
-    ): String? {
+    private suspend fun runBotGuardInWebView(challengeData: JsonObject): String? {
         val deferred = CompletableDeferred<String?>()
+        var webViewRef: WebView? = null
 
         mainHandler.post {
             val webView = WebView(context)
+            webViewRef = webView
             webView.settings.javaScriptEnabled = true
 
             val bridge = object {
                 @JavascriptInterface
-                fun onResult(jsonArrayStr: String) {
+                fun onBotGuardResult(response: String) {
                     mainHandler.post {
-                        try {
-                            val jsonArray = JsonParser.parseString(jsonArrayStr).asJsonArray
-                            val bytes = ByteArray(jsonArray.size()) { i -> jsonArray[i].asInt.toByte() }
-                            val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE)
-                            deferred.complete(base64)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Result parse error: ${e.message}")
-                            deferred.complete(null)
-                        }
+                        if (deferred.isCompleted) { webView.destroy(); return@post }
+                        Log.d(TAG, "  BotGuard response received: ${response.take(30)}...")
+                        deferred.complete(response)
                         webView.destroy()
+                        webViewRef = null
                     }
                 }
 
                 @JavascriptInterface
                 fun onError(msg: String) {
                     mainHandler.post {
-                        Log.e(TAG, "JS error: $msg")
+                        if (deferred.isCompleted) { webView.destroy(); return@post }
+                        Log.e(TAG, "  BotGuard JS error: $msg")
                         deferred.complete(null)
                         webView.destroy()
+                        webViewRef = null
                     }
                 }
             }
-            webView.addJavascriptInterface(bridge, "PoTokenBridge")
+            webView.addJavascriptInterface(bridge, "BotGuardBridge")
 
-            webView.loadUrl("file:///android_asset/po_token.html")
+            // Load blank page sebagai base
+            webView.loadDataWithBaseURL(
+                "https://www.youtube.com",
+                "<html><body></body></html>",
+                "text/html", "utf-8", null
+            )
 
             webView.webViewClient = object : android.webkit.WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    val challengeJson = gson.toJson(challengeData)
+                    val interpreterJs = challengeData.get("interpreterJavascript")?.asString ?: ""
+                    val program = challengeData.get("program")?.asString ?: ""
+                    val globalName = challengeData.get("globalName")?.asString ?: ""
+                    val programJson = gson.toJson(program)
+                    val globalNameJson = gson.toJson(globalName)
+
+                    // Script ini meniru botGuardClient.js dari bgutils-js:
+                    // 1. Load interpreter VM
+                    // 2. Init VM dengan program
+                    // 3. Tunggu asyncSnapshotFunction tersedia
+                    // 4. Ambil snapshot (botguardResponse)
                     val script = """
                         (async function() {
                             try {
-                                // Step 1: Jalankan BotGuard VM
-                                var botResult = await runBotGuard($challengeJson);
-                                var webPoSignalOutput = botResult.webPoSignalOutput;
+                                // Load BotGuard VM interpreter
+                                (new Function(${gson.toJson(interpreterJs)}))();
                                 
-                                // Step 2: Mint PoToken (identifier = visitorData)
-                                var rawToken = obtainPoToken(webPoSignalOutput, "$integrityToken", "$identifier");
+                                const globalName = $globalNameJson;
+                                const program = $programJson;
                                 
-                                // Step 3: Kirim array byte ke Kotlin
-                                var arr = Array.from(rawToken);
-                                window.PoTokenBridge.onResult(JSON.stringify(arr));
+                                if (!window[globalName]) {
+                                    window.BotGuardBridge.onError('VM not found: ' + globalName);
+                                    return;
+                                }
+                                if (!window[globalName].a) {
+                                    window.BotGuardBridge.onError('VM init function not found');
+                                    return;
+                                }
+                                
+                                // Setup deferred untuk vmFunctions
+                                let resolveVm;
+                                const vmPromise = new Promise(r => { resolveVm = r; });
+                                
+                                const vmFunctionsCallback = function(asyncSnapshotFn, shutdownFn, passEventFn, checkCameraFn) {
+                                    resolveVm({
+                                        asyncSnapshotFunction: asyncSnapshotFn,
+                                        shutdownFunction: shutdownFn
+                                    });
+                                };
+                                
+                                // Init VM — syncSnapshotFunction di index [0]
+                                const webPoSignalOutput = [];
+                                window[globalName].a(
+                                    program,
+                                    vmFunctionsCallback,
+                                    true,
+                                    undefined,
+                                    function() {},
+                                    [[], []]
+                                );
+                                
+                                // Tunggu asyncSnapshotFunction (max 10 detik)
+                                const vmFunctions = await Promise.race([
+                                    vmPromise,
+                                    new Promise((_, reject) => setTimeout(() => reject(new Error('VM timeout')), 10000))
+                                ]);
+                                
+                                if (!vmFunctions.asyncSnapshotFunction) {
+                                    window.BotGuardBridge.onError('asyncSnapshotFunction not available');
+                                    return;
+                                }
+                                
+                                // Ambil snapshot
+                                const botguardResponse = await new Promise((resolve, reject) => {
+                                    vmFunctions.asyncSnapshotFunction(
+                                        function(response) { resolve(response); },
+                                        [undefined, undefined, webPoSignalOutput, undefined]
+                                    );
+                                    setTimeout(() => reject(new Error('snapshot timeout')), 10000);
+                                });
+                                
+                                window.BotGuardBridge.onBotGuardResult(botguardResponse || '');
+                                
                             } catch(e) {
-                                window.PoTokenBridge.onError(e.toString() + " | " + e.stack);
+                                window.BotGuardBridge.onError(e.toString() + ' | stack: ' + (e.stack || 'none'));
                             }
                         })();
                     """.trimIndent()
-                    webView.evaluateJavascript(script, null)
+                    view?.evaluateJavascript(script, null)
                 }
             }
         }
 
-        return withTimeoutOrNull(25000) { deferred.await() }
+        return try {
+            withTimeoutOrNull(25_000) { deferred.await() }
+        } finally {
+            if (!deferred.isCompleted) deferred.complete(null)
+            mainHandler.post { webViewRef?.destroy(); webViewRef = null }
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Step 3: Fetch integrity token dari jnn-pa/GenerateIT
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * POST https://jnn-pa.googleapis.com/$rpc/google.internal.waa.v1.Waa/GenerateIT
+     * Body: ["<requestKey>", "<botguardResponse>"]
+     *
+     * Response: JSON array [integrityToken, estimatedTtlSecs, mintRefreshThreshold, websafeFallbackToken]
+     *
+     * integrityToken adalah base64 string yang di-pass ke WebView untuk mint.
+     */
+    private fun fetchIntegrityToken(botguardResponse: String): JsonObject? {
+        return try {
+            val payload = gson.toJson(listOf(REQUEST_KEY, botguardResponse))
+            val req = Request.Builder()
+                .url(GENERATE_IT_URL)
+                .post(payload.toRequestBody("application/json+protobuf".toMediaType()))
+                .header("x-goog-api-key", GOOG_API_KEY)
+                .header("x-user-agent", "grpc-web-javascript/0.1")
+                .header("User-Agent", USER_AGENT)
+                .header("Content-Type", "application/json+protobuf")
+                .build()
+
+            val resp = http.newCall(req).execute()
+            Log.d(TAG, "  GenerateIT response code: ${resp.code}")
+
+            if (!resp.isSuccessful) {
+                Log.e(TAG, "  GenerateIT HTTP error: ${resp.code}")
+                return null
+            }
+
+            val body = resp.body?.string() ?: return null
+            Log.d(TAG, "  GenerateIT response: ${body.take(200)}")
+
+            // Response: [integrityToken, estimatedTtlSecs, mintRefreshThreshold, websafeFallbackToken]
+            val reader = com.google.gson.stream.JsonReader(java.io.StringReader(body))
+            reader.isLenient = true
+            val arr = JsonParser.parseReader(reader).asJsonArray
+
+            if (arr.size() == 0) {
+                Log.e(TAG, "  GenerateIT empty array response")
+                return null
+            }
+
+            val integrityToken = arr[0]?.asString ?: ""
+            val estimatedTtl = if (arr.size() > 1) arr[1]?.asLong ?: 0L else 0L
+            val mintRefreshThreshold = if (arr.size() > 2) arr[2]?.asLong ?: 0L else 0L
+
+            if (integrityToken.isBlank()) {
+                Log.e(TAG, "  integrityToken kosong di response: $body")
+                return null
+            }
+
+            JsonObject().apply {
+                addProperty("integrityToken", integrityToken)
+                addProperty("estimatedTtlSecs", estimatedTtl)
+                addProperty("mintRefreshThreshold", mintRefreshThreshold)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "  fetchIntegrityToken exception: ${e.message}", e)
+            null
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Step 4: Mint PoToken di WebView
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Mint PoToken menggunakan webPoSignalOutput dari BotGuard dan integrityToken.
+     *
+     * Flow sesuai WebPoMinter.create() + mintAsWebsafeString() dari bgutils-js:
+     *   1. webPoSignalOutput[0] adalah getMinter function
+     *   2. getMinter(base64ToU8(integrityToken)) → mintCallback (mungkin async)
+     *   3. mintCallback(TextEncoder.encode(identifier)) → Uint8Array
+     *   4. u8ToBase64(result, true) → websafe base64
+     *
+     * Identifier = visitorData (bukan videoId).
+     */
+    @SuppressLint("SetJavaScriptEnabled")
+    private suspend fun mintPoTokenInWebView(
+        challengeData: JsonObject,
+        integrityToken: String,
+        identifier: String
+    ): String? {
+        val deferred = CompletableDeferred<String?>()
+        var webViewRef: WebView? = null
+
+        mainHandler.post {
+            val webView = WebView(context)
+            webViewRef = webView
+            webView.settings.javaScriptEnabled = true
+
+            val bridge = object {
+                @JavascriptInterface
+                fun onResult(base64Token: String) {
+                    mainHandler.post {
+                        if (deferred.isCompleted) { webView.destroy(); return@post }
+                        Log.d(TAG, "  Mint result: ${base64Token.take(30)}...")
+                        deferred.complete(base64Token)
+                        webView.destroy()
+                        webViewRef = null
+                    }
+                }
+
+                @JavascriptInterface
+                fun onError(msg: String) {
+                    mainHandler.post {
+                        if (deferred.isCompleted) { webView.destroy(); return@post }
+                        Log.e(TAG, "  Mint JS error: $msg")
+                        deferred.complete(null)
+                        webView.destroy()
+                        webViewRef = null
+                    }
+                }
+            }
+            webView.addJavascriptInterface(bridge, "MintBridge")
+
+            webView.loadDataWithBaseURL(
+                "https://www.youtube.com",
+                "<html><body></body></html>",
+                "text/html", "utf-8", null
+            )
+
+            webView.webViewClient = object : android.webkit.WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    val interpreterJs = challengeData.get("interpreterJavascript")?.asString ?: ""
+                    val program = challengeData.get("program")?.asString ?: ""
+                    val globalName = challengeData.get("globalName")?.asString ?: ""
+                    val programJson = gson.toJson(program)
+                    val globalNameJson = gson.toJson(globalName)
+                    val integrityTokenJson = gson.toJson(integrityToken)
+                    val identifierJson = gson.toJson(identifier)
+
+                    // Helper: u8ToBase64 websafe (sesuai bgutils-js)
+                    val script = """
+                        (async function() {
+                            try {
+                                // Helper functions
+                                function base64ToU8(base64) {
+                                    var std = base64.replace(/-/g,'+').replace(/_/g,'/').replace(/\./g,'=');
+                                    var bin = atob(std);
+                                    return new Uint8Array([...bin].map(c => c.charCodeAt(0)));
+                                }
+                                function u8ToBase64(u8, websafe) {
+                                    var result = btoa(String.fromCharCode(...u8));
+                                    if (websafe) {
+                                        result = result.replace(/\+/g,'-').replace(/\//g,'_');
+                                    }
+                                    return result;
+                                }
+                                
+                                // Load BotGuard VM interpreter
+                                (new Function(${gson.toJson(interpreterJs)}))();
+                                
+                                const globalName = $globalNameJson;
+                                const program = $programJson;
+                                const integrityToken = $integrityTokenJson;
+                                const identifier = $identifierJson;
+                                
+                                if (!window[globalName] || !window[globalName].a) {
+                                    window.MintBridge.onError('VM not available: ' + globalName);
+                                    return;
+                                }
+                                
+                                // Setup VM
+                                let resolveVm;
+                                const vmPromise = new Promise(r => { resolveVm = r; });
+                                const webPoSignalOutput = [];
+                                
+                                window[globalName].a(
+                                    program,
+                                    function(asyncSnapshotFn, shutdownFn, passEventFn, checkCameraFn) {
+                                        resolveVm({ asyncSnapshotFunction: asyncSnapshotFn });
+                                    },
+                                    true, undefined, function() {}, [[], []]
+                                );
+                                
+                                // Tunggu VM siap
+                                const vmFunctions = await Promise.race([
+                                    vmPromise,
+                                    new Promise((_, reject) => setTimeout(() => reject(new Error('VM timeout')), 10000))
+                                ]);
+                                
+                                // Jalankan snapshot untuk populate webPoSignalOutput
+                                await new Promise((resolve, reject) => {
+                                    vmFunctions.asyncSnapshotFunction(
+                                        function(response) { resolve(response); },
+                                        [undefined, undefined, webPoSignalOutput, undefined]
+                                    );
+                                    setTimeout(() => reject(new Error('snapshot timeout')), 10000);
+                                });
+                                
+                                // Mint PoToken (WebPoMinter.create + mintAsWebsafeString)
+                                const getMinter = webPoSignalOutput[0];
+                                if (!getMinter) {
+                                    window.MintBridge.onError('PMD:Undefined - webPoSignalOutput[0] null');
+                                    return;
+                                }
+                                
+                                // integrityToken perlu di-decode dari base64 ke Uint8Array
+                                const integrityTokenBytes = base64ToU8(integrityToken);
+                                
+                                // getMinter mungkin async (Promise) atau sync
+                                const mintCallback = await Promise.resolve(getMinter(integrityTokenBytes));
+                                
+                                if (!(mintCallback instanceof Function)) {
+                                    window.MintBridge.onError('APF:Failed - mintCallback bukan Function, type: ' + typeof mintCallback);
+                                    return;
+                                }
+                                
+                                // identifier di-encode sebagai UTF-8 bytes
+                                const identifierBytes = new TextEncoder().encode(identifier);
+                                const result = await Promise.resolve(mintCallback(identifierBytes));
+                                
+                                if (!result) {
+                                    window.MintBridge.onError('YNJ:Undefined - mint result null');
+                                    return;
+                                }
+                                if (!(result instanceof Uint8Array)) {
+                                    window.MintBridge.onError('ODM:Invalid - result bukan Uint8Array: ' + typeof result);
+                                    return;
+                                }
+                                
+                                // Convert ke websafe base64
+                                const poToken = u8ToBase64(result, true);
+                                window.MintBridge.onResult(poToken);
+                                
+                            } catch(e) {
+                                window.MintBridge.onError(e.toString() + ' | stack: ' + (e.stack || 'none'));
+                            }
+                        })();
+                    """.trimIndent()
+                    view?.evaluateJavascript(script, null)
+                }
+            }
+        }
+
+        return try {
+            withTimeoutOrNull(30_000) { deferred.await() }
+        } finally {
+            if (!deferred.isCompleted) deferred.complete(null)
+            mainHandler.post { webViewRef?.destroy(); webViewRef = null }
+        }
     }
 }

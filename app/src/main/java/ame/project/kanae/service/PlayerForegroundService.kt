@@ -9,6 +9,7 @@ import com.google.gson.Gson
 import ame.project.kanae.MainActivity
 import ame.project.kanae.model.Song
 import ame.project.kanae.model.TikTokChat
+import ame.project.kanae.overlay.ChatOverlayManager
 import ame.project.kanae.overlay.LyricsOverlayManager
 import ame.project.kanae.overlay.OverlayManager
 import ame.project.kanae.overlay.QueueOverlayManager
@@ -45,6 +46,7 @@ class PlayerForegroundService : Service() {
     private lateinit var overlayManager: OverlayManager
     private lateinit var queueOverlayManager: QueueOverlayManager
     private lateinit var lyricsOverlayManager: LyricsOverlayManager
+    private lateinit var chatOverlayManager: ChatOverlayManager
 
     private val queue       = ArrayDeque<Song>()
     private var currentSong: Song?  = null
@@ -54,6 +56,7 @@ class PlayerForegroundService : Service() {
     private var durationMs  = 0L
     private var shuffleMode = false
     private var tiktokConnected = false
+    private var requestLimit  = 3
 
     private var apiKey        = ""
     private var tiktokUsername = ""
@@ -113,28 +116,48 @@ class PlayerForegroundService : Service() {
             p.init()
         }
 
-        YtDlpHelper.init()
+        YtDlpHelper.initNpe()
         ytDlp = YtDlpHelper(this)
+        serviceScope.launch {
+            ytDlp.ensureInstalled(
+                onProgress = { p -> Log.d(TAG, "yt-dlp install progress: $p%") },
+                onLog = { msg -> Log.d(TAG, "yt-dlp install: $msg") }
+            )
+            broadcastState()
+        }
 
         overlayManager = OverlayManager(
             context     = this,
             scope       = serviceScope,
             onPlayPause = ::togglePlayPause,
             onSkip      = ::playNext,
-            onClose     = { }
+            onClose     = { broadcastState() }
         )
 
         queueOverlayManager = QueueOverlayManager(
             context  = this,
             onPlay   = { pos -> queue.elementAtOrNull(pos)?.let { playSong(it) } },
-            onRemove = { pos -> removeFromQueue(pos) }
+            onRemove = { pos -> removeFromQueue(pos) },
+            onClose  = { broadcastState() }
         )
 
         lyricsOverlayManager = LyricsOverlayManager(
             context       = this,
             scope         = serviceScope,
-            preferredLang = loadPreferredLyricsLang()
+            preferredLang = loadPreferredLyricsLang(),
+            onClose       = { broadcastState() }
         )
+
+        chatOverlayManager = ChatOverlayManager(
+            context = this,
+            scope   = serviceScope,
+            maxLines = prefs.getInt("chat_max_lines", 5),
+            onClose = { broadcastState() }
+        ).apply {
+            setTransparent(prefs.getBoolean("chat_transparent", true))
+            setOverlayWidth(prefs.getInt("chat_width", 300))
+            setDisplayDuration(prefs.getInt("chat_duration", 6))
+        }
 
         tiktokManager = buildTikTokManager()
 
@@ -171,6 +194,7 @@ class PlayerForegroundService : Service() {
         overlayManager.hide()
         queueOverlayManager.hide()
         lyricsOverlayManager.hide()
+        chatOverlayManager.hide()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -180,6 +204,7 @@ class PlayerForegroundService : Service() {
         apiKey         = prefs.getString("euler_api_key", "")     ?: ""
         tiktokUsername = prefs.getString("tiktok_username", "")   ?: ""
         shuffleMode    = prefs.getBoolean("shuffle_mode", false)
+        requestLimit   = prefs.getInt("request_limit", 3)
         canvasPlayerX  = prefs.getInt("canvas_px", 16)
         canvasPlayerY  = prefs.getInt("canvas_py", 100)
         canvasQueueX   = prefs.getInt("canvas_qx", 16)
@@ -201,6 +226,7 @@ class PlayerForegroundService : Service() {
     fun saveSettings(
         apiKey: String,
         username: String,
+        limit: Int = 3,
         cmdConfig: TikTokLiveManager.CommandConfig? = null
     ) {
         if (apiKey.isBlank() && username.isBlank()) {
@@ -214,9 +240,11 @@ class PlayerForegroundService : Service() {
 
         this.apiKey        = apiKey
         this.tiktokUsername = username.removePrefix("@")
+        this.requestLimit   = limit
         prefs.edit()
             .putString("euler_api_key", this.apiKey)
             .putString("tiktok_username", this.tiktokUsername)
+            .putInt("request_limit", this.requestLimit)
             .apply()
 
         cmdConfig?.let { cfg ->
@@ -406,11 +434,15 @@ class PlayerForegroundService : Service() {
         Log.d(TAG, "[TikTok] @${chat.uniqueId}: ${chat.comment}")
         broadcastChat(chat)
 
+        if (chatOverlayManager.isShowing) {
+            chatOverlayManager.addChat(chat.nickname, chat.comment)
+        }
+
         when (chat.commandType) {
             TikTokChat.CommandType.REQUEST -> {
                 val arg = chat.commandArg ?: return
 
-                // NEW: Limit song requests (Max 3 per user)
+                // NEW: Limit song requests (Customizable per user)
                 val cleanOwner = tiktokUsername.trim().removePrefix("@")
                 val isOwner    = chat.uniqueId.equals(cleanOwner, ignoreCase = true)
                 val isAdmin    = isOwner || chat.uniqueId.equals("admin", ignoreCase = true)
@@ -418,8 +450,8 @@ class PlayerForegroundService : Service() {
                 if (!isAdmin) {
                     val userReq = "@${chat.uniqueId}"
                     val count   = queue.count { it.requestedBy == userReq }
-                    if (count >= 3) {
-                        Log.d(TAG, "[TikTok] Request denied: $userReq already has $count songs in queue")
+                    if (count >= requestLimit) {
+                        Log.d(TAG, "[TikTok] Request denied: $userReq already has $count songs in queue (limit $requestLimit)")
                         return
                     }
                 }
@@ -474,6 +506,8 @@ class PlayerForegroundService : Service() {
         queueOverlayManager.setCanvasMode(locked = true, x = qx, y = qy)
         if (lyricsOverlayManager.isShowing)
             lyricsOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 440)
+        if (chatOverlayManager.isShowing)
+            chatOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 800)
 
         broadcastState()
     }
@@ -485,6 +519,8 @@ class PlayerForegroundService : Service() {
         queueOverlayManager.setCanvasMode(locked = false)
         if (lyricsOverlayManager.isShowing)
             lyricsOverlayManager.setCanvasMode(locked = false)
+        if (chatOverlayManager.isShowing)
+            chatOverlayManager.setCanvasMode(locked = false)
         broadcastState()
     }
 
@@ -522,6 +558,55 @@ class PlayerForegroundService : Service() {
 
     val lyricsOverlayVisible get() = lyricsOverlayManager.isShowing
 
+    // ── Chat overlay ──────────────────────────────────────────────────
+    fun toggleChatOverlay() {
+        if (chatOverlayManager.isShowing) {
+            chatOverlayManager.hide()
+        } else {
+            chatOverlayManager.show()
+        }
+        broadcastState()
+    }
+
+    fun updateChatMaxLines(lines: Int) {
+        prefs.edit().putInt("chat_max_lines", lines).apply()
+        chatOverlayManager.setMaxLines(lines)
+    }
+
+    fun updateChatTransparency(transparent: Boolean) {
+        prefs.edit().putBoolean("chat_transparent", transparent).apply()
+        chatOverlayManager.setTransparent(transparent)
+    }
+
+    fun updateChatWidth(widthDp: Int) {
+        prefs.edit().putInt("chat_width", widthDp).apply()
+        chatOverlayManager.setOverlayWidth(widthDp)
+    }
+
+    fun updateChatDuration(seconds: Int) {
+        prefs.edit().putInt("chat_duration", seconds).apply()
+        chatOverlayManager.setDisplayDuration(seconds)
+    }
+
+    val chatOverlayVisible get() = chatOverlayManager.isShowing
+
+    fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float) {
+        // Save to prefs for persistence
+        prefs.edit()
+            .putInt("${key}_x", x)
+            .putInt("${key}_y", y)
+            .putFloat("${key}_scale", scale)
+            .apply()
+
+        // Apply immediately if overlay is showing
+        when (key) {
+            "player" -> if (overlayManager.isShowing) overlayManager.applyConfig(x, y, scale)
+            "queue"  -> if (queueOverlayManager.isShowing) queueOverlayManager.applyConfig(x, y, scale)
+            "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(x, y, scale)
+            "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(x, y, scale)
+        }
+    }
+
     // ── State map (for MainActivity syncUi) ───────────────────────────
     fun getStateMap(): Map<String, Any?> = mapOf(
         "current_song"      to currentSong?.let { gson.toJson(it) },
@@ -532,9 +617,14 @@ class PlayerForegroundService : Service() {
         "duration_ms"       to durationMs,
         "shuffle_mode"      to shuffleMode,
         "tiktok_connected"  to tiktokConnected,
+        "request_limit"     to requestLimit,
         "ytdlp_installed"   to ytDlp.isInstalled,
         "canvas_mode"       to canvasModeEnabled,
-        "lyrics_visible"    to lyricsOverlayManager.isShowing
+        "lyrics_visible"    to lyricsOverlayManager.isShowing,
+        "chat_visible"      to chatOverlayManager.isShowing,
+        "chat_max_lines"    to prefs.getInt("chat_max_lines", 5),
+        "chat_width"        to prefs.getInt("chat_width", 300),
+        "chat_duration"     to prefs.getInt("chat_duration", 6)
     )
 
     // ── Notification ──────────────────────────────────────────────────
@@ -606,6 +696,16 @@ class PlayerForegroundService : Service() {
         TikTokLiveManager(apiKey, tiktokUsername, serviceScope).also { t ->
             t.setCommandConfig(commandConfig)
             t.onChat         = ::handleTikTokChat
+            t.onLike = { user, nick, count ->
+                if (chatOverlayManager.isShowing) {
+                    chatOverlayManager.addChat(nick, "Liked the live! x$count", 0xFFFF4444.toInt())
+                }
+            }
+            t.onGift = { user, nick, gift, count ->
+                if (chatOverlayManager.isShowing) {
+                    chatOverlayManager.addChat(nick, "Sent $gift x$count", 0xFFFF00FF.toInt())
+                }
+            }
             t.onConnected    = {
                 tiktokConnected = true
                 overlayManager.setLiveStatus(true)
