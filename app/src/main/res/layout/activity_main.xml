@@ -297,6 +297,33 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- COMMAND PERMISSIONS -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="COMMAND PERMISSIONS"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.15"
+            android:layout_marginStart="12dp"
+            android:layout_marginBottom="10dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAdminList"
+            android:layout_width="match_parent"
+            android:layout_height="64dp"
+            android:layout_marginBottom="20dp"
+            android:text="AUTHORIZED USERS (SKIP/STOP/CM)"
+            app:icon="@android:drawable/ic_lock_lock"
+            app:backgroundTint="@color/card_bg"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1FFFFFFF"
+            app:cornerRadius="20dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:textColor="@color/text_primary" />
+
         <!-- OVERLAY CONTROLS -->
         <TextView
             android:layout_width="match_parent"
@@ -508,7 +535,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- SETTINGS -->
+        <!-- EULERSTREAM & TIKTOK CONNECT -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -517,7 +544,7 @@
             app:cardElevation="0dp"
             app:strokeWidth="1dp"
             app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="40dp">
+            android:layout_marginBottom="20dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -528,7 +555,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/config_label"
+                    android:text="EULERSTREAM CONNECT"
                     android:textColor="@color/orange"
                     android:textSize="11sp"
                     android:textStyle="bold"
@@ -559,7 +586,7 @@
                     android:layout_height="wrap_content"
                     android:hint="@string/tiktok_user_hint"
                     style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="24dp"
                     app:boxCornerRadiusBottomEnd="16dp"
                     app:boxCornerRadiusBottomStart="16dp"
                     app:boxCornerRadiusTopEnd="16dp"
@@ -571,6 +598,47 @@
                         android:inputType="text"
                         android:textColor="@color/text_primary" />
                 </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnConnectTiktok"
+                    android:layout_width="match_parent"
+                    android:layout_height="64dp"
+                    android:text="CONNECT TIKTOK"
+                    app:backgroundTint="@color/orange"
+                    android:textColor="@color/bg_dark"
+                    android:textStyle="bold"
+                    app:cornerRadius="20dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- PLAYER SETTINGS -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/card_bg"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#1FFFFFFF"
+            android:layout_marginBottom="40dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="24dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="PLAYER CONFIGURATION"
+                    android:textColor="@color/orange"
+                    android:textSize="11sp"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="24dp" />
 
                 <!-- Request Limit -->
                 <com.google.android.material.textfield.TextInputLayout
@@ -751,14 +819,13 @@
                     android:id="@+id/btnSaveSettings"
                     android:layout_width="match_parent"
                     android:layout_height="64dp"
-                    android:text="@string/btn_save_connect"
-                    app:backgroundTint="@color/orange"
-                    android:textColor="@color/bg_dark"
+                    android:text="SAVE CONFIGURATION"
+                    app:backgroundTint="@color/purple"
+                    android:textColor="@color/white"
                     android:textStyle="bold"
                     app:cornerRadius="20dp"
                     android:insetTop="0dp"
-                    android:insetBottom="0dp"
-                    app:elevation="4dp" />
+                    android:insetBottom="0dp" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

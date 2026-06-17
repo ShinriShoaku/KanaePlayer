@@ -34,7 +34,8 @@ class OverlayGestureHelper(
     private val rootView: View,
     private val params: WindowManager.LayoutParams,
     private val wm: WindowManager,
-    private val onSingleTap: (() -> Unit)? = null
+    private val onSingleTap: (() -> Unit)? = null,
+    var onInteraction: (() -> Unit)? = null
 ) : View.OnTouchListener {
 
     // ── drag state ────────────────────────────────────────────────────
@@ -65,6 +66,7 @@ class OverlayGestureHelper(
     // ─────────────────────────────────────────────────────────────────
     override fun onTouch(v: View, event: MotionEvent): Boolean {
         if (locked) return false
+        onInteraction?.invoke()
 
         when (event.actionMasked) {
 

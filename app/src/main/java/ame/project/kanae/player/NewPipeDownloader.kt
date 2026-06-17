@@ -13,15 +13,21 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 /**
- * NewPipeDownloader v7
+ * NewPipeDownloader v9
  *
- * Strategi:
- *  1. visitor_id → inject cached visitorData.
- *  2. ANDROID player → return HTTP 400, biar NewPipe Extractor skip ANDROID
- *     dan fallback ke WEB client secara internal.
- *  3. WEB player → inject X-Goog-Po-Token jika tersedia.
- *  4. Content-Type application/json untuk youtubei/v1.
- *  5. Logging playabilityStatus untuk diagnosis.
+ * Perbaikan dari v8:
+ *  - HAPUS inject X-Goog-Po-Token header untuk WEB client.
+ *    Alasan: di NPE dev branch, WEB client hanya dipakai untuk metadata/thumbnail
+ *    via fetchWebClientMetadataAndSetThumbnails() — tidak fetch streamingData.
+ *    PoToken untuk WEB sekarang di-inject via PoTokenProvider.getWebClientPoToken()
+ *    sebagai playerRequestsPoToken (param ke-2), bukan via header manual.
+ *
+ *  - Log WEB player Status=UNKNOWN sekarang bukan error — itu normal karena
+ *    response WEB metadata-only memang tidak punya streamingData/playabilityStatus.
+ *    Log level diubah dari WARNING ke DEBUG untuk WEB client.
+ *
+ *  - streamingData missing warning hanya berlaku untuk ANDROID/iOS client,
+ *    bukan WEB.
  */
 class NewPipeDownloader private constructor(private val client: OkHttpClient) : Downloader() {
 
@@ -31,13 +37,9 @@ class NewPipeDownloader private constructor(private val client: OkHttpClient) : 
         private const val VISITOR_ID_PATH = "youtubei/v1/visitor_id"
         private const val PLAYER_PATH = "youtubei/v1/player"
 
-        private val ANDROID_CLIENT_NAMES = listOf(
-            "\"ANDROID\"",
-            "\"ANDROID_TESTSUITE\"",
-            "\"ANDROID_MUSIC\"",
-            "\"ANDROID_CREATOR\"",
-            "\"ANDROID_VR\""
-        )
+        // TTL constants
+        private const val VD_TTL_MS  = 6 * 60 * 60 * 1000L  // 6 jam
+        private const val POT_TTL_MS = 1 * 60 * 60 * 1000L  // 1 jam (konservatif)
 
         @Volatile private var instance: NewPipeDownloader? = null
 
@@ -52,24 +54,53 @@ class NewPipeDownloader private constructor(private val client: OkHttpClient) : 
         }
     }
 
+    // ── State dengan timestamp ────────────────────────────────────────────────
+
     @Volatile private var visitorData: String? = null
+    @Volatile private var visitorDataSetAt: Long = 0L
+
     @Volatile private var poToken: String? = null
+    @Volatile private var poTokenSetAt: Long = 0L
+
+    // ── VisitorData ───────────────────────────────────────────────────────────
 
     fun setVisitorData(data: String?) {
         visitorData = data
+        visitorDataSetAt = if (data.isNullOrBlank()) 0L else System.currentTimeMillis()
         Log.d(TAG, "visitorData cached: ${data?.take(25)}...")
     }
 
     fun getVisitorData(): String? = visitorData
 
+    fun isVisitorDataValid(): Boolean {
+        if (visitorData.isNullOrBlank()) return false
+        val age = System.currentTimeMillis() - visitorDataSetAt
+        val valid = age < VD_TTL_MS
+        if (!valid) Log.w(TAG, "visitorData EXPIRED (age=${age / 60000}min, TTL=${VD_TTL_MS / 60000}min)")
+        return valid
+    }
+
+    // ── PoToken ───────────────────────────────────────────────────────────────
+
     fun setPoToken(token: String?) {
         poToken = token
+        poTokenSetAt = if (token.isNullOrBlank()) 0L else System.currentTimeMillis()
         if (!token.isNullOrBlank()) {
             Log.d(TAG, "poToken cached: ${token.take(25)}...")
         }
     }
 
     fun getPoToken(): String? = poToken
+
+    fun isPoTokenValid(): Boolean {
+        if (poToken.isNullOrBlank()) return false
+        val age = System.currentTimeMillis() - poTokenSetAt
+        val valid = age < POT_TTL_MS
+        if (!valid) Log.w(TAG, "poToken EXPIRED (age=${age / 60000}min, TTL=${POT_TTL_MS / 60000}min)")
+        return valid
+    }
+
+    // ── Execute ───────────────────────────────────────────────────────────────
 
     @Throws(ReCaptchaException::class)
     override fun execute(request: Request): Response {
@@ -92,14 +123,14 @@ class NewPipeDownloader private constructor(private val client: OkHttpClient) : 
         // ── Content-Type Detection ──────────────────────────────────────────
         val isInnertube = url.contains("youtubei/v1")
         val contentType = if (isInnertube) "application/json" else "application/x-www-form-urlencoded"
+        val finalBody = dataToSend?.toRequestBody(contentType.toMediaType())
 
-        var finalBody = dataToSend?.toRequestBody(contentType.toMediaType())
-
-        // ── Intercept 2: ANDROID player ─────────────────────────────────────
+        // ── Detect client name untuk logging ────────────────────────────────
         var currentClientName = "UNKNOWN"
         if (url.contains(PLAYER_PATH) && httpMethod == "POST" && dataToSend != null) {
             val bodyStr = dataToSend.toString(Charsets.UTF_8)
-            currentClientName = Regex("""\"clientName\"\s*:\s*\"([^\"]+)\"""").find(bodyStr)?.groupValues?.get(1) ?: "UNKNOWN"
+            currentClientName = Regex("""\"clientName\"\s*:\s*\"([^\"]+)\"""")
+                .find(bodyStr)?.groupValues?.get(1) ?: "UNKNOWN"
             Log.d(TAG, "Player request for client: $currentClientName")
         }
 
@@ -111,61 +142,77 @@ class NewPipeDownloader private constructor(private val client: OkHttpClient) : 
             values.forEach { v -> builder.addHeader(name, v) }
         }
 
-        // Apply Chrome UA only if no User-Agent is provided by the extractor
+        // Apply Chrome UA hanya kalau extractor tidak menyediakan
         val hasUA = headers.keys.any { it.equals("User-Agent", true) }
         if (!hasUA) {
-            builder.header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
+            builder.header(
+                "User-Agent",
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+            )
         }
 
         visitorData?.let { builder.header("X-Goog-Visitor-Id", it) }
 
-        // Injeksi Po-Token hanya jika request adalah untuk client WEB
-        poToken?.let { token ->
-            if (url.contains(PLAYER_PATH)) {
-                val bodyStr = dataToSend?.toString(Charsets.UTF_8) ?: ""
-                // Pastikan kita hanya menyuntikkan token WEB ke client yang sesuai
-                if (bodyStr.contains("\"WEB\"") || bodyStr.contains("\"WEB_REMIX\"") || bodyStr.contains("\"WEB_EMBEDDED\"")) {
-                    builder.header("X-Goog-Po-Token", token)
-                    Log.d(TAG, "Injecting X-Goog-Po-Token for WEB player")
-                }
-            }
-        }
+        // CATATAN: X-Goog-Po-Token TIDAK diinject manual di sini.
+        // PoToken dihandle oleh NPE via PoTokenProvider (di YtDlpHelper.initNpe()):
+        //   - ANDROID client → streamingDataPoToken (param ke-3)
+        //   - WEB client     → playerRequestsPoToken (param ke-2), metadata only
+        // Manual inject via header sudah tidak diperlukan dan bisa konflik.
 
         val resp = client.newCall(builder.build()).execute()
         if (resp.code == 429) throw ReCaptchaException("reCaptcha Required", url)
 
         val responseBody = resp.body?.string() ?: ""
 
-        // ── Parse playability error untuk logging ───────────────────────────
+        // ── Parse playability status untuk logging ──────────────────────────
         if (url.contains(PLAYER_PATH)) {
             val json = try { JSONObject(responseBody) } catch (e: Exception) { null }
-            val status = json?.optJSONObject("playabilityStatus") ?: json?.optJSONObject("playerResponse")?.optJSONObject("playabilityStatus")
-            val statusCode = status?.optString("status") ?: (if (json?.has("streamingData") == true) "OK" else "UNKNOWN")
+            val status = json?.optJSONObject("playabilityStatus")
+                ?: json?.optJSONObject("playerResponse")?.optJSONObject("playabilityStatus")
+            val statusCode = status?.optString("status")
+                ?: (if (json?.has("streamingData") == true) "OK" else "UNKNOWN")
             val videoId = json?.optJSONObject("videoDetails")?.optString("videoId") ?: "unknown"
+
+            val isWebClient = currentClientName == "WEB"
+                    || currentClientName == "WEB_REMIX"
+                    || currentClientName == "WEB_EMBEDDED_PLAYER"
 
             Log.d(TAG, "Player Response for $videoId: Status=$statusCode, Client=$currentClientName")
 
             if (statusCode == "UNKNOWN") {
-                val keys = mutableListOf<String>()
-                json?.keys()?.forEach { keys.add(it) }
-                Log.d(TAG, "Unknown response root keys: $keys")
+                if (isWebClient) {
+                    // WEB client di NPE dev branch hanya fetch metadata (thumbnail, title, dll),
+                    // bukan streamingData → Status=UNKNOWN is BY DESIGN, bukan error.
+                    Log.d(TAG, "WEB metadata-only response (normal) — root keys: ${json?.keys()?.asSequence()?.toList()}")
+                } else {
+                    // Non-WEB client UNKNOWN = masalah nyata
+                    val keys = mutableListOf<String>()
+                    json?.keys()?.forEach { keys.add(it) }
+                    Log.w(TAG, "Non-WEB client UNKNOWN response, root keys: $keys")
+                }
             }
 
             if (statusCode != "OK" && statusCode != "UNKNOWN") {
                 val reason = status?.optString("reason") ?: "No reason"
                 Log.w(TAG, "YouTube playability error: $statusCode ($reason)")
                 Log.d(TAG, "Player response preview: ${responseBody.take(1000)}")
-            } else if (json != null && !json.has("streamingData") && statusCode == "OK") {
-                Log.w(TAG, "YouTube Status OK but streamingData is MISSING (PoToken required)")
+            }
+
+            // streamingData missing warning hanya relevan untuk ANDROID/iOS (primary clients)
+            if (!isWebClient && json != null && !json.has("streamingData") && statusCode == "OK") {
+                Log.w(TAG, "[$currentClientName] Status=OK tapi streamingData MISSING → PoToken mungkin expired")
             }
         }
 
-        // ── Auto-extract visitorData ───────────────────────────────────────
-        if (visitorData.isNullOrBlank() && url.contains("youtube")) {
+        // ── Auto-extract visitorData dari response (hanya kalau belum ada) ─
+        if (!isVisitorDataValid() && url.contains("youtube")) {
             Regex(""""visitorData"\s*:\s*"([^"]{10,})"""")
                 .find(responseBody)?.groupValues?.get(1)
                 ?.takeIf { it.isNotBlank() }
-                ?.let { setVisitorData(it) }
+                ?.let {
+                    Log.d(TAG, "Auto-extracted fresh visitorData from response")
+                    setVisitorData(it)
+                }
         }
 
         return Response(

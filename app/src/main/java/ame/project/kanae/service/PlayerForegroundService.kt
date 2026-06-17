@@ -14,9 +14,11 @@ import ame.project.kanae.overlay.ChatOverlayManager
 import ame.project.kanae.overlay.LyricsOverlayManager
 import ame.project.kanae.overlay.OverlayManager
 import ame.project.kanae.overlay.QueueOverlayManager
+import ame.project.kanae.overlay.TikTokNotificationOverlayManager
 import ame.project.kanae.player.AudioPlayer
 import ame.project.kanae.player.YtDlpHelper
 import ame.project.kanae.tiktok.TikTokLiveManager
+import android.view.WindowManager
 import kotlinx.coroutines.*
 
 class PlayerForegroundService : Service() {
@@ -48,6 +50,7 @@ class PlayerForegroundService : Service() {
     private lateinit var queueOverlayManager: QueueOverlayManager
     private lateinit var lyricsOverlayManager: LyricsOverlayManager
     private lateinit var chatOverlayManager: ChatOverlayManager
+    private lateinit var notifOverlayManager: TikTokNotificationOverlayManager
 
     private val queue       = ArrayDeque<Song>()
     private var currentSong: Song?  = null
@@ -160,6 +163,21 @@ class PlayerForegroundService : Service() {
             setOverlayWidth(prefs.getInt("chat_width", 300))
             setDisplayDuration(prefs.getInt("chat_duration", 6))
         }
+
+        notifOverlayManager = TikTokNotificationOverlayManager(this).apply {
+            setConfig(
+                prefs.getString("notif_share_img", null),
+                prefs.getString("notif_gift_img", null),
+                prefs.getString("notif_share_aud", null),
+                prefs.getString("notif_gift_aud", null),
+                prefs.getInt("notif_duration", 5)
+            )
+        }
+
+        // Apply saved configurations to Queue Overlay
+        val qAutoHide = prefs.getBoolean("queue_auto_hide", false)
+        val qDuration = prefs.getInt("queue_duration", 10)
+        queueOverlayManager.setAutoHide(qAutoHide, qDuration)
 
         tiktokManager = buildTikTokManager()
 
@@ -470,7 +488,24 @@ class PlayerForegroundService : Service() {
             }
             TikTokChat.CommandType.SKIP        -> if (isAdmin) playNext()
             TikTokChat.CommandType.STOP        -> if (isAdmin) stopPlayer()
-            TikTokChat.CommandType.QUEUE       -> if (isAdmin) broadcastState()
+            TikTokChat.CommandType.QUEUE       -> {
+                if (isAdmin) broadcastState()
+                
+                // Show queue overlay if requested via command (even if autohide is on)
+                serviceScope.launch(Dispatchers.Main) {
+                    if (!queueOverlayManager.isShowing) {
+                        val x = prefs.getInt("queue_x", 16)
+                        val y = prefs.getInt("queue_y", 420)
+                        val scale = prefs.getFloat("queue_scale", 1f)
+                        val width = prefs.getInt("queue_width", 300)
+                        queueOverlayManager.show(queue.toList())
+                        queueOverlayManager.applyConfig(x, y, scale, width)
+                    } else {
+                        queueOverlayManager.updateQueue(queue.toList())
+                        queueOverlayManager.resetHideTimer()
+                    }
+                }
+            }
             TikTokChat.CommandType.CLEAR_MUSIC -> {
                 if (!isAdmin) return
                 val arg = chat.commandArg?.trim() ?: return
@@ -558,8 +593,35 @@ class PlayerForegroundService : Service() {
     val overlayVisible get() = overlayManager.isShowing
 
     fun toggleQueueOverlay() {
-        if (queueOverlayManager.isShowing) queueOverlayManager.hide()
-        else queueOverlayManager.show(getQueue())
+        if (queueOverlayManager.isShowing) {
+            queueOverlayManager.hide()
+        } else {
+            showQueueOverlay()
+        }
+    }
+
+    fun showQueueOverlay() {
+        val x = prefs.getInt("queue_x", 16)
+        val y = prefs.getInt("queue_y", 420)
+        val scale = prefs.getFloat("queue_scale", 1f)
+        val width = prefs.getInt("queue_width", 300)
+        queueOverlayManager.show(queue.toList())
+        queueOverlayManager.applyConfig(x, y, scale, width)
+        broadcastState()
+    }
+
+    val queueOverlayVisible get() = queueOverlayManager.isShowing
+
+    fun updateQueueAutoHide(enabled: Boolean) {
+        prefs.edit().putBoolean("queue_auto_hide", enabled).apply()
+        val duration = prefs.getInt("queue_duration", 10)
+        queueOverlayManager.setAutoHide(enabled, duration)
+    }
+
+    fun updateQueueDuration(seconds: Int) {
+        prefs.edit().putInt("queue_duration", seconds).apply()
+        val enabled = prefs.getBoolean("queue_auto_hide", false)
+        queueOverlayManager.setAutoHide(enabled, seconds)
     }
 
     // ── Lyrics overlay ────────────────────────────────────────────────
@@ -584,7 +646,7 @@ class PlayerForegroundService : Service() {
             val x = prefs.getInt("chat_x", 16)
             val y = prefs.getInt("chat_y", 500)
             val scale = prefs.getFloat("chat_scale", 1f)
-            val width = prefs.getInt("chat_width", 300)
+            val width = prefs.getInt("chat_width", 150)
             chatOverlayManager.show(x, y, scale, width)
         }
         broadcastState()
@@ -610,13 +672,75 @@ class PlayerForegroundService : Service() {
         chatOverlayManager.setDisplayDuration(seconds)
     }
 
+    fun updateNotifConfig(shareImg: String?, giftImg: String?, shareAud: String?, giftAud: String?, duration: Int, refreshType: String? = null) {
+        notifOverlayManager.setConfig(shareImg, giftImg, shareAud, giftAud, duration)
+        if (notifOverlayManager.isShowing || refreshType != null) {
+            showNotifDummy(refreshType ?: "gift")
+        }
+    }
+
+    fun showChatDummy() {
+        chatOverlayManager.addDummyChat()
+    }
+
+    fun hideChatDummy() {
+        chatOverlayManager.clearDummyChat()
+    }
+
+    fun showNotifDummy(type: String = "gift", persistent: Boolean = false) {
+        val action = if (type == "gift") "mengirim Gift (Preview)" else "membagikan live (Preview)"
+        notifOverlayManager.showNotification("Preview User", action, type, isDummy = true, persistent = persistent)
+    }
+
+    fun resetNotifTimer() {
+        notifOverlayManager.resetHideTimer()
+    }
+
+    fun hideNotif() {
+        notifOverlayManager.hide()
+    }
+
     val chatOverlayVisible get() = chatOverlayManager.isShowing
+    val notifOverlayVisible get() = notifOverlayManager.isShowing
 
     fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
+        // If x or y is -1, it means "keep current screen position"
+        var finalX = x
+        var finalY = y
+
+        fun getCurrentPos(manager: Any?): Pair<Int, Int>? {
+            if (manager == null) return null
+            return try {
+                val lpField = manager.javaClass.getDeclaredField("layoutParams")
+                lpField.isAccessible = true
+                val lp = lpField.get(manager) as? WindowManager.LayoutParams
+                if (lp != null) Pair(lp.x, lp.y) else null
+            } catch (e: Exception) { null }
+        }
+
+        if (finalX == -1 || finalY == -1) {
+            val current = when(key) {
+                "player" -> getCurrentPos(overlayManager)
+                "queue"  -> getCurrentPos(queueOverlayManager)
+                "lyrics" -> getCurrentPos(lyricsOverlayManager)
+                "chat"   -> getCurrentPos(chatOverlayManager)
+                "notif"  -> getCurrentPos(notifOverlayManager)
+                else -> null
+            }
+            if (current != null) {
+                if (finalX == -1) finalX = current.first
+                if (finalY == -1) finalY = current.second
+            } else {
+                // Overlay not showing, fallback to existing saved pref
+                if (finalX == -1) finalX = prefs.getInt("${key}_x", 100)
+                if (finalY == -1) finalY = prefs.getInt("${key}_y", 100)
+            }
+        }
+
         // Save to prefs for persistence
         prefs.edit()
-            .putInt("${key}_x", x)
-            .putInt("${key}_y", y)
+            .putInt("${key}_x", finalX)
+            .putInt("${key}_y", finalY)
             .putFloat("${key}_scale", scale)
             .putInt("${key}_width", width)
             .putInt("${key}_height", height)
@@ -624,10 +748,34 @@ class PlayerForegroundService : Service() {
 
         // Apply immediately if overlay is showing
         when (key) {
-            "player" -> if (overlayManager.isShowing) overlayManager.applyConfig(x, y, scale, width, height)
-            "queue"  -> if (queueOverlayManager.isShowing) queueOverlayManager.applyConfig(x, y, scale, width, height)
-            "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(x, y, scale, width, height)
-            "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(x, y, scale, width)
+            "player" -> if (overlayManager.isShowing) overlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "queue"  -> if (queueOverlayManager.isShowing) queueOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(finalX, finalY, scale, width)
+            "notif"  -> if (notifOverlayManager.isShowing) notifOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+        }
+    }
+
+    fun getOverlayPosition(key: String): Pair<Int, Int> {
+        fun getPos(manager: Any?): Pair<Int, Int> {
+            if (manager == null) return Pair(0, 0)
+            return try {
+                val lpField = manager.javaClass.getDeclaredField("layoutParams")
+                lpField.isAccessible = true
+                val lp = lpField.get(manager) as? WindowManager.LayoutParams
+                if (lp != null) Pair(lp.x, lp.y) else Pair(0, 0)
+            } catch (e: Exception) { 
+                // Fallback to saved prefs if field access fails or manager is null
+                Pair(prefs.getInt("${key}_x", 0), prefs.getInt("${key}_y", 0))
+            }
+        }
+        return when(key) {
+            "player" -> getPos(overlayManager)
+            "queue"  -> getPos(queueOverlayManager)
+            "lyrics" -> getPos(lyricsOverlayManager)
+            "chat"   -> getPos(chatOverlayManager)
+            "notif"  -> getPos(notifOverlayManager)
+            else -> Pair(0, 0)
         }
     }
 
@@ -646,7 +794,9 @@ class PlayerForegroundService : Service() {
         "ytdlp_installed"   to ytDlp.isInstalled,
         "canvas_mode"       to canvasModeEnabled,
         "lyrics_visible"    to lyricsOverlayManager.isShowing,
+        "queue_visible"     to queueOverlayManager.isShowing,
         "chat_visible"      to chatOverlayManager.isShowing,
+        "notif_visible"     to notifOverlayManager.isShowing,
         "chat_max_lines"    to prefs.getInt("chat_max_lines", 5),
         "chat_width"        to prefs.getInt("chat_width", 300),
         "chat_duration"     to prefs.getInt("chat_duration", 6)
@@ -730,15 +880,16 @@ class PlayerForegroundService : Service() {
         TikTokLiveManager(apiKey, tiktokUsername, serviceScope).also { t ->
             t.setCommandConfig(commandConfig)
             t.onChat         = ::handleTikTokChat
-            t.onLike = { user, nick, count ->
-                if (chatOverlayManager.isShowing) {
-                    chatOverlayManager.addChat(nick, "Liked the live! x$count", 0xFFFF4444.toInt())
-                }
+            t.onLike = { _, _, _ ->
+                // Comment/Notification removed from chat overlay as requested
             }
-            t.onGift = { user, nick, gift, count ->
-                if (chatOverlayManager.isShowing) {
-                    chatOverlayManager.addChat(nick, "Sent $gift x$count", 0xFFFF00FF.toInt())
-                }
+            t.onGift = { _, nick, gift, count ->
+                // Removed from chat overlay, only show in notification overlay
+                notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift")
+            }
+            t.onShare = { _, nick ->
+                // Removed from chat overlay, only show in notification overlay
+                notifOverlayManager.showNotification(nick, "membagikan live", "share")
             }
             t.onConnected    = {
                 tiktokConnected = true

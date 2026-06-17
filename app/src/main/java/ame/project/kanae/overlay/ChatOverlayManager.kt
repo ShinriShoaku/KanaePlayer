@@ -26,17 +26,19 @@ class ChatOverlayManager(
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
     
-    private var overlayWidth: Int = 300
+    private var overlayWidth: Int = 150
     private var displayDurationMs: Long = 6000
     private val handler = Handler(Looper.getMainLooper())
     private var isTransparent = true
     private var isDummyActive = false
     private var currentTextScale: Float = 1f
+    private val activeChats = mutableListOf<View>()
+    private val dummyAutoHideRunnable = Runnable { clearDummyChat() }
 
     var isShowing: Boolean = false
         private set
 
-    fun show(x: Int = 16, y: Int = 500, scale: Float = 1f, width: Int = 300) {
+    fun show(x: Int = 16, y: Int = 500, scale: Float = 1f, width: Int = 150) {
         if (isShowing) return
         
         this.overlayWidth = width
@@ -96,20 +98,35 @@ class ChatOverlayManager(
             }
         }
 
-        // Add placeholder text to help positioning
-        addDummyChat()
+        // Add placeholder text to help positioning, auto-hide after 4s
+        addDummyChat(autoHideMs = 4000)
     }
 
-    private fun addDummyChat() {
+    fun addDummyChat(autoHideMs: Long = 0) {
         if (!isShowing) return
-        isDummyActive = true
-        addChat("System", "Chat Overlay Active (Drag me!)", isDummy = true)
+        handler.removeCallbacks(dummyAutoHideRunnable)
+        
+        if (!isDummyActive) {
+            isDummyActive = true
+            addChat("System", "Chat Overlay Active (Drag me!)", isDummy = true)
+        }
+        
+        if (autoHideMs > 0) {
+            handler.postDelayed(dummyAutoHideRunnable, autoHideMs)
+        }
     }
 
-    private fun clearDummyChat() {
+    fun clearDummyChat() {
+        handler.removeCallbacks(dummyAutoHideRunnable)
         if (!isDummyActive) return
         val container = chatContainer ?: return
-        container.removeAllViews()
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            if (child.tag == "dummy") {
+                removeChatWithAnimation(container, child)
+                break
+            }
+        }
         isDummyActive = false
     }
 
@@ -124,6 +141,8 @@ class ChatOverlayManager(
         chatContainer = null
         layoutParams = null
         gestureHelper = null
+        activeChats.clear()
+        isDummyActive = false
         isShowing = false
     }
 
@@ -143,14 +162,10 @@ class ChatOverlayManager(
         if (!isShowing) return
         val container = chatContainer ?: return
 
-        // If a real chat comes in and dummy is active, clear the dummy first
-        if (!isDummy && isDummyActive) {
-            clearDummyChat()
-        }
-
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val chatView = LayoutInflater.from(themed).inflate(R.layout.item_chat_bubble, container, false)
-        
+        if (isDummy) chatView.tag = "dummy"
+
         val tvNick = chatView.findViewById<TextView>(R.id.tv_username)
         tvNick.text = nickname
         tvNick.setTextColor(color)
@@ -162,23 +177,36 @@ class ChatOverlayManager(
 
         // Fade in animation
         chatView.alpha = 0f
-        // Add new chat at the bottom for normal flow
-        container.addView(chatView)
+        
+        if (isDummy) {
+            // Remove old dummy if exists
+            for (i in 0 until container.childCount) {
+                if (container.getChildAt(i).tag == "dummy") {
+                    container.removeViewAt(i)
+                    break
+                }
+            }
+            container.addView(chatView, 0) // Always at top
+        } else {
+            container.addView(chatView)
+            activeChats.add(chatView)
+        }
+        
         chatView.animate().alpha(1f).setDuration(300).start()
         
         // Update window size to accommodate new message
         syncWindowSize()
 
-        // Check max lines - remove oldest which is at the top (index 0)
-        if (container.childCount > maxLines) {
-            val oldest = container.getChildAt(0)
+        // Check max lines
+        while (activeChats.size > maxLines) {
+            val oldest = activeChats.removeAt(0)
             removeChatWithAnimation(container, oldest)
         }
 
         // Auto hide after set duration
         if (!isDummy) {
             handler.postDelayed({
-                if (chatView.parent != null) {
+                if (activeChats.remove(chatView)) {
                     removeChatWithAnimation(container, chatView)
                 }
             }, displayDurationMs)
@@ -200,6 +228,11 @@ class ChatOverlayManager(
 
     fun setMaxLines(lines: Int) {
         this.maxLines = lines
+        val container = chatContainer ?: return
+        while (activeChats.size > maxLines) {
+            val oldest = activeChats.removeAt(0)
+            removeChatWithAnimation(container, oldest)
+        }
     }
 
     fun setDisplayDuration(seconds: Int) {
