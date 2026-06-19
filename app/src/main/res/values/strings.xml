@@ -37,4 +37,15 @@
     <string name="cmd_clear_music_hint">Clear Music Command</string>
     <string name="btn_play">Play</string>
     <string name="btn_save_connect">SAVE &amp; CONNECT</string>
+
+    <string name="btn_notif">Notif</string>
+    <string name="label_share_img">Share Image/GIF</string>
+    <string name="label_share_audio">Share Audio</string>
+    <string name="label_gift_img">Gift Image/GIF</string>
+    <string name="label_gift_audio">Gift Audio</string>
+    <string name="btn_select_file">Select File</string>
+    <string name="label_share_config">SHARE CONFIG</string>
+    <string name="label_gift_config">GIFT CONFIG</string>
+    <string name="btn_image">IMAGE</string>
+    <string name="btn_audio">AUDIO</string>
 </resources>

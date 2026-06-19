@@ -198,6 +198,30 @@
                             android:textStyle="bold"
                             android:layout_marginTop="8dp" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnNotifOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_red"
+                            android:src="@android:drawable/ic_popup_reminder"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelNotif"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_notif"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
@@ -232,32 +256,41 @@
                         app:tint="@color/text_secondary" />
                 </RelativeLayout>
 
-                <TextView
+                <LinearLayout
+                    android:id="@+id/posSettingsContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Position X"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp" />
-                <SeekBar
-                    android:id="@+id/sbPosX"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="2000"
-                    android:layout_marginVertical="8dp" />
+                    android:orientation="vertical">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Position Y"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:layout_marginTop="8dp" />
-                <SeekBar
-                    android:id="@+id/sbPosY"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:max="3000"
-                    android:layout_marginVertical="8dp" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Position X"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <SeekBar
+                        android:id="@+id/sbPosX"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"
+                        android:max="2000" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Position Y"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <SeekBar
+                        android:id="@+id/sbPosY"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="8dp"
+                        android:max="3000" />
+                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
@@ -273,6 +306,38 @@
                     android:min="20"
                     android:max="250"
                     android:progress="100"
+                    android:layout_marginVertical="8dp" />
+
+                <TextView
+                    android:id="@+id/tvWidthLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Width: Auto"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp" />
+                <SeekBar
+                    android:id="@+id/sbWidth"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="1000"
+                    android:progress="0"
+                    android:layout_marginVertical="8dp" />
+
+                <TextView
+                    android:id="@+id/tvHeightLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Height: Auto"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:layout_marginTop="8dp" />
+                <SeekBar
+                    android:id="@+id/sbHeight"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="2000"
+                    android:progress="0"
                     android:layout_marginVertical="8dp" />
 
                 <!-- EXTRA SETTINGS FOR CHAT -->
@@ -309,23 +374,6 @@
                         android:layout_marginTop="4dp" />
 
                     <TextView
-                        android:id="@+id/tvChatWidthLabel"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Chat Overlay Width: 300dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
-                        android:layout_marginTop="8dp" />
-                    <SeekBar
-                        android:id="@+id/sbChatWidth"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:min="100"
-                        android:max="1000"
-                        android:progress="300"
-                        android:layout_marginVertical="8dp" />
-
-                    <TextView
                         android:id="@+id/tvChatDurationLabel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -340,6 +388,232 @@
                         android:min="1"
                         android:max="30"
                         android:progress="6"
+                        android:layout_marginVertical="8dp" />
+
+                    <!-- TTS SETTINGS -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#1AFFFFFF"
+                        android:layout_marginVertical="8dp" />
+
+                    <CheckBox
+                        android:id="@+id/cbChatTts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Enable Chat TTS (Voice)"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginTop="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvTtsVolumeLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="TTS Volume: 100%"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" />
+                    <SeekBar
+                        android:id="@+id/sbTtsVolume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="200"
+                        android:progress="100"
+                        android:layout_marginVertical="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvTtsMaxLengthLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="TTS Max Text Length: 100"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" />
+                    <SeekBar
+                        android:id="@+id/sbTtsMaxLength"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:min="10"
+                        android:max="500"
+                        android:progress="100"
+                        android:layout_marginVertical="8dp" />
+                </LinearLayout>
+
+                <!-- EXTRA SETTINGS FOR QUEUE -->
+                <LinearLayout
+                    android:id="@+id/extraQueueSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <CheckBox
+                        android:id="@+id/cbQueueAutoHide"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Auto Hide Queue Overlay"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginTop="4dp" />
+
+                    <TextView
+                        android:id="@+id/tvQueueDurationLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Queue Display Duration: 10s"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" />
+                    <SeekBar
+                        android:id="@+id/sbQueueDuration"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:min="1"
+                        android:max="30"
+                        android:progress="10"
+                        android:layout_marginVertical="8dp" />
+                </LinearLayout>
+
+                <!-- EXTRA SETTINGS FOR NOTIF -->
+                <LinearLayout
+                    android:id="@+id/extraNotifSettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="8dp"
+                        android:baselineAligned="false">
+
+                        <!-- Share Group -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingEnd="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_share_config"
+                                android:textColor="@color/orange"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSelectShareImg"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/btn_image"
+                                android:textSize="11sp"
+                                app:icon="@android:drawable/ic_menu_gallery"
+                                app:iconSize="18dp"
+                                app:cornerRadius="8dp"
+                                android:padding="0dp"
+                                android:ellipsize="end"
+                                android:singleLine="true" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSelectShareAudio"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/btn_audio"
+                                android:textSize="11sp"
+                                app:icon="@android:drawable/ic_lock_silent_mode_off"
+                                app:iconSize="18dp"
+                                app:cornerRadius="8dp"
+                                android:padding="0dp"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true" />
+                        </LinearLayout>
+
+                        <!-- Gift Group -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:paddingStart="8dp">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/label_gift_config"
+                                android:textColor="@color/orange"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:layout_marginBottom="8dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSelectGiftImg"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/btn_image"
+                                android:textSize="11sp"
+                                app:icon="@android:drawable/ic_menu_gallery"
+                                app:iconSize="18dp"
+                                app:cornerRadius="8dp"
+                                android:padding="0dp"
+                                android:ellipsize="end"
+                                android:singleLine="true" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnSelectGiftAudio"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/btn_audio"
+                                android:textSize="11sp"
+                                app:icon="@android:drawable/ic_lock_silent_mode_off"
+                                app:iconSize="18dp"
+                                app:cornerRadius="8dp"
+                                android:padding="0dp"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:singleLine="true" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvNotifDurationLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Notif Display Duration: 5s"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:layout_marginTop="16dp" />
+                    <SeekBar
+                        android:id="@+id/sbNotifDuration"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:min="1"
+                        android:max="30"
+                        android:progress="5"
+                        android:layout_marginVertical="8dp" />
+
+                    <TextView
+                        android:id="@+id/tvNotifVolumeLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Notif Audio Volume: 100%"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp"
+                        android:layout_marginTop="8dp" />
+                    <SeekBar
+                        android:id="@+id/sbNotifVolume"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:max="200"
+                        android:progress="100"
                         android:layout_marginVertical="8dp" />
                 </LinearLayout>
 

@@ -1,31 +1,25 @@
-# Change Log & New Features
+# Changelog - YTTikTokPlayer
 
-## [8.1.0] - Latest Updates
+## [8.3.0] - 2023-10-27
 
-### 💬 Chat Overlay & Performance
-- **Bug Fix: Max Chat Lines**: Fixed a critical issue where the chat limit didn't work. Now strictly enforces the maximum number of visible messages to maintain performance and prevent memory leaks.
-- **Smart Dummy Text**: Improved "Chat Overlay Active" behavior. It now automatically hides after 4 seconds when activated normally, but remains persistent while in the Settings menu for easier positioning.
-- **Clean Chat Mode**: Removed **Like, Gift, and Share** events from the Chat Overlay. These events are now handled exclusively by the Notification Overlay to reduce clutter.
-- **Improved Animations**: Added smoother fade-in and fade-out animations for chat bubbles.
+### 🚀 Fitur Baru
+- **Independent Volume Control**: Penambahan slider volume terpisah untuk **Music**, **Chat TTS**, dan **Notification Overlay**.
+- **Digital Volume Boost (LoudnessEnhancer)**: TTS sekarang mendukung penguatan suara hingga **200%** menggunakan amplifier digital agar suara asisten tetap terdengar kencang di atas musik.
+- **Dynamic Audio Ducking**: Volume musik akan mengecil secara otomatis (Soft Ducking) sebesar 5-15% saat asisten atau notifikasi bersuara, dan kembali normal setelah selesai.
 
-### 🔔 Customizable Notification Overlay (New Feature!)
-- **Total Customization**: You can now set **custom images and sounds** for TikTok Share and Gift events.
-- **Persistent Settings Preview**: While adjusting notification settings, the overlay stays visible so you can see your changes in real-time.
-- **Interaction Awareness**: Moving or touching the notification overlay now automatically resets its auto-hide timer, preventing it from disappearing while you're positioning it.
-- **Audio Feedback**: Added support for custom notification sounds (WAV/MP3) when a user shares the live or sends a gift.
+### 🛠️ Perbaikan & Peningkatan TTS (Text-to-Speech)
+- **TTS-to-File Engine**: Mengubah sistem pembacaan teks menjadi file audio sementara (WAV) untuk mendapatkan kontrol volume yang lebih stabil dan presisi.
+- **Indonesian Language Support**: Memaksa penggunaan locale `id-ID` agar suara asisten tetap berbahasa Indonesia meskipun sistem HP menggunakan bahasa lain.
+- **Smart Filter Chat**: 
+    - Mengabaikan pesan yang diawali dengan `@` (mention/tag).
+    - Otomatis menyaring dan tidak membaca pesan yang merupakan *Command* (seperti `#req`, `#skip`, dll) berdasarkan pengaturan custom Anda.
+    - Menghapus karakter `@` di tengah kalimat agar tidak dibaca "at".
+- **Robust Fallback**: Menambahkan sistem cadangan jika mesin TTS error atau gagal membuat file, aplikasi akan otomatis beralih ke mode suara langsung tanpa crash.
 
-### 🛠️ Core Improvements
-- **Optimized Memory Management**: View instances are now properly recycled and pruned from memory when they expire.
-- **Enhanced Gesture Helper**: Improved interaction logic to better handle simultaneous dragging and auto-hide behaviors across all overlays.
-- **UI Synchronization**: Better consistency between the BottomSheet settings panel and the actual overlay states.
+### 🐞 Bug Fixes
+- Memperbaiki masalah TTS Samsung yang volumenya sangat kecil.
+- Memperbaiki interupsi audio yang menyebabkan musik berhenti (*pause*) saat asisten berbicara.
+- Menambahkan pembersihan file sampah (`tts_cache.wav`) secara otomatis.
 
 ---
-
-## [7.5.0] - Previous Updates
-
-### 💬 Chat Overlay Enhancements
-- **Dynamic Text Scaling**: Font size control instead of layout scaling for better clarity.
-- **Auto-Height Management**: Dynamic container resizing.
-- **Natural Chat Flow**: Newest messages appear at the bottom.
-- **Authorizer User (Admin List)**: Added management for authorized users to execute commands.
-- **General Fixes**: Improved gesture stability and settings sync.
+*Developed with ❤️ for the community.*

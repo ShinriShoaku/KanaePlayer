@@ -42,6 +42,11 @@ class QueueOverlayManager(
     private var tvBadge: TextView?           = null
     private var rvQueue: RecyclerView?       = null
 
+    private var autoHideEnabled = false
+    private var displayDurationMs = 10000L
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val hideRunnable = Runnable { hide() }
+
     var isShowing: Boolean = false
         private set
 
@@ -101,10 +106,20 @@ class QueueOverlayManager(
         isShowing = true
 
         updateQueue(queue)
+        
+        if (autoHideEnabled) {
+            startHideTimer()
+        }
+    }
+
+    private fun startHideTimer() {
+        handler.removeCallbacks(hideRunnable)
+        handler.postDelayed(hideRunnable, displayDurationMs)
     }
 
     fun hide() {
         if (!isShowing) return
+        handler.removeCallbacks(hideRunnable)
         rootView?.let { 
             it.setOnTouchListener(null)
             runCatching { wm.removeView(it) } 
@@ -144,8 +159,25 @@ class QueueOverlayManager(
      */
     fun autoShowIfNeeded(queue: List<Song>) {
         if (queue.isEmpty()) return
-        if (isShowing) updateQueue(queue)
-        else show(queue)
+        if (isShowing) {
+            updateQueue(queue)
+            if (autoHideEnabled) startHideTimer()
+        } else show(queue)
+    }
+
+    fun setAutoHide(enabled: Boolean, durationSeconds: Int) {
+        this.autoHideEnabled = enabled
+        this.displayDurationMs = durationSeconds * 1000L
+        if (isShowing) {
+            if (enabled) startHideTimer()
+            else handler.removeCallbacks(hideRunnable)
+        }
+    }
+
+    fun resetHideTimer() {
+        if (isShowing && autoHideEnabled) {
+            startHideTimer()
+        }
     }
 
     // ── Canvas locked mode ────────────────────────────────────────────

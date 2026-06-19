@@ -95,6 +95,10 @@ class AudioPlayer(
         player?.seekTo(positionMs)
     }
 
+    fun setVolume(volume: Float) {
+        player?.volume = volume
+    }
+
     /** Release resources – call from Service.onDestroy. */
     fun release() {
         stopProgressUpdates()
