@@ -1,5 +1,22 @@
 # Changelog - YTTikTokPlayer
 
+## [8.5.0] - 2025-06-25
+
+### 🎁 Fitur Baru (TikTok Gift Enhancement)
+- **TikTok Gift Icon Integration**: Notifikasi overlay sekarang dapat menampilkan ikon asli gift dari TikTok secara otomatis.
+- **Smart Gift Detection**: Logika ekstraksi data gift diperbarui untuk mendukung format JSON terbaru dari TikTok/EulerStream, termasuk pengambilan nama gift dari teks deskripsi.
+- **Gift Priority Setting**: Penambahan opsi di Bottom Sheet Settings untuk memilih antara menggunakan **Ikon Asli TikTok** (Prioritas) atau **Gambar Custom** pilihan sendiri.
+- **Improved Duplicate Filter**: Sistem pelacakan ID pesan (`msgId`) yang lebih kuat untuk mencegah munculnya notifikasi ganda dari jalur WebSocket dan HTTP Polling.
+
+### ⚙️ Peningkatan Teknis
+- **JSON Chunk Logging**: Sistem logging sementara untuk membedah data JSON besar tanpa terpotong oleh batas Logcat (untuk kebutuhan debugging).
+- **Glide Image Loading**: Optimalisasi pemuatan gambar dari URL eksternal untuk overlay yang lebih ringan.
+
+### 🐞 Bug Fixes
+- Memperbaiki masalah Nama Gift yang sering muncul sebagai "Gift" (default) menjadi nama asli (misal: "Rose").
+- Memperbaiki masalah notifikasi gift/chat yang muncul dua kali (*double notification*).
+
+
 ## [8.3.0] - 2023-10-27
 
 ### 🚀 Fitur Baru
