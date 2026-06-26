@@ -1,4 +1,4 @@
-# Changelog - YTTikTokPlayer
+# Changelog - KanaePlayer
 
 ## [8.8.2] - 2025-10-27
 

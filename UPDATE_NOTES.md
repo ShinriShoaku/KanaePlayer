@@ -1,4 +1,4 @@
-# Update Notes - YTTikTokPlayer
+# Update Notes - KanaePlayer
 
 ## Update 8.8.2: Koneksi Stabil & Navigasi Cepat
 
