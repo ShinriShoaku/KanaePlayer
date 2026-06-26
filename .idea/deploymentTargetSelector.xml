@@ -4,10 +4,21 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-06T06:33:25.277353599Z">
+        <DropdownSelection timestamp="2026-06-26T06:17:46.122931841Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=RR8R703LEVN" />
+              <DeviceId pluginId="Default" identifier="serial=192.168.8.116:39957;connection=e0aac687" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="YtDlpTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-06-13T11:33:03.784895475Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="Default" identifier="serial=192.168.8.116:37579;connection=35977566" />
             </handle>
           </Target>
         </DropdownSelection>
