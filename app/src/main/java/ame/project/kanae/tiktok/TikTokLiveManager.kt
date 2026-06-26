@@ -31,7 +31,8 @@ class TikTokLiveManager(
 
     var onChat: ((TikTokChat) -> Unit)? = null
     var onLike: ((String, String, Int) -> Unit)? = null
-    var onGift: ((String, String, String, Int) -> Unit)? = null
+    var onGift: ((String, String, String, Int, String?) -> Unit)? = null
+    var onShare: ((String, String) -> Unit)? = null
     var onConnected: (() -> Unit)? = null
     var onDisconnected: (() -> Unit)? = null
     var onError: ((String) -> Unit)? = null
@@ -177,20 +178,30 @@ class TikTokLiveManager(
                     val data = msgObj["data"]?.asJsonObject ?: return@forEach
                     when (type) {
                         "WebcastChatMessage", "chat", "comment", "message" -> {
+                            if (!shouldProcessMessage(data)) return@forEach
                             if (System.currentTimeMillis() - connectTime < 5000) return@forEach
                             val chat = buildChat(data) ?: return@forEach
                             scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
                         }
                         "WebcastLikeMessage", "like" -> {
+                            if (!shouldProcessMessage(data)) return@forEach
                             val (uniqueId, nickname) = getUserInfo(data)
                             val count = data["likeCount"]?.asInt ?: 1
                             scope.launch(Dispatchers.Main) { onLike?.invoke(nickname, uniqueId, count) }
                         }
                         "WebcastGiftMessage", "gift" -> {
+                            if (!shouldProcessMessage(data)) return@forEach
                             val (uniqueId, nickname) = getUserInfo(data)
-                            val giftName = data["giftName"]?.asString ?: "Gift"
-                            val count = data["repeatCount"]?.asInt ?: 1
-                            scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count) }
+                            
+                            val giftName = extractGiftName(data)
+                            val count = extractGiftCount(data)
+                            val giftIcon = extractGiftIcon(data)
+                            
+                            scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
+                        }
+                        "WebcastSocialMessage", "share" -> {
+                            val (uniqueId, nickname) = getUserInfo(data)
+                            scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
                         }
                         "roomInfo", "connect_success", "roomUser", "tiktok.connect" -> {
                             if (!isConnectCallbackTriggered) {
@@ -210,20 +221,28 @@ class TikTokLiveManager(
                 val data = obj["data"].asJsonObject
                 when (event) {
                     "chat", "comment", "message", "WebcastChatMessage" -> {
+                        if (!shouldProcessMessage(data)) return
                         if (System.currentTimeMillis() - connectTime < 5000) return
                         val msg = buildChat(data) ?: return
                         scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                     }
                     "like", "WebcastLikeMessage" -> {
+                        if (!shouldProcessMessage(data)) return
                         val (uniqueId, nickname) = getUserInfo(data)
                         val count = data["likeCount"]?.asInt ?: 1
                         scope.launch(Dispatchers.Main) { onLike?.invoke(nickname, uniqueId, count) }
                     }
                     "gift", "WebcastGiftMessage" -> {
+                        if (!shouldProcessMessage(data)) return
                         val (uniqueId, nickname) = getUserInfo(data)
-                        val giftName = data["giftName"]?.asString ?: "Gift"
-                        val count = data["repeatCount"]?.asInt ?: 1
-                        scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count) }
+                        val giftName = extractGiftName(data)
+                        val count = extractGiftCount(data)
+                        val giftIcon = extractGiftIcon(data)
+                        scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
+                    }
+                    "share", "WebcastSocialMessage" -> {
+                        val (uniqueId, nickname) = getUserInfo(data)
+                        scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
                     }
                     "connect_success", "roomUser" -> {
                         if (!isConnectCallbackTriggered) {
@@ -301,16 +320,8 @@ class TikTokLiveManager(
                 arr.forEach { el ->
                     if (!el.isJsonObject) return@forEach
                     val obj = el.asJsonObject
-                    val msgId = obj["id"]?.asString
-                        ?: obj["msgId"]?.asString
-                        ?: obj["msg_id"]?.asString
-                        ?: ""
-                    if (msgId.isNotEmpty() && msgId in lastChatIds) return@forEach
-                    if (msgId.isNotEmpty()) lastChatIds.add(msgId)
-                    if (lastChatIds.size > 200) {
-                        val keep = lastChatIds.toList().takeLast(100)
-                        lastChatIds.clear(); lastChatIds.addAll(keep)
-                    }
+                    if (!shouldProcessMessage(obj)) return@forEach
+                    
                     val chat = buildChat(obj) ?: return@forEach
                     if (System.currentTimeMillis() - connectTime < 5000) return@forEach
                     scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
@@ -397,5 +408,92 @@ class TikTokLiveManager(
         commandConfig.queuePrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.QUEUE to null }
 
         return TikTokChat.CommandType.NONE to null
+    }
+
+    private fun shouldProcessMessage(data: JsonObject): Boolean {
+        val msgId = data["id"]?.asString
+            ?: data["msgId"]?.asString
+            ?: data["msg_id"]?.asString
+            ?: data["common"]?.asJsonObject?.get("msgId")?.asString
+            ?: data["common"]?.asJsonObject?.get("msg_id")?.asString
+            ?: ""
+        
+        if (msgId.isEmpty()) return true // No ID, assume not duplicate
+
+        if (msgId in lastChatIds) return false
+        
+        lastChatIds.add(msgId)
+        if (lastChatIds.size > 300) {
+            val keep = lastChatIds.toList().takeLast(150)
+            lastChatIds.clear()
+            lastChatIds.addAll(keep)
+        }
+        return true
+    }
+
+    private fun extractGiftName(data: JsonObject): String {
+        // 1. Check in giftDetails (Found in log!)
+        data["giftDetails"]?.asJsonObject?.let { gd ->
+            gd["giftName"]?.asString?.let { return it }
+        }
+
+        // 2. Direct fields
+        data["giftName"]?.asString?.let { return it }
+        data["gift_name"]?.asString?.let { return it }
+
+        // 3. Nested in gift object
+        data["gift"]?.asJsonObject?.let { g ->
+            g["name"]?.asString?.let { return it }
+            g["describe"]?.asString?.let { return it }
+        }
+
+        // 3. Fallback from describe string (misal: "user gifted the host 1 Rose")
+        data["describe"]?.asString?.let { desc ->
+            if (desc.contains("gifted the host")) {
+                val parts = desc.split("gifted the host")
+                if (parts.size > 1) {
+                    // Ambil bagian setelah "gifted the host" (misal: "1 Rose")
+                    val giftPart = parts[1].trim()
+                    // Hilangkan angka di depan jika ada (misal: "1 Rose" -> "Rose")
+                    return giftPart.replace(Regex("^\\d+\\s+"), "")
+                }
+            }
+        }
+
+        return "Gift"
+    }
+
+    private fun extractGiftCount(data: JsonObject): Int {
+        return data["repeatCount"]?.asInt
+            ?: data["repeat_count"]?.asInt
+            ?: data["comboCount"]?.asInt
+            ?: 1
+    }
+
+    private fun extractGiftIcon(data: JsonObject): String? {
+        // 1. Check in giftDetails -> icon or giftImage (Found in log!)
+        data["giftDetails"]?.asJsonObject?.let { gd ->
+            val iconObj = gd["icon"]?.asJsonObject ?: gd["giftImage"]?.asJsonObject
+            iconObj?.get("url")?.asJsonArray?.let { list ->
+                if (list.size() > 0) return list[0].asString
+            }
+        }
+
+        // 2. Direct fields
+        data["giftIcon"]?.asString?.let { return it }
+        data["gift_icon"]?.asString?.let { return it }
+
+        // 3. Nested in gift object
+        data["gift"]?.asJsonObject?.let { g ->
+            val img = g["image"]?.asJsonObject ?: g["icon"]?.asJsonObject
+            img?.get("url_list")?.asJsonArray?.let { list ->
+                if (list.size() > 0) return list[0].asString
+            }
+        }
+        
+        // 3. Try to find in profilePicture as absolute fallback (not recommended but for debug)
+        // data["user"]?.asJsonObject?.get("profilePicture")?.asJsonObject...
+        
+        return null
     }
 }
