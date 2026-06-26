@@ -1,5 +1,17 @@
 # Changelog - YTTikTokPlayer
 
+## [8.7.0] - 2025-07-16
+
+### 🌐 Peningkatan Custom Overlay
+- **Hybrid Hiding Logic**: Mengganti sistem `View.GONE` menjadi `alpha = 0f` saat autohide. Hal ini mencegah sistem Android menangguhkan (*suspend*) proses JavaScript di WebView, memastikan notifikasi Saweria/Sociabuzz tetap terdeteksi 100% di background.
+- **Instant WebView Wake-up**: Menambahkan pemanggilan `onResume()` saat overlay muncul kembali untuk memastikan performa rendering langsung maksimal tanpa delay.
+- **Hot-Reload URL**: Perubahan URL di menu pengaturan kini langsung diterapkan secara real-time pada overlay yang sedang aktif tanpa perlu restart widget.
+- **Stability Fix**: Memperbaiki konflik komunikasi JavaScript Bridge saat menggunakan lebih dari satu overlay dari domain yang sama.
+
+### 🐞 Bug Fixes
+- Memperbaiki masalah overlay yang sering "mogok" atau tidak mau muncul kembali setelah tersembunyi lama.
+- Memperbaiki bug dimana video/audio di dalam WebView sering terhenti otomatis oleh sistem saat status GONE.
+
 ## [8.6.0] - 2025-07-15
 
 ### 🌐 Fitur Baru: Custom Overlay (Web-Based)

@@ -1,6 +1,6 @@
 # Update Notes - Custom Overlay System
 
-Update 8.6.0 memperkenalkan sistem **Custom Overlay** yang fleksibel, memungkinkan pengguna untuk menambahkan widget pihak ketiga (seperti alert donasi) langsung ke dalam tampilan overlay.
+Update 8.7.0 memperkenalkan sistem **Custom Overlay** yang fleksibel, memungkinkan pengguna untuk menambahkan widget pihak ketiga (seperti alert donasi) langsung ke dalam tampilan overlay.
 
 ## Fitur Utama
 
@@ -11,9 +11,9 @@ Update 8.6.0 memperkenalkan sistem **Custom Overlay** yang fleksibel, memungkink
 
 ### 2. Logika "Smart Hide" (Autohide)
 Fitur ini didesain khusus agar layar tetap bersih saat tidak ada aktivitas:
-- **Automatic Sleep**: Menyembunyikan overlay (`View.GONE`) jika tidak ada aktivitas media atau perubahan visual dalam durasi tertentu.
-- **Instant Wake-up**: Mengawasi perubahan DOM dan audio di dalam WebView. Begitu notifikasi muncul di web, overlay akan langsung tampil kembali secara otomatis.
-- **Resource Efficient**: Mengurangi beban render sistem saat overlay dalam kondisi tersembunyi.
+- **Persistent Background Process**: Menggunakan teknik transparansi (`alpha = 0f`) alih-alih menyembunyikan total (`GONE`). Ini menjamin WebView tetap aktif menjalankan skrip deteksi notifikasi di background.
+- **Instant Wake-up**: Mengawasi perubahan DOM dan audio di dalam WebView menggunakan *Mutation Observer*. Begitu ada aktivitas (seperti notifikasi Saweria baru), overlay akan langsung tampil kembali secara instan.
+- **Auto Media Check**: Sistem akan terus memantau apakah ada media (audio/video) yang sedang diputar sebelum memutuskan untuk bersembunyi kembali.
 
 ### 3. Real-time Visual Adjuster
 Kamu bisa mengatur tampilan overlay tanpa harus bolak-balik ke menu pengaturan:
