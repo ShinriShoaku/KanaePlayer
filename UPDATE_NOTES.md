@@ -1,6 +1,20 @@
-# Update Notes - Custom Overlay System
+# Update Notes - YTTikTokPlayer
 
-Update 8.7.0 memperkenalkan sistem **Custom Overlay** yang fleksibel, memungkinkan pengguna untuk menambahkan widget pihak ketiga (seperti alert donasi) langsung ke dalam tampilan overlay.
+## Update 8.8.2: Koneksi Stabil & Navigasi Cepat
+
+Update ini berfokus pada stabilitas koneksi TikTok Live melalui EulerStream dan kemudahan akses pengaturan overlay.
+
+### 1. Stabilitas Koneksi (EulerStream)
+- **Self-Healing Connection**: Jika koneksi internet terganggu, aplikasi kini secara otomatis mencoba menyambung kembali (*Auto-Retry*) hingga 5 kali sebelum beralih ke mode cadangan (HTTP Polling).
+- **Anti-Spam Delay**: Delay 5 detik saat awal koneksi untuk menyaring perintah lama yang menumpuk, memastikan antrian lagu tetap bersih saat Live baru dimulai.
+- **Live Debugging**: Semua kendala koneksi kini diinformasikan langsung melalui chat log di layar utama, sehingga kamu tahu persis jika ada masalah pada API Key atau Username.
+
+### 2. Navigasi Pengaturan "Long-Press"
+- Membuka pengaturan overlay kini jauh lebih cepat. Cukup **tekan lama** tombol overlay manapun di menu Bottom Sheet untuk langsung mengatur posisi, skala, dan fitur spesifik overlay tersebut tanpa navigasi yang rumit.
+
+---
+
+## Update 8.7.0: Custom Overlay System
 
 ## Fitur Utama
 

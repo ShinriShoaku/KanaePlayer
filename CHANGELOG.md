@@ -1,5 +1,26 @@
 # Changelog - YTTikTokPlayer
 
+## [8.8.2] - 2025-10-27
+
+### 🌐 EulerStream & TikTok Stability
+- **Auto-Reconnection System**: Menambahkan mekanisme *Retry* otomatis hingga 5 kali dengan jeda waktu meningkat (*Exponential Backoff*) jika koneksi WebSocket terputus secara mendadak.
+- **Enhanced Heartbeat**: Optimasi koneksi dengan `pingInterval` 30 detik untuk menjaga integritas socket dan mencegah *timeout* sepihak oleh ISP atau sistem Android.
+- **5s Smart Delay**: Sistem secara cerdas mengabaikan perintah musik (#req, #skip, dll) selama 5 detik pertama setelah terhubung untuk mencegah "banjir" lagu lama, namun tetap menampilkan chat tersebut di log sebagai informasi.
+- **System Live Log**: Pesan error koneksi, status penyambungan ulang, dan notifikasi sistem kini muncul langsung di Log Chat (Main UI) dengan ikon (ℹ️) untuk transparansi status koneksi.
+
+### ⚙️ UI & UX Enhancements
+- **Quick Access Settings**: Menambahkan fitur **Long-press** pada tombol toggle overlay di Bottom Sheet untuk masuk langsung ke pengaturan spesifik (Player, Queue, Chat, dll).
+- **Improved Positioning Engine**: Sinkronisasi posisi (X, Y) yang lebih presisi saat menggunakan mode geser (*drag*) dan penyimpanan otomatis yang lebih reliabel.
+
+### 🌐 Custom Overlay Improvements
+- **Resource Optimization**: Peningkatan penanganan memori pada Custom WebView Overlay untuk menjamin notifikasi donasi (Saweria/Sociabuzz) tetap responsif 24/7.
+- **Dynamic Scale Adjuster**: Perbaikan pada slider skala agar perubahan ukuran visual terasa lebih halus dan instan.
+
+### 🐞 Bug Fixes
+- Memperbaiki masalah *ghost connection* dimana koneksi lama tidak terputus sempurna saat berganti akun TikTok.
+- Memperbaiki bug status UI yang macet di "Connecting" saat terjadi kegagalan otentikasi API Key.
+- Perbaikan pada filter pesan duplikat agar tidak membuang pesan sistem yang penting.
+
 ## [8.7.0] - 2025-07-16
 
 ### 🌐 Peningkatan Custom Overlay

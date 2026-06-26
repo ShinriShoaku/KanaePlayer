@@ -6,37 +6,29 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.Button
 import android.view.WindowManager
+import android.os.Handler
+import android.os.Looper
 import kotlin.math.*
 
 /**
  * Unified touch handler for floating overlay windows managed by [WindowManager].
- *
- * Gestures on the root view:
- *  ① Single-finger drag   → moves the window (params.x / params.y)
- *  ② Two-finger pinch     → scales content (scaleX / scaleY) range 0.35×–4×
- *  ③ Two-finger rotate    → rotates content freely
- *  ④ Short tap            → dispatches click to an [ImageButton]/[Button] under
- *                           the finger, or calls [onSingleTap] if none found
- *
- * KEY FIX – rotation / scale clipping:
- *   WindowManager clips drawing to the window rectangle.  When the view is
- *   rotated or scaled, its visual corners extend beyond that rectangle and get
- *   clipped.  This class solves it by recomputing the **axis-aligned bounding
- *   box** of the transformed content after every pinch/rotate gesture and
- *   updating params.width / params.height + re-centering params.x / params.y
- *   so the visual center stays fixed on screen.
- *
- * Usage:
- *   val helper = OverlayGestureHelper(rootView, params, wm) { toggleExpand() }
- *   rootView.setOnTouchListener(helper)
  */
 class OverlayGestureHelper(
     private val rootView: View,
     private val params: WindowManager.LayoutParams,
     private val wm: WindowManager,
     private val onSingleTap: (() -> Unit)? = null,
+    private val onLongPress: (() -> Unit)? = null,
     var onInteraction: (() -> Unit)? = null
 ) : View.OnTouchListener {
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val longPressRunnable = Runnable {
+        if (!hasMoved && !isMultiTouch) {
+            isLongPressTriggered = true
+            onLongPress?.invoke()
+        }
+    }
 
     // ── drag state ────────────────────────────────────────────────────
     private var initX    = 0;   private var initY    = 0
@@ -45,6 +37,7 @@ class OverlayGestureHelper(
     // ── multi-touch state ─────────────────────────────────────────────
     private var isMultiTouch   = false
     private var hasMoved       = false
+    private var isLongPressTriggered = false
     private var lastPinchDist  = 0f
     private var lastPinchAngle = 0f
     private var downTime       = 0L
@@ -53,175 +46,152 @@ class OverlayGestureHelper(
     var currentScale    = 1f
     var currentRotation = 0f
 
-    /**
-     * Original (unscaled, unrotated) content size, captured on first gesture.
-     * Once set it never changes — we always compute bounds from these values.
-     */
     private var origW = 0
     private var origH = 0
 
-    /** When true all touch input is ignored (canvas locked mode). */
     var locked = false
 
-    // ─────────────────────────────────────────────────────────────────
     override fun onTouch(v: View, event: MotionEvent): Boolean {
         if (locked) return false
         onInteraction?.invoke()
 
-        when (event.actionMasked) {
+        val x = event.x
+        val y = event.y
 
-            // ── finger down ───────────────────────────────────────────
+        when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 initX    = params.x;   initY    = params.y
                 rawDownX = event.rawX; rawDownY = event.rawY
                 isMultiTouch = false;  hasMoved = false
+                isLongPressTriggered = false
                 downTime = System.currentTimeMillis()
-                // Capture original size lazily (view must be laid-out first)
                 captureOrigSize()
+                
+                handler.postDelayed(longPressRunnable, 600)
                 return true
             }
 
-            // ── second finger touches ─────────────────────────────────
             MotionEvent.ACTION_POINTER_DOWN -> {
                 isMultiTouch   = true
+                handler.removeCallbacks(longPressRunnable)
                 lastPinchDist  = pinchDist(event)
                 lastPinchAngle = pinchAngle(event)
                 captureOrigSize()
             }
 
-            // ── movement ──────────────────────────────────────────────
             MotionEvent.ACTION_MOVE -> {
-                if (!isMultiTouch) {
-                    // ── single-finger drag ────────────────────────────
-                    val dx = event.rawX - rawDownX
-                    val dy = event.rawY - rawDownY
-                    if (abs(dx) > 5f || abs(dy) > 5f) hasMoved = true
+                val dx = event.rawX - rawDownX
+                val dy = event.rawY - rawDownY
+                
+                if (abs(dx) > 10f || abs(dy) > 10f) {
+                    hasMoved = true
+                    handler.removeCallbacks(longPressRunnable)
+                }
+
+                if (!isMultiTouch && !isLongPressTriggered) {
                     params.x = initX + dx.toInt()
                     params.y = initY + dy.toInt()
                     tryUpdate()
                 }
             }
 
-            // ── second finger lifted ──────────────────────────────────
-            MotionEvent.ACTION_POINTER_UP -> {
-                if (event.pointerCount <= 2) {
-                    isMultiTouch = false
-                    // Re-anchor single-touch drag so view doesn't jump
-                    val idx   = if (event.actionIndex == 0) 1 else 0
-                    rawDownX  = event.getX(idx) + rootView.left
-                    rawDownY  = event.getY(idx) + rootView.top
-                    initX     = params.x
-                    initY     = params.y
-                }
-            }
-
-            // ── finger up / cancelled ─────────────────────────────────
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                handler.removeCallbacks(longPressRunnable)
+                onInteraction?.invoke()
+                
                 val elapsed = System.currentTimeMillis() - downTime
-                if (!hasMoved && elapsed < 350L &&
-                    event.actionMasked == MotionEvent.ACTION_UP) {
-                    // Short tap → try to click a button, else call onSingleTap
-                    val btn = findButtonAt(rootView as? ViewGroup, event.x, event.y)
-                    if (btn != null) btn.performClick()
-                    else onSingleTap?.invoke()
+                if (!hasMoved && !isLongPressTriggered && event.actionMasked == MotionEvent.ACTION_UP) {
+                    // Try to click buttons first
+                    val btn = findButtonAt(rootView as? ViewGroup, x, y)
+                    if (btn != null) {
+                        btn.performClick()
+                    } else if (elapsed < 400) {
+                        // It was a short tap and no button was hit.
+                        // Pass the touch to the view BELOW (the WebView).
+                        // Since we consumed ACTION_DOWN, we must manually dispatch.
+                        dispatchTapToUnderlying(v, event)
+                        onSingleTap?.invoke()
+                    }
                 }
             }
         }
         return true
     }
 
-    // ── Bounding-box update ───────────────────────────────────────────
-
     /**
-     * Computes the axis-aligned bounding box of the content rectangle after
-     * applying [currentScale] and [currentRotation], then updates
-     * [params].width / height and re-centers [params].x / y so the visual
-     * center of the overlay stays at the same screen position.
-     *
-     *  For a rectangle W×H rotated by θ and scaled by S:
-     *    scaledW = W·S,  scaledH = H·S
-     *    bboxW   = scaledW·|cos θ| + scaledH·|sin θ|
-     *    bboxH   = scaledW·|sin θ| + scaledH·|cos θ|
+     * Pass the click event to the sibling view behind this gesture layer.
+     * In our layout, the WebView is the first child, and this layer is the second.
      */
+    private fun dispatchTapToUnderlying(gestureLayer: View, originalUp: MotionEvent) {
+        val parent = gestureLayer.parent as? ViewGroup ?: return
+        // The view behind us (usually at index 0)
+        val target = parent.getChildAt(0) ?: return
+        if (target == gestureLayer) return
+
+        // Create a sequence of DOWN and UP at the same coordinate
+        val down = MotionEvent.obtain(
+            originalUp.downTime, originalUp.eventTime,
+            MotionEvent.ACTION_DOWN, originalUp.x, originalUp.y, 0
+        )
+        val up = MotionEvent.obtain(originalUp)
+
+        target.dispatchTouchEvent(down)
+        target.dispatchTouchEvent(up)
+
+        down.recycle()
+        up.recycle()
+    }
+
     private fun updateWindowBounds() {
         if (origW <= 0 || origH <= 0) return
-
         val scaledW = origW * currentScale
         val scaledH = origH * currentScale
-
         val rad  = Math.toRadians(currentRotation.toDouble())
         val cosA = abs(cos(rad)).toFloat()
         val sinA = abs(sin(rad)).toFloat()
-
-        // Add a small margin so the rotated corners are never exactly on the edge
         val margin = 12
         val newW = (scaledW * cosA + scaledH * sinA).toInt() + margin
         val newH = (scaledW * sinA + scaledH * cosA).toInt() + margin
-
-        // Current window center (before resize)
         val cx = params.x + params.width  / 2
         val cy = params.y + params.height / 2
-
         params.width  = newW
         params.height = newH
-
-        // Re-center: move top-left so center stays at (cx, cy)
         params.x = (cx - newW / 2).coerceAtLeast(0)
         params.y = (cy - newH / 2).coerceAtLeast(0)
-
         tryUpdate()
     }
 
-    /** Capture original unscaled dimensions from the laid-out view (once). */
     private fun captureOrigSize() {
         if (origW > 0 || rootView.width == 0) return
         origW = (rootView.width  / currentScale).toInt().coerceAtLeast(1)
         origH = (rootView.height / currentScale).toInt().coerceAtLeast(1)
     }
 
-    /**
-     * Updates the base dimensions when content size changes dynamically.
-     * This ensures scaling/rotation remains accurate while keeping the
-     * user's current zoom level (currentScale).
-     */
     fun updateBaseSize(wPx: Int, hPx: Int) {
-        // If the change is negligible, ignore it to prevent flickering
         if (abs(origW - wPx) < 5 && abs(origH - hPx) < 5) return
-
         origW = wPx
         origH = hPx
-        
-        // Refresh the window bounds to accommodate new content size 
-        // while maintaining the user's rotation and scale.
-        // We use a specialized version for dynamic size updates to avoid jumping
         updateWindowBoundsNoCenter()
     }
 
     private fun updateWindowBoundsNoCenter() {
         if (origW <= 0 || origH <= 0) return
-
         val scaledW = origW * currentScale
         val scaledH = origH * currentScale
-
         val rad  = Math.toRadians(currentRotation.toDouble())
         val cosA = abs(cos(rad)).toFloat()
         val sinA = abs(sin(rad)).toFloat()
-
         val margin = 12
         val newW = (scaledW * cosA + scaledH * sinA).toInt() + margin
         val newH = (scaledW * sinA + scaledH * cosA).toInt() + margin
-
         params.width  = newW
         params.height = newH
-
         tryUpdate()
     }
 
     private fun tryUpdate() {
         try { wm.updateViewLayout(rootView, params) } catch (_: Exception) { }
     }
-
-    // ── Math helpers ──────────────────────────────────────────────────
 
     private fun pinchDist(e: MotionEvent): Float {
         val dx = e.getX(0) - e.getX(1)
@@ -230,17 +200,8 @@ class OverlayGestureHelper(
     }
 
     private fun pinchAngle(e: MotionEvent): Float =
-        Math.toDegrees(
-            atan2(
-                (e.getY(0) - e.getY(1)).toDouble(),
-                (e.getX(0) - e.getX(1)).toDouble()
-            )
-        ).toFloat()
+        Math.toDegrees(atan2((e.getY(0) - e.getY(1)).toDouble(), (e.getX(0) - e.getX(1)).toDouble())).toFloat()
 
-    /**
-     * Recursively searches [group] for an [ImageButton] or [Button] whose
-     * layout bounds contain ([x], [y]) in the group's coordinate space.
-     */
     private fun findButtonAt(group: ViewGroup?, x: Float, y: Float): View? {
         group ?: return null
         for (i in 0 until group.childCount) {
