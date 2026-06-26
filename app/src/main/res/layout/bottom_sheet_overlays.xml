@@ -222,6 +222,29 @@
                             android:textStyle="bold"
                             android:layout_marginTop="8dp" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnCustomOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_purple"
+                            android:src="@android:drawable/ic_menu_share"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Custom"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
 
@@ -582,6 +605,14 @@
                                 android:singleLine="true" />
                         </LinearLayout>
                     </LinearLayout>
+
+                    <CheckBox
+                        android:id="@+id/cbUseTiktokGiftIcon"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Use TikTok Gift Icon (Priority)"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginTop="8dp" />
 
                     <TextView
                         android:id="@+id/tvNotifDurationLabel"
