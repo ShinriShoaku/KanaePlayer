@@ -1,6 +1,6 @@
 # Update Notes - KanaePlayer
 
-## Update 8.8.2: Koneksi Stabil & Navigasi Cepat
+## Update 8.8.3: Koneksi Stabil & Navigasi Cepat
 
 Update ini berfokus pada stabilitas koneksi TikTok Live melalui EulerStream dan kemudahan akses pengaturan overlay.
 
