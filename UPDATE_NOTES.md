@@ -1,5 +1,18 @@
 # Update Notes - KanaePlayer
 
+## Update 8.8.4: Perbaikan Layout & Tampilan Bersih
+
+Update ini fokus pada perbaikan visual dan kenyamanan antarmuka pengguna.
+
+### 1. Perbaikan Header Settings
+- **Safe Area Support**: Menambahkan dukungan `fitsSystemWindows` pada menu Custom Overlay Settings agar bagian atas layar tidak tertutup oleh status bar atau notch, terutama pada Custom ROM.
+- **Modern Layout**: Menggunakan `ConstraintLayout` untuk header agar elemen teks dan tombol tetap presisi di berbagai ukuran layar.
+
+### 2. Tampilan Full Custom
+- **Remove Default Action Bar**: Menghapus bar judul bawaan sistem yang duplikat. Kini aplikasi menggunakan tema `NoActionBar` sehingga seluruh area layar digunakan secara maksimal oleh desain kustom aplikasi.
+
+---
+
 ## Update 8.8.3: Koneksi Stabil & Navigasi Cepat
 
 Update ini berfokus pada stabilitas koneksi TikTok Live melalui EulerStream dan kemudahan akses pengaturan overlay.

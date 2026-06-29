@@ -1,5 +1,12 @@
 # Changelog - KanaePlayer
 
+## [8.8.4] - 2025-10-30
+
+### ⚙️ UI & UX Fixes
+- **Layout Optimization (Custom Overlay Settings)**: Perbaikan masalah header yang tertutup pada perangkat tertentu atau Custom ROM dengan menerapkan `fitsSystemWindows` dan optimasi `ConstraintLayout`.
+- **Enhanced Scrolling**: Mengganti `ScrollView` standar dengan `NestedScrollView` untuk integrasi yang lebih baik dengan komponen Material Design.
+- **Title Bar Removal**: Menghapus Action Bar bawaan yang duplikat untuk memberikan ruang layar yang lebih luas dan tampilan yang lebih bersih, beralih sepenuhnya ke header kustom.
+
 ## [8.8.2] - 2025-10-27
 
 ### 🌐 EulerStream & TikTok Stability
