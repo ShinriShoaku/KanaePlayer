@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="240dp"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="#AA000000"
+    android:padding="8dp"
+    android:gravity="center_vertical">
+
+    <com.google.android.material.imageview.ShapeableImageView
+        android:id="@+id/join_user_image"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:scaleType="centerCrop"
+        android:src="@android:drawable/ic_menu_gallery"
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.Circle" />
+
+    <TextView
+        android:id="@+id/join_user_text"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:text="User joined"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:ellipsize="end"
+        android:maxLines="1" />
+
+    <View
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:background="#FFDD00"
+        android:layout_marginStart="8dp" />
+
+</LinearLayout>

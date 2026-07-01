@@ -1,6 +1,7 @@
 package ame.project.kanae.overlay
 
 import android.content.Context
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.util.Log
 import android.media.MediaPlayer
@@ -15,8 +16,18 @@ import android.view.WindowManager
 import android.widget.ImageView
 import android.widget.TextView
 import ame.project.kanae.R
+import ame.project.kanae.model.CustomTheme
 import com.bumptech.glide.Glide
 
+/**
+ * NOTE: Notif overlay intentionally does NOT use [PunchThroughLayout].
+ * PunchThroughLayout is only for player/queue/lyrics/chat overlays.
+ * The notif root layout uses `android:elevation`, and combining that with
+ * PunchThroughLayout's `draw()` override (which uses `canvas.saveLayer` +
+ * PorterDuff.CLEAR to punch a transparent hole) triggered a native rendering
+ * recursion crash (infinite loop in ViewGroup.resetResolvedLayoutDirection)
+ * on attach. So here `rootView` is attached to the WindowManager directly.
+ */
 class TikTokNotificationOverlayManager(private val context: Context) {
     private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var rootView: View? = null
@@ -40,15 +51,51 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var notificationVolume: Float = 1.0f
     private var useTiktokGiftIcon: Boolean = true
+    private var currentTheme: CustomTheme = CustomTheme()
 
     var isShowing = false
-    private set
+        private set
+
+    fun applyTheme(theme: CustomTheme) {
+        this.currentTheme = theme
+        val view = rootView ?: return
+        val bgAlpha = theme.alpha
+
+        theme.bgPrimary?.let { color ->
+            val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
+            view.background?.let { bg ->
+                val wrapped = androidx.core.graphics.drawable.DrawableCompat.wrap(bg.mutate())
+                androidx.core.graphics.drawable.DrawableCompat.setTint(wrapped, colorWithAlpha)
+                view.background = wrapped
+            } ?: run {
+                view.setBackgroundColor(colorWithAlpha)
+            }
+        } ?: run {
+            view.background?.mutate()?.alpha = bgAlpha
+        }
+
+        theme.textPrimary?.let { color ->
+            tvUser?.setTextColor(color)
+            tvAction?.setTextColor(color)
+        }
+    }
+
+    /**
+     * Visual "punch through" mode is not supported for the notif overlay
+     * (see class doc). Kept as a no-op so callers (e.g. PlayerForegroundService's
+     * generic `updateVisualPunchEnabled("notif", enabled)`) don't need special-casing.
+     */
+    fun setVisualPunchEnabled(enabled: Boolean) {
+        if (enabled) {
+            Log.w("NotifOverlay", "Visual punch is not supported for the notif overlay; ignoring.")
+        }
+    }
 
     fun setVolume(volume: Float) {
         notificationVolume = volume
         val actualVol = if (volume > 1.0f) 1.0f else volume
         mediaPlayer?.setVolume(actualVol, actualVol)
-        
+
         if (volume > 1.0f) {
             val gain = ((volume - 1.0f) * 2000).toInt() // Max +2000mB (20dB) gain at 200%
             applyGain(gain)
@@ -69,6 +116,7 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         }
     }
 
+    @Synchronized
     fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null) {
         if (rootView == null) {
             setupView()
@@ -100,11 +148,11 @@ class TikTokNotificationOverlayManager(private val context: Context) {
                     mediaPlayer?.stop()
                     mediaPlayer?.release()
                     loudnessEnhancer?.release()
-                    
+
                     mediaPlayer = MediaPlayer.create(context, it)
                     val actualVol = if (notificationVolume > 1.0f) 1.0f else notificationVolume
                     mediaPlayer?.setVolume(actualVol, actualVol)
-                    
+
                     val sessionId = mediaPlayer?.audioSessionId ?: 0
                     if (sessionId != 0) {
                         loudnessEnhancer = LoudnessEnhancer(sessionId)
@@ -130,10 +178,17 @@ class TikTokNotificationOverlayManager(private val context: Context) {
 
         if (!isShowing) {
             try {
+                // Defensive guard: if rootView somehow still has a stale parent
+                // (e.g. a previous removeView failed/raced), detach it first,
+                // to avoid ever attaching a view that's already parented.
+                val currentParent = rootView?.parent
+                if (currentParent is android.view.ViewGroup) {
+                    currentParent.removeView(rootView)
+                }
                 wm.addView(rootView, layoutParams)
                 isShowing = true
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("NotifOverlay", "Failed to attach notif overlay", e)
             }
         }
 
@@ -148,10 +203,10 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         if (rootView == null) setupView()
         val lp = layoutParams ?: return
         val view = rootView ?: return
-        
+
         lp.x = x
         lp.y = y
-        
+
         view.pivotX = 0f
         view.pivotY = 0f
         view.scaleX = scale
@@ -166,26 +221,29 @@ class TikTokNotificationOverlayManager(private val context: Context) {
             if (baseW > 0) View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             if (baseH > 0) View.MeasureSpec.makeMeasureSpec(baseH, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
-        
+
         val actualW = if (baseW > 0) baseW else view.measuredWidth
         val actualH = if (baseH > 0) baseH else view.measuredHeight
 
         lp.width = (actualW * scale).toInt()
         lp.height = (actualH * scale).toInt()
-        
+
         gestureHelper?.let {
             it.currentScale = scale
             it.updateBaseSize(actualW, actualH)
         }
-        
-        try { wm.updateViewLayout(rootView, lp) } catch (_: Exception) {}
+
+        try { wm.updateViewLayout(view, lp) } catch (_: Exception) {}
     }
 
     private fun setupView() {
-        rootView = LayoutInflater.from(context).inflate(R.layout.overlay_tiktok_notification, null)
+        val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
+        rootView = LayoutInflater.from(themed).inflate(R.layout.overlay_tiktok_notification, null)
         ivImage = rootView?.findViewById(R.id.tiktok_notif_image)
         tvUser = rootView?.findViewById(R.id.tiktok_notif_user)
         tvAction = rootView?.findViewById(R.id.tiktok_notif_action)
+
+        applyTheme(currentTheme)
 
         layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,

@@ -10,15 +10,26 @@ import com.google.gson.Gson
 import ame.project.kanae.MainActivity
 import ame.project.kanae.model.Song
 import ame.project.kanae.model.TikTokChat
+import ame.project.kanae.model.CustomTheme
 import ame.project.kanae.overlay.ChatOverlayManager
+import ame.project.kanae.overlay.CustomOverlayManager
 import ame.project.kanae.overlay.LyricsOverlayManager
 import ame.project.kanae.overlay.OverlayManager
 import ame.project.kanae.overlay.QueueOverlayManager
 import ame.project.kanae.overlay.TikTokNotificationOverlayManager
+import ame.project.kanae.overlay.TikTokJoinOverlayManager
+import ame.project.kanae.overlay.TikTokLikeOverlayManager
 import ame.project.kanae.player.AudioPlayer
 import ame.project.kanae.player.YtDlpHelper
 import ame.project.kanae.tiktok.TikTokLiveManager
 import android.view.WindowManager
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import android.media.AudioAttributes
+import android.media.MediaPlayer
+import android.media.audiofx.LoudnessEnhancer
+import java.io.File
+import java.util.Locale
 import kotlinx.coroutines.*
 
 class PlayerForegroundService : Service() {
@@ -51,6 +62,9 @@ class PlayerForegroundService : Service() {
     private lateinit var lyricsOverlayManager: LyricsOverlayManager
     private lateinit var chatOverlayManager: ChatOverlayManager
     private lateinit var notifOverlayManager: TikTokNotificationOverlayManager
+    private lateinit var joinOverlayManager: TikTokJoinOverlayManager
+    private lateinit var likeOverlayManager: TikTokLikeOverlayManager
+    private lateinit var customOverlayManager: CustomOverlayManager
 
     private val queue       = ArrayDeque<Song>()
     private var currentSong: Song?  = null
@@ -59,9 +73,25 @@ class PlayerForegroundService : Service() {
     private var positionMs  = 0L
     private var durationMs  = 0L
     private var shuffleMode = false
+    private var musicVolume = 1.0f
+    private var notifVolume = 1.0f
     private var tiktokConnected = false
     private var tiktokConnecting = false
+    private var tiktokConnectTime = 0L
     private var requestLimit  = 3
+    private var useTiktokGiftIcon = true
+    private var joinEnabled = true
+    private var likeEnabled = true
+    private var notifEnabled = true
+
+    private var tts: TextToSpeech? = null
+    private var ttsEnabled: Boolean = false
+    private var ttsVolume: Float = 1.0f
+    private var ttsMaxLength: Int = 100
+    private var isTtsSpeaking: Boolean = false
+    private var ttsMediaPlayer: MediaPlayer? = null
+    private var ttsLoudnessEnhancer: LoudnessEnhancer? = null
+    private val ttsFile by lazy { File(cacheDir, "tts_cache.wav") }
 
     private var apiKey        = ""
     private var tiktokUsername = ""
@@ -76,6 +106,8 @@ class PlayerForegroundService : Service() {
 
     private val prefs by lazy { getSharedPreferences(PREFS_NAME, MODE_PRIVATE) }
     private val gson  = Gson()
+
+    fun getCustomOverlayManager() = customOverlayManager
 
     inner class LocalBinder : Binder() {
         fun getService(): PlayerForegroundService = this@PlayerForegroundService
@@ -119,6 +151,7 @@ class PlayerForegroundService : Service() {
                 broadcastState()
             }
             p.init()
+            p.setVolume(musicVolume)
         }
 
         YtDlpHelper.initNpe()
@@ -137,14 +170,20 @@ class PlayerForegroundService : Service() {
             onPlayPause = ::togglePlayPause,
             onSkip      = ::playNext,
             onClose     = { broadcastState() }
-        )
+        ).apply {
+            updateStyle(prefs.getInt("canvas_player_layout", ame.project.kanae.R.layout.overlay_layout))
+        }
 
         queueOverlayManager = QueueOverlayManager(
             context  = this,
             onPlay   = { pos -> queue.elementAtOrNull(pos)?.let { playSong(it) } },
             onRemove = { pos -> removeFromQueue(pos) },
             onClose  = { broadcastState() }
-        )
+        ).apply {
+            val container = prefs.getInt("canvas_queue_layout", ame.project.kanae.R.layout.overlay_queue_layout)
+            val item = prefs.getInt("canvas_queue_item_layout", ame.project.kanae.R.layout.item_queue)
+            updateStyle(container, item)
+        }
 
         lyricsOverlayManager = LyricsOverlayManager(
             context       = this,
@@ -162,6 +201,10 @@ class PlayerForegroundService : Service() {
             setTransparent(prefs.getBoolean("chat_transparent", true))
             setOverlayWidth(prefs.getInt("chat_width", 300))
             setDisplayDuration(prefs.getInt("chat_duration", 6))
+            updateStyle(
+                prefs.getInt("canvas_chat_layout", ame.project.kanae.R.layout.item_chat_bubble),
+                prefs.getInt("canvas_chat_bg", ame.project.kanae.R.drawable.bg_chat_bubble)
+            )
         }
 
         notifOverlayManager = TikTokNotificationOverlayManager(this).apply {
@@ -172,12 +215,37 @@ class PlayerForegroundService : Service() {
                 prefs.getString("notif_gift_aud", null),
                 prefs.getInt("notif_duration", 5)
             )
+            setUseTiktokGiftIcon(prefs.getBoolean("use_tiktok_gift_icon", true))
+            setVolume(notifVolume)
+            setVisualPunchEnabled(prefs.getBoolean("notif_visual_punch", false))
         }
 
-        // Apply saved configurations to Queue Overlay
+        joinOverlayManager = TikTokJoinOverlayManager(this).apply {
+            updateStyle(prefs.getInt("canvas_join_layout", ame.project.kanae.R.layout.overlay_tiktok_join))
+        }
+        likeOverlayManager = TikTokLikeOverlayManager(this).apply {
+            updateStyle(prefs.getInt("canvas_like_layout", ame.project.kanae.R.layout.overlay_tiktok_like))
+        }
+
+        customOverlayManager = CustomOverlayManager(this, serviceScope)
+
+        updateCustomThemes()
+
+        // Apply saved configurations to overlays
+        overlayManager.setVisualPunchEnabled(prefs.getBoolean("player_visual_punch", false))
+        queueOverlayManager.setVisualPunchEnabled(prefs.getBoolean("queue_visual_punch", false))
+        lyricsOverlayManager.setVisualPunchEnabled(prefs.getBoolean("lyrics_visual_punch", false))
+        chatOverlayManager.setVisualPunchEnabled(prefs.getBoolean("chat_visual_punch", false))
+
         val qAutoHide = prefs.getBoolean("queue_auto_hide", false)
         val qDuration = prefs.getInt("queue_duration", 10)
         queueOverlayManager.setAutoHide(qAutoHide, qDuration)
+
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                tts?.setLanguage(Locale.forLanguageTag("id-ID"))
+            }
+        }
 
         tiktokManager = buildTikTokManager()
 
@@ -209,12 +277,15 @@ class PlayerForegroundService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        tts?.stop()
+        tts?.shutdown()
         tiktokManager.disconnect()
         audioPlayer.release()
         overlayManager.hide()
         queueOverlayManager.hide()
         lyricsOverlayManager.hide()
         chatOverlayManager.hide()
+        customOverlayManager.hideAll()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -225,6 +296,17 @@ class PlayerForegroundService : Service() {
         tiktokUsername = prefs.getString("tiktok_username", "")   ?: ""
         shuffleMode    = prefs.getBoolean("shuffle_mode", false)
         requestLimit   = prefs.getInt("request_limit", 3)
+        musicVolume    = prefs.getFloat("music_volume", 1.0f)
+        notifVolume    = prefs.getFloat("notif_volume", 1.0f)
+        useTiktokGiftIcon = prefs.getBoolean("use_tiktok_gift_icon", true)
+        joinEnabled    = prefs.getBoolean("join_enabled", true)
+        likeEnabled    = prefs.getBoolean("like_enabled", true)
+        notifEnabled   = prefs.getBoolean("notif_enabled", true)
+
+        ttsEnabled = prefs.getBoolean("chat_tts_enabled", false)
+        ttsVolume = prefs.getFloat("chat_tts_volume", 1.0f)
+        ttsMaxLength = prefs.getInt("chat_tts_max_length", 100)
+
         canvasPlayerX  = prefs.getInt("canvas_px", 16)
         canvasPlayerY  = prefs.getInt("canvas_py", 100)
         canvasQueueX   = prefs.getInt("canvas_qx", 16)
@@ -279,10 +361,11 @@ class PlayerForegroundService : Service() {
                 .apply()
         }
 
-        tiktokManager.disconnect()
+        tiktokManager.release()
         tiktokManager = buildTikTokManager()
         if (this.tiktokUsername.isNotBlank() && this.apiKey.isNotBlank()) {
             tiktokConnecting = true
+            tiktokConnectTime = System.currentTimeMillis() + 3600000 // Future time to ignore everything until connected
             broadcastState()
             tiktokManager.connect()
         }
@@ -466,6 +549,13 @@ class PlayerForegroundService : Service() {
             chatOverlayManager.addChat(chat.nickname, chat.comment)
         }
 
+        if (System.currentTimeMillis() - tiktokConnectTime < 5000) {
+            Log.d(TAG, "[TikTok] Ignoring command from @${chat.uniqueId} (initial 5s delay)")
+            return
+        }
+
+        speak(chat.comment)
+
         val isAdmin = isAdmin(chat.uniqueId)
 
         when (chat.commandType) {
@@ -561,6 +651,16 @@ class PlayerForegroundService : Service() {
             lyricsOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 440)
         if (chatOverlayManager.isShowing)
             chatOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 800)
+        if (joinOverlayManager.isShowing) {
+            val jx = prefs.getInt("join_x", 100)
+            val jy = prefs.getInt("join_y", 200)
+            joinOverlayManager.setCanvasMode(locked = true, x = jx, y = jy)
+        }
+        if (likeOverlayManager.isShowing) {
+            val lx = prefs.getInt("like_x", 50)
+            val ly = prefs.getInt("like_y", 100)
+            likeOverlayManager.setCanvasMode(locked = true, x = lx, y = ly)
+        }
 
         broadcastState()
     }
@@ -574,6 +674,10 @@ class PlayerForegroundService : Service() {
             lyricsOverlayManager.setCanvasMode(locked = false)
         if (chatOverlayManager.isShowing)
             chatOverlayManager.setCanvasMode(locked = false)
+        if (joinOverlayManager.isShowing)
+            joinOverlayManager.setCanvasMode(locked = false)
+        if (likeOverlayManager.isShowing)
+            likeOverlayManager.setCanvasMode(locked = false)
         broadcastState()
     }
 
@@ -672,11 +776,120 @@ class PlayerForegroundService : Service() {
         chatOverlayManager.setDisplayDuration(seconds)
     }
 
+    fun updateChatStyle(layoutId: Int, bgId: Int) {
+        prefs.edit()
+            .putInt("canvas_chat_layout", layoutId)
+            .putInt("canvas_chat_bg", bgId)
+            .apply()
+        chatOverlayManager.updateStyle(layoutId, bgId)
+    }
+
+    fun updateJoinStyle(layoutId: Int) {
+        prefs.edit()
+            .putInt("canvas_join_layout", layoutId)
+            .apply()
+        joinOverlayManager.updateStyle(layoutId)
+    }
+
+    fun updateLikeStyle(layoutId: Int) {
+        prefs.edit()
+            .putInt("canvas_like_layout", layoutId)
+            .apply()
+        likeOverlayManager.updateStyle(layoutId)
+    }
+
+    fun updatePlayerStyle(layoutId: Int) {
+        prefs.edit()
+            .putInt("canvas_player_layout", layoutId)
+            .apply()
+        overlayManager.updateStyle(layoutId)
+    }
+
+    fun updateQueueStyle(containerId: Int, itemId: Int) {
+        prefs.edit()
+            .putInt("canvas_queue_layout", containerId)
+            .putInt("canvas_queue_item_layout", itemId)
+            .apply()
+        queueOverlayManager.updateStyle(containerId, itemId)
+    }
+
+    private fun loadTheme(category: String): CustomTheme {
+        val baseKey = "canvas_${category}_custom"
+        return CustomTheme(
+            bgPrimary = if (prefs.contains("${baseKey}_bg")) prefs.getInt("${baseKey}_bg", 0) else null,
+            bgSecondary = if (prefs.contains("${baseKey}_bg_sec")) prefs.getInt("${baseKey}_bg_sec", 0) else null,
+            textPrimary = if (prefs.contains("${baseKey}_text")) prefs.getInt("${baseKey}_text", 0) else null,
+            textSecondary = if (prefs.contains("${baseKey}_text_sec")) prefs.getInt("${baseKey}_text_sec", 0) else null,
+            alpha = prefs.getInt("${baseKey}_alpha", 255)
+        )
+    }
+
+    fun updateCustomThemes() {
+        overlayManager.applyTheme(loadTheme("player"))
+        queueOverlayManager.applyTheme(loadTheme("queue"))
+        lyricsOverlayManager.applyTheme(loadTheme("lyrics"))
+        chatOverlayManager.applyTheme(loadTheme("chat"))
+        notifOverlayManager.applyTheme(loadTheme("notif"))
+    }
+
+    fun updateTtsEnabled(enabled: Boolean) {
+        ttsEnabled = enabled
+        prefs.edit().putBoolean("chat_tts_enabled", enabled).apply()
+    }
+
+    fun updateTtsVolume(volume: Float) {
+        Log.d(TAG, "updateTtsVolume: $volume")
+        ttsVolume = volume
+        prefs.edit().putFloat("chat_tts_volume", volume).apply()
+    }
+
+    fun updateTtsMaxLength(length: Int) {
+        ttsMaxLength = length
+        prefs.edit().putInt("chat_tts_max_length", length).apply()
+    }
+
+    fun updateMusicVolume(volume: Float) {
+        musicVolume = volume
+        if (!isTtsSpeaking) {
+            audioPlayer.setVolume(volume)
+        } else {
+            audioPlayer.setVolume(volume * 0.15f)
+        }
+        prefs.edit().putFloat("music_volume", volume).apply()
+        broadcastState()
+    }
+
+    fun updateNotifVolume(volume: Float) {
+        notifVolume = volume
+        prefs.edit().putFloat("notif_volume", volume).apply()
+        notifOverlayManager.setVolume(volume)
+        broadcastState()
+    }
+
+    fun updateUseTiktokGiftIcon(enabled: Boolean) {
+        Log.d(TAG, "Setting UseTiktokGiftIcon changed to: $enabled")
+        useTiktokGiftIcon = enabled
+        prefs.edit().putBoolean("use_tiktok_gift_icon", enabled).apply()
+        notifOverlayManager.setUseTiktokGiftIcon(enabled)
+        broadcastState()
+    }
+
     fun updateNotifConfig(shareImg: String?, giftImg: String?, shareAud: String?, giftAud: String?, duration: Int, refreshType: String? = null) {
         notifOverlayManager.setConfig(shareImg, giftImg, shareAud, giftAud, duration)
         if (notifOverlayManager.isShowing || refreshType != null) {
             showNotifDummy(refreshType ?: "gift")
         }
+    }
+
+    fun toggleNotifOverlay() {
+        notifEnabled = !notifEnabled
+        prefs.edit().putBoolean("notif_enabled", notifEnabled).apply()
+        if (notifEnabled) {
+            showNotifDummy()
+        } else {
+            notifOverlayManager.hide()
+        }
+        broadcastState()
     }
 
     fun showChatDummy() {
@@ -700,8 +913,85 @@ class PlayerForegroundService : Service() {
         notifOverlayManager.hide()
     }
 
+    fun updateNotifEnabled(enabled: Boolean) {
+        notifEnabled = enabled
+        prefs.edit().putBoolean("notif_enabled", enabled).apply()
+        broadcastState()
+    }
+
+    fun hideJoinOverlay() {
+        joinOverlayManager.hide()
+    }
+
+    fun hideLikeOverlay() {
+        likeOverlayManager.hide()
+    }
+
+    fun updateVisualPunchEnabled(key: String, enabled: Boolean) {
+        prefs.edit().putBoolean("${key}_visual_punch", enabled).apply()
+        when (key) {
+            "player" -> overlayManager.setVisualPunchEnabled(enabled)
+            "queue"  -> queueOverlayManager.setVisualPunchEnabled(enabled)
+            "lyrics" -> lyricsOverlayManager.setVisualPunchEnabled(enabled)
+            "chat"   -> chatOverlayManager.setVisualPunchEnabled(enabled)
+            "notif"  -> notifOverlayManager.setVisualPunchEnabled(enabled)
+        }
+    }
+
     val chatOverlayVisible get() = chatOverlayManager.isShowing
     val notifOverlayVisible get() = notifOverlayManager.isShowing
+    val joinOverlayVisible get() = joinOverlayManager.isShowing
+    val likeOverlayVisible get() = likeOverlayManager.isShowing
+
+    fun toggleJoinOverlay() {
+        joinEnabled = !joinEnabled
+        prefs.edit().putBoolean("join_enabled", joinEnabled).apply()
+        if (joinEnabled) {
+            showJoinDummy()
+        } else {
+            joinOverlayManager.hide()
+        }
+        broadcastState()
+    }
+
+    fun toggleLikeOverlay() {
+        likeEnabled = !likeEnabled
+        prefs.edit().putBoolean("like_enabled", likeEnabled).apply()
+        if (likeEnabled) {
+            showLikeDummy()
+        } else {
+            likeOverlayManager.hide()
+        }
+        broadcastState()
+    }
+
+    fun updateJoinEnabled(enabled: Boolean) {
+        joinEnabled = enabled
+        prefs.edit().putBoolean("join_enabled", enabled).apply()
+        broadcastState()
+    }
+
+    fun updateLikeEnabled(enabled: Boolean) {
+        likeEnabled = enabled
+        prefs.edit().putBoolean("like_enabled", enabled).apply()
+        broadcastState()
+    }
+
+    fun showJoinDummy() {
+        val x = prefs.getInt("join_x", 100)
+        val y = prefs.getInt("join_y", 200)
+        val scale = prefs.getFloat("join_scale", 1f)
+        joinOverlayManager.showJoin("Preview", null, isDummy = true)
+        joinOverlayManager.applyConfig(x, y, scale)
+    }
+
+    fun showLikeDummy() {
+        val x = prefs.getInt("like_x", 50)
+        val y = prefs.getInt("like_y", 100)
+        val scale = prefs.getFloat("like_scale", 1f)
+        likeOverlayManager.showLike("Preview", 1, null, isDummy = true)
+        likeOverlayManager.applyConfig(x, y, scale)
+    }
 
     fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
         // If x or y is -1, it means "keep current screen position"
@@ -725,6 +1015,8 @@ class PlayerForegroundService : Service() {
                 "lyrics" -> getCurrentPos(lyricsOverlayManager)
                 "chat"   -> getCurrentPos(chatOverlayManager)
                 "notif"  -> getCurrentPos(notifOverlayManager)
+                "join"   -> getCurrentPos(joinOverlayManager)
+                "like"   -> getCurrentPos(likeOverlayManager)
                 else -> null
             }
             if (current != null) {
@@ -753,6 +1045,8 @@ class PlayerForegroundService : Service() {
             "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(finalX, finalY, scale, width, height)
             "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(finalX, finalY, scale, width)
             "notif"  -> if (notifOverlayManager.isShowing) notifOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "join"   -> if (joinOverlayManager.isShowing) joinOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "like"   -> if (likeOverlayManager.isShowing) likeOverlayManager.applyConfig(finalX, finalY, scale, width, height)
         }
     }
 
@@ -775,6 +1069,8 @@ class PlayerForegroundService : Service() {
             "lyrics" -> getPos(lyricsOverlayManager)
             "chat"   -> getPos(chatOverlayManager)
             "notif"  -> getPos(notifOverlayManager)
+            "join"   -> getPos(joinOverlayManager)
+            "like"   -> getPos(likeOverlayManager)
             else -> Pair(0, 0)
         }
     }
@@ -797,9 +1093,20 @@ class PlayerForegroundService : Service() {
         "queue_visible"     to queueOverlayManager.isShowing,
         "chat_visible"      to chatOverlayManager.isShowing,
         "notif_visible"     to notifOverlayManager.isShowing,
+        "notif_enabled"     to notifEnabled,
+        "join_visible"      to joinOverlayManager.isShowing,
+        "like_visible"      to likeOverlayManager.isShowing,
+        "join_enabled"      to joinEnabled,
+        "like_enabled"      to likeEnabled,
         "chat_max_lines"    to prefs.getInt("chat_max_lines", 5),
         "chat_width"        to prefs.getInt("chat_width", 300),
-        "chat_duration"     to prefs.getInt("chat_duration", 6)
+        "chat_duration"     to prefs.getInt("chat_duration", 6),
+        "chat_tts_enabled"  to ttsEnabled,
+        "chat_tts_volume"   to ttsVolume,
+        "chat_tts_max_length" to ttsMaxLength,
+        "music_volume"      to musicVolume,
+        "notif_volume"      to notifVolume,
+        "use_tiktok_gift_icon" to useTiktokGiftIcon
     )
 
     // ── Notification ──────────────────────────────────────────────────
@@ -876,24 +1183,183 @@ class PlayerForegroundService : Service() {
         overlayManager.updateQueueCount(queue.size)
     }
 
+    private fun speak(text: String) {
+        if (!ttsEnabled || tts == null) return
+        
+        try {
+            if (text.length > ttsMaxLength) return
+
+            val trimmed = text.trim()
+            if (trimmed.startsWith("@")) return
+            
+            val isCommand = commandConfig.let { cfg ->
+                cfg.requestPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                cfg.skipPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                cfg.stopPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                cfg.queuePrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                cfg.clearMusicPrefixes.any { trimmed.startsWith(it, ignoreCase = true) }
+            }
+            if (isCommand) return
+
+            val cleanedText = trimmed.replace("@", "")
+            if (cleanedText.isBlank()) return
+
+            val params = Bundle()
+            val utteranceId = "chat_${System.currentTimeMillis()}"
+            
+            // Setup listener
+            tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                override fun onStart(id: String?) {
+                    // Jika fallback ke direct speak, kita tetap butuh ducking
+                    if (id == utteranceId && (!ttsFile.exists() || ttsFile.length() == 0L)) {
+                        serviceScope.launch(Dispatchers.Main) { applyDucking(true) }
+                    }
+                }
+                override fun onDone(id: String?) {
+                    if (id == utteranceId) {
+                        serviceScope.launch(Dispatchers.Main) {
+                            if (ttsFile.exists() && ttsFile.length() > 0) {
+                                playTtsFile()
+                            } else {
+                                // Jika file tidak ada, berarti sudah dibaca via direct speak
+                                applyDucking(false)
+                            }
+                        }
+                    }
+                }
+                @Deprecated("Deprecated in Java")
+                override fun onError(id: String?) { 
+                    serviceScope.launch(Dispatchers.Main) { applyDucking(false) }
+                }
+            })
+
+            // Coba buat file audio
+            val result = tts?.synthesizeToFile(cleanedText, params, ttsFile, utteranceId)
+            
+            // Fallback: Jika synthesizeToFile gagal, langsung bersuara
+            if (result != TextToSpeech.SUCCESS) {
+                Log.w(TAG, "synthesizeToFile failed, falling back to direct speak")
+                params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, ttsVolume.coerceIn(0f, 1f))
+                tts?.speak(cleanedText, TextToSpeech.QUEUE_ADD, params, utteranceId)
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "TTS speak error: ${e.message}")
+            applyDucking(false)
+        }
+    }
+
+    private fun applyDucking(enabled: Boolean) {
+        isTtsSpeaking = enabled
+        val volume = if (enabled) {
+            val duckFactor = when {
+                ttsVolume >= 1.5f -> 0.85f
+                ttsVolume >= 1.0f -> 0.90f
+                else -> 0.95f
+            }
+            musicVolume * duckFactor
+        } else {
+            musicVolume
+        }
+        audioPlayer.setVolume(volume)
+    }
+
+    private fun playTtsFile() {
+        try {
+            if (!ttsFile.exists() || ttsFile.length() == 0L) {
+                applyDucking(false)
+                return
+            }
+
+            ttsMediaPlayer?.stop()
+            ttsMediaPlayer?.release()
+
+            applyDucking(true)
+
+            ttsMediaPlayer = MediaPlayer().apply {
+                setDataSource(ttsFile.absolutePath)
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                
+                setVolume(1.0f, 1.0f)
+                
+                setOnCompletionListener {
+                    applyDucking(false)
+                    cleanupPlayer()
+                }
+                setOnErrorListener { _, _, _ ->
+                    applyDucking(false)
+                    cleanupPlayer()
+                    true
+                }
+                prepare()
+                
+                if (ttsVolume > 1.0f) {
+                    try {
+                        ttsLoudnessEnhancer = LoudnessEnhancer(audioSessionId).apply {
+                            val targetGain = ((ttsVolume - 1.0f) * 3000).toInt().coerceIn(0, 4000)
+                            setTargetGain(targetGain)
+                            enabled = true
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "LoudnessEnhancer error: ${e.message}")
+                    }
+                }
+                
+                start()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error playing TTS file: ${e.message}")
+            applyDucking(false)
+            cleanupPlayer()
+        }
+    }
+
+    private fun cleanupPlayer() {
+        try {
+            ttsLoudnessEnhancer?.release()
+            ttsLoudnessEnhancer = null
+            ttsMediaPlayer?.release()
+            ttsMediaPlayer = null
+            if (ttsFile.exists()) ttsFile.delete()
+        } catch (e: Exception) { /* ignore */ }
+    }
+
     private fun buildTikTokManager(): TikTokLiveManager =
         TikTokLiveManager(apiKey, tiktokUsername, serviceScope).also { t ->
             t.setCommandConfig(commandConfig)
             t.onChat         = ::handleTikTokChat
-            t.onLike = { _, _, _ ->
-                // Comment/Notification removed from chat overlay as requested
+            t.onLike = { nick, uid, count, profile ->
+                if (likeEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    likeOverlayManager.showLike(nick, count, profile)
+                }
             }
-            t.onGift = { _, nick, gift, count ->
-                // Removed from chat overlay, only show in notification overlay
-                notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift")
+            t.onJoin = { nick, uid, profile ->
+                if (joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    joinOverlayManager.showJoin(nick, profile)
+                }
+            }
+            t.onGift = { uid, nick, gift, count, iconUrl ->
+                Log.d(TAG, "[TikTok] Gift from @$uid ($nick): $gift x$count | Icon: $iconUrl")
+                broadcastSystemChat("$nick mengirim $gift x$count")
+                if (notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl)
+                }
             }
             t.onShare = { _, nick ->
-                // Removed from chat overlay, only show in notification overlay
-                notifOverlayManager.showNotification(nick, "membagikan live", "share")
+                broadcastSystemChat("$nick membagikan live")
+                if (notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    notifOverlayManager.showNotification(nick, "membagikan live", "share")
+                }
             }
             t.onConnected    = {
                 tiktokConnected = true
                 tiktokConnecting = false
+                tiktokConnectTime = System.currentTimeMillis()
                 overlayManager.setLiveStatus(true)
                 broadcastSystemChat("Connected to TikTok Live @$tiktokUsername")
                 broadcastState()
@@ -905,9 +1371,16 @@ class PlayerForegroundService : Service() {
                 broadcastSystemChat("Disconnected from TikTok Live")
                 broadcastState()
             }
+            t.onConnecting = {
+                tiktokConnecting = true
+                broadcastState()
+            }
             t.onError = { 
                 Log.w(TAG, "TikTok error: $it")
-                tiktokConnecting = false
+                // Only set tiktokConnecting to false if it's NOT a retry message
+                if (!it.contains("Retrying", ignoreCase = true)) {
+                    tiktokConnecting = false
+                }
                 broadcastSystemChat("Error: $it")
                 broadcastState()
             }

@@ -19,4 +19,8 @@
         <item name="android:backgroundDimEnabled">false</item>
     </style>
 
+    <style name="ShapeAppearance.Circle" parent="">
+        <item name="cornerSize">50%</item>
+    </style>
+
 </resources>

@@ -11,8 +11,8 @@ android {
         applicationId "ame.project.kanae"
         minSdk 26
         targetSdk 35
-        versionCode 8
-        versionName "8.8.4"
+        versionCode 9
+        versionName "9.0.0"
         ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -82,6 +82,9 @@ dependencies {
 
     // ── Preference ────────────────────────────────────────────────────────────
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // ── Color Picker ──────────────────────────────────────────────────────────
+    implementation 'com.github.duanhong169:colorpicker:1.1.6'
 
     // ── Testing ───────────────────────────────────────────────────────────────
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

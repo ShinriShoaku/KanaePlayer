@@ -3,14 +3,18 @@ package ame.project.kanae.overlay
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
 import android.content.Context
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.*
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.graphics.drawable.DrawableCompat
 import ame.project.kanae.R
+import ame.project.kanae.model.CustomTheme
 import kotlinx.coroutines.CoroutineScope
 
 class ChatOverlayManager(
@@ -22,6 +26,7 @@ class ChatOverlayManager(
     private val context = context.applicationContext
     private val wm = this.context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     private var rootView: View? = null
+    private var punchLayout: PunchThroughLayout? = null
     private var chatContainer: LinearLayout? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
@@ -32,11 +37,24 @@ class ChatOverlayManager(
     private var isTransparent = true
     private var isDummyActive = false
     private var currentTextScale: Float = 1f
+    private var currentLayoutId: Int = R.layout.item_chat_bubble
+    private var currentBgId: Int = R.drawable.bg_chat_bubble
+    private var currentTheme: CustomTheme = CustomTheme()
     private val activeChats = mutableListOf<View>()
     private val dummyAutoHideRunnable = Runnable { clearDummyChat() }
 
     var isShowing: Boolean = false
         private set
+
+    private var visualPunchEnabled = false
+
+    fun setVisualPunchEnabled(enabled: Boolean) {
+        this.visualPunchEnabled = enabled
+        punchLayout?.punchEnabled = enabled
+        rootView?.setOnTouchListener(if (enabled) null else gestureHelper)
+        rootView?.isClickable = !enabled
+        rootView?.isFocusable = !enabled
+    }
 
     fun show(x: Int = 16, y: Int = 500, scale: Float = 1f, width: Int = 150) {
         if (isShowing) return
@@ -48,6 +66,17 @@ class ChatOverlayManager(
         val view = LayoutInflater.from(themed).inflate(R.layout.overlay_chat_layout, null)
         rootView = view
         chatContainer = view.findViewById(R.id.chat_container)
+
+        val punch = PunchThroughLayout(themed).apply {
+            punchEnabled = visualPunchEnabled
+            // Use FrameLayout.LayoutParams for the inner view to avoid ClassCastException
+            val lp = FrameLayout.LayoutParams(
+                overlayWidth.dp,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
+            addView(view, lp)
+        }
+        punchLayout = punch
 
         updateBackground()
 
@@ -78,17 +107,18 @@ class ChatOverlayManager(
         layoutParams = params
 
         gestureHelper = OverlayGestureHelper(
-            rootView = view,
+            rootView = punch, // Use punch as the window root
             params = params,
             wm = wm,
             onSingleTap = null
         ).also { 
             it.currentScale = 1f // Visual scale remains 1
             it.updateBaseSize(baseW, 100) 
-            view.setOnTouchListener(it) 
+            if (visualPunchEnabled) view.setOnTouchListener(null) 
+            else view.setOnTouchListener(it)
         }
 
-        wm.addView(view, params)
+        wm.addView(punch, params)
         isShowing = true
 
         // Force initial size sync
@@ -133,11 +163,14 @@ class ChatOverlayManager(
     fun hide() {
         if (!isShowing) return
         handler.removeCallbacksAndMessages(null)
-        rootView?.let {
-            it.setOnTouchListener(null)
+        punchLayout?.let {
             runCatching { wm.removeView(it) }
         }
+        rootView?.let {
+            it.setOnTouchListener(null)
+        }
         rootView = null
+        punchLayout = null
         chatContainer = null
         layoutParams = null
         gestureHelper = null
@@ -152,10 +185,55 @@ class ChatOverlayManager(
     }
 
     private fun updateBackground() {
-        rootView?.setBackgroundResource(if (isTransparent) 
-            android.R.color.transparent 
-        else 
-            R.drawable.overlay_bg)
+        val root = rootView ?: return
+        if (isTransparent) {
+            root.setBackgroundResource(android.R.color.transparent)
+        } else {
+            root.setBackgroundResource(R.drawable.overlay_bg)
+            applyThemeToRoot()
+        }
+    }
+
+    private fun applyThemeToRoot() {
+        val root = rootView ?: return
+        if (isTransparent) return
+        
+        val theme = currentTheme
+        val bgAlpha = theme.alpha
+        
+        theme.bgPrimary?.let { color ->
+            val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
+            root.background?.let { bg ->
+                val wrapped = DrawableCompat.wrap(bg.mutate())
+                DrawableCompat.setTint(wrapped, colorWithAlpha)
+                root.background = wrapped
+            } ?: run {
+                root.setBackgroundColor(colorWithAlpha)
+            }
+        } ?: run {
+            root.background?.mutate()?.alpha = bgAlpha
+        }
+    }
+
+    fun updateStyle(layoutId: Int, bgId: Int) {
+        this.currentLayoutId = layoutId
+        this.currentBgId = bgId
+        // Update existing dummy if any
+        if (isDummyActive) {
+            clearDummyChat()
+            addDummyChat()
+        }
+    }
+
+    fun applyTheme(theme: CustomTheme) {
+        this.currentTheme = theme
+        applyThemeToRoot()
+        // Refresh existing chats if possible? 
+        // For simplicity, we just apply to new ones, but we can clear dummy
+        if (isDummyActive) {
+            clearDummyChat()
+            addDummyChat()
+        }
     }
 
     fun addChat(nickname: String, message: String, color: Int = 0xFFFFCC00.toInt(), isDummy: Boolean = false) {
@@ -163,17 +241,73 @@ class ChatOverlayManager(
         val container = chatContainer ?: return
 
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
-        val chatView = LayoutInflater.from(themed).inflate(R.layout.item_chat_bubble, container, false)
+        val chatView = LayoutInflater.from(themed).inflate(currentLayoutId, container, false)
         if (isDummy) chatView.tag = "dummy"
 
         val tvNick = chatView.findViewById<TextView>(R.id.tv_username)
-        tvNick.text = nickname
-        tvNick.setTextColor(color)
-        tvNick.textSize = 12f * currentTextScale
-
         val tvMsg = chatView.findViewById<TextView>(R.id.tv_message)
-        tvMsg.text = message
-        tvMsg.textSize = 12f * currentTextScale
+        val bubble = chatView.findViewById<View>(R.id.chat_bubble_container)
+
+        tvNick?.text = nickname
+        tvNick?.textSize = 12f * currentTextScale
+        tvMsg?.text = message
+        tvMsg?.textSize = 12f * currentTextScale
+
+        // Apply Theme
+        val theme = currentTheme
+        val bgAlpha = theme.alpha
+
+        // Background Logic
+        if (currentBgId != 0 && currentBgId != android.R.color.transparent) {
+            bubble?.setBackgroundResource(currentBgId)
+        } else if (currentBgId == android.R.color.transparent) {
+            bubble?.background = null
+        }
+
+        theme.bgPrimary?.let { color ->
+            val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
+            bubble?.background?.let { bg ->
+                val wrapped = DrawableCompat.wrap(bg.mutate())
+                DrawableCompat.setTint(wrapped, colorWithAlpha)
+                bubble.background = wrapped
+            } ?: run {
+                bubble?.setBackgroundColor(colorWithAlpha)
+            }
+        } ?: run {
+            if (currentBgId != 0 && currentBgId != android.R.color.transparent) {
+                val bgColor = if (isDummy) Color.argb(0x80, 0, 0, 0) else getBubbleColor(nickname)
+                bubble?.background?.let { bg ->
+                    val wrapped = DrawableCompat.wrap(bg.mutate())
+                    DrawableCompat.setTint(wrapped, bgColor)
+                    bubble.background = wrapped
+                    bubble.background?.alpha = bgAlpha
+                }
+            } else {
+                bubble?.background?.mutate()?.alpha = bgAlpha
+            }
+        }
+
+        // Secondary Background (for boxed layout)
+        if (currentLayoutId == R.layout.item_chat_bubble_boxed) {
+            theme.bgSecondary?.let { color ->
+                val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
+                tvNick?.background?.let { bg ->
+                    val wrapped = DrawableCompat.wrap(bg.mutate())
+                    DrawableCompat.setTint(wrapped, colorWithAlpha)
+                    tvNick.background = wrapped
+                } ?: run {
+                    tvNick?.setBackgroundColor(colorWithAlpha)
+                }
+            } ?: run {
+                tvNick?.background?.mutate()?.alpha = bgAlpha
+            }
+        }
+
+        // Text Colors
+        theme.textPrimary?.let { tvMsg?.setTextColor(it) }
+        theme.textSecondary?.let { tvNick?.setTextColor(it) } 
+            ?: theme.textPrimary?.let { tvNick?.setTextColor(it) }
+            ?: run { if (currentBgId != 0) tvNick?.setTextColor(color) }
 
         // Fade in animation
         chatView.alpha = 0f
@@ -211,6 +345,19 @@ class ChatOverlayManager(
                 }
             }, displayDurationMs)
         }
+    }
+
+    private fun getBubbleColor(name: String): Int {
+        val colors = intArrayOf(
+            0xFF1A1A2E.toInt(), 0xFF16213E.toInt(), 0xFF0F3460.toInt(),
+            0xFF533483.toInt(), 0xFF4E31AA.toInt(), 0xFF1A4D2E.toInt(),
+            0xFF6D214F.toInt(), 0xFF1B1464.toInt(), 0xFF2C3E50.toInt(),
+            0xFF8E44AD.toInt(), 0xFF2980B9.toInt(), 0xFF27AE60.toInt()
+        )
+        val index = Math.abs(name.hashCode()) % colors.size
+        val baseColor = colors[index]
+        // Make it semi-transparent (e.g., 0xCC = 204 alpha)
+        return (baseColor and 0x00FFFFFF) or (0xCC shl 24)
     }
 
     private fun removeChatWithAnimation(container: LinearLayout, view: View) {
@@ -251,7 +398,7 @@ class ChatOverlayManager(
         }
 
         params.width = widthDp.dp
-        runCatching { wm.updateViewLayout(view, params) }
+        punchLayout?.let { runCatching { wm.updateViewLayout(it, params) } }
     }
 
     private val Int.dp: Int
@@ -281,22 +428,23 @@ class ChatOverlayManager(
         params.height = baseH
         
         gestureHelper?.updateBaseSize(baseW, baseH)
-        runCatching { wm.updateViewLayout(view, params) }
+        punchLayout?.let { runCatching { wm.updateViewLayout(it, params) } }
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0) {
         val params = layoutParams ?: return
-        val view = rootView ?: return
+        val view = punchLayout ?: return
+        val content = rootView ?: return
         
         params.x = x
         params.y = y
         this.currentTextScale = scale
 
         // Reset visual scale - we use text scaling now
-        view.pivotX = 0f
-        view.pivotY = 0f
-        view.scaleX = 1f
-        view.scaleY = 1f
+        content.pivotX = 0f
+        content.pivotY = 0f
+        content.scaleX = 1f
+        content.scaleY = 1f
         
         // Update window size agar mencakup seluruh layout
         val dp = context!!.resources.displayMetrics.density
@@ -344,7 +492,7 @@ class ChatOverlayManager(
     fun setCanvasMode(locked: Boolean, x: Int = 0, y: Int = 0) {
         gestureHelper?.locked = locked
         val params = layoutParams ?: return
-        val view = rootView ?: return
+        val view = punchLayout ?: return
         if (locked) {
             params.x = x; params.y = y
             params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
