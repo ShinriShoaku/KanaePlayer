@@ -1,5 +1,13 @@
 # Changelog - KanaePlayer
 
+## [9.0.1] - 2025-11-05
+
+### ✨ New Features & Improvements
+- **Canvas System**: Penambahan basis sistem Canvas untuk animasi dan interaksi visual yang lebih dinamis.
+- **Like & Join Overlays**: Fitur overlay baru untuk mendeteksi dan merespon interaksi Like serta bergabungnya penonton (Join) secara real-time.
+- **Visual Punch (Experimental)**: Implementasi awal efek Visual Punch untuk memberikan feedback visual yang lebih kuat.
+- **Custom Style**: Dukungan kustomisasi gaya visual yang lebih luas untuk berbagai elemen antarmuka.
+
 ## [8.8.4] - 2025-10-30
 
 ### ⚙️ UI & UX Fixes

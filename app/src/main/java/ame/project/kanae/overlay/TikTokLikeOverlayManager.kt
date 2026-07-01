@@ -26,6 +26,14 @@ class TikTokLikeOverlayManager(private val context: Context) {
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
     
+    // Simpan posisi terakhir agar tidak reset saat hide/show
+    private var lastX: Int = 50
+    private var lastY: Int = 500
+    private var lastScale: Float = 1.0f
+
+    /** Callback saat user menggeser overlay secara manual */
+    var onPositionChanged: ((x: Int, y: Int) -> Unit)? = null
+    
     private var bubbleContainer: FrameLayout? = null
     private var ivImage: ImageView? = null
     private var tvUser: TextView? = null
@@ -42,6 +50,9 @@ class TikTokLikeOverlayManager(private val context: Context) {
     fun showLike(nickname: String, count: Int, profileUrl: String?, isDummy: Boolean = false) {
         handler.post {
             if (rootView == null) setupView()
+            
+            // Apply posisi terakhir segera setelah setupView
+            applyConfigInternal(lastX, lastY, lastScale)
             
             tvUser?.text = nickname
             tvCount?.text = if (isDummy) "Tapped (Preview)" else "Tapped x$count"
@@ -77,7 +88,16 @@ class TikTokLikeOverlayManager(private val context: Context) {
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
-        if (rootView == null) setupView()
+        handler.post {
+            lastX = x
+            lastY = y
+            lastScale = scale
+            applyConfigInternal(x, y, scale, wDp, hDp)
+        }
+    }
+
+    private fun applyConfigInternal(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
+        if (rootView == null) return
         val lp = layoutParams ?: return
         val view = rootView ?: return
 
@@ -147,6 +167,13 @@ class TikTokLikeOverlayManager(private val context: Context) {
     private fun setupView() {
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         rootView = LayoutInflater.from(themed).inflate(currentLayoutId, null)
+        
+        // Add default LayoutParams to prevent NPE during manual measurement
+        rootView?.layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+
         bubbleContainer = rootView?.findViewById(R.id.like_bubble_container)
         ivImage = rootView?.findViewById(R.id.like_user_image)
         tvUser = rootView?.findViewById(R.id.like_user_name)
@@ -166,7 +193,13 @@ class TikTokLikeOverlayManager(private val context: Context) {
             y = 500
         }
 
-        gestureHelper = OverlayGestureHelper(rootView!!, layoutParams!!, wm)
+        gestureHelper = OverlayGestureHelper(rootView!!, layoutParams!!, wm).apply {
+            onInteraction = {
+                lastX = layoutParams?.x ?: lastX
+                lastY = layoutParams?.y ?: lastY
+                onPositionChanged?.invoke(lastX, lastY)
+            }
+        }
         rootView?.setOnTouchListener(gestureHelper)
     }
 
@@ -213,10 +246,21 @@ class TikTokLikeOverlayManager(private val context: Context) {
         if (isShowing && rootView != null) {
             try {
                 wm.removeView(rootView)
-                isShowing = false
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
+        isShowing = false
+        
+        // Bersihkan bubble container untuk menghentikan animasi yang mungkin masih berjalan
+        bubbleContainer?.removeAllViews()
+        
+        rootView = null
+        bubbleContainer = null
+        ivImage = null
+        tvUser = null
+        tvCount = null
+        gestureHelper = null
+        layoutParams = null
     }
 }

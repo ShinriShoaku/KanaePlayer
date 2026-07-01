@@ -222,9 +222,29 @@ class PlayerForegroundService : Service() {
 
         joinOverlayManager = TikTokJoinOverlayManager(this).apply {
             updateStyle(prefs.getInt("canvas_join_layout", ame.project.kanae.R.layout.overlay_tiktok_join))
+            
+            // Restore last position
+            val x = prefs.getInt("join_x", 100)
+            val y = prefs.getInt("join_y", 200)
+            val scale = prefs.getFloat("join_scale", 1f)
+            applyConfig(x, y, scale)
+
+            onPositionChanged = { nx, ny ->
+                prefs.edit().putInt("join_x", nx).putInt("join_y", ny).apply()
+            }
         }
         likeOverlayManager = TikTokLikeOverlayManager(this).apply {
             updateStyle(prefs.getInt("canvas_like_layout", ame.project.kanae.R.layout.overlay_tiktok_like))
+            
+            // Restore last position
+            val x = prefs.getInt("like_x", 50)
+            val y = prefs.getInt("like_y", 500)
+            val scale = prefs.getFloat("like_scale", 1f)
+            applyConfig(x, y, scale)
+
+            onPositionChanged = { nx, ny ->
+                prefs.edit().putInt("like_x", nx).putInt("like_y", ny).apply()
+            }
         }
 
         customOverlayManager = CustomOverlayManager(this, serviceScope)
@@ -279,12 +299,21 @@ class PlayerForegroundService : Service() {
         Log.d(TAG, "onDestroy")
         tts?.stop()
         tts?.shutdown()
-        tiktokManager.disconnect()
+        cleanupPlayer() // Pastikan MediaPlayer & Enhancer TTS dilepaskan
+        
+        tiktokManager.release() // Gunakan release() bukan hanya disconnect()
         audioPlayer.release()
+        
         overlayManager.hide()
         queueOverlayManager.hide()
         lyricsOverlayManager.hide()
         chatOverlayManager.hide()
+        
+        // Perbaikan: Pastikan overlay notif, join, dan like juga di-hide
+        notifOverlayManager.hide()
+        joinOverlayManager.hide()
+        likeOverlayManager.hide()
+
         customOverlayManager.hideAll()
         serviceScope.cancel()
         super.onDestroy()

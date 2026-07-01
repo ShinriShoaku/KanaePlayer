@@ -19,6 +19,12 @@ class TikTokJoinOverlayManager(private val context: Context) {
     private var rootView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
+
+    private var lastX: Int = 100
+    private var lastY: Int = 200
+    private var lastScale: Float = 1.0f
+
+    var onPositionChanged: ((x: Int, y: Int) -> Unit)? = null
     
     private var ivImage: ImageView? = null
     private var tvUser: TextView? = null
@@ -34,6 +40,9 @@ class TikTokJoinOverlayManager(private val context: Context) {
         handler.post {
             if (rootView == null) setupView()
             
+            // Apply posisi terakhir
+            applyConfigInternal(lastX, lastY, lastScale)
+
             tvUser?.text = if (isDummy) "$nickname (Preview)" else "$nickname joined"
             profileUrl?.let {
                 ivImage?.let { img -> 
@@ -62,7 +71,16 @@ class TikTokJoinOverlayManager(private val context: Context) {
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
-        if (rootView == null) setupView()
+        handler.post {
+            lastX = x
+            lastY = y
+            lastScale = scale
+            applyConfigInternal(x, y, scale, wDp, hDp)
+        }
+    }
+
+    private fun applyConfigInternal(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
+        if (rootView == null) return
         val lp = layoutParams ?: return
         val view = rootView ?: return
 
@@ -132,6 +150,13 @@ class TikTokJoinOverlayManager(private val context: Context) {
     private fun setupView() {
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         rootView = LayoutInflater.from(themed).inflate(currentLayoutId, null)
+        
+        // Add default LayoutParams to prevent NPE during manual measurement
+        rootView?.layoutParams = android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+
         ivImage = rootView?.findViewById(R.id.join_user_image)
         tvUser = rootView?.findViewById(R.id.join_user_text)
 
@@ -149,7 +174,13 @@ class TikTokJoinOverlayManager(private val context: Context) {
             y = 200
         }
 
-        gestureHelper = OverlayGestureHelper(rootView!!, layoutParams!!, wm)
+        gestureHelper = OverlayGestureHelper(rootView!!, layoutParams!!, wm).apply {
+            onInteraction = {
+                lastX = layoutParams?.x ?: lastX
+                lastY = layoutParams?.y ?: lastY
+                onPositionChanged?.invoke(lastX, lastY)
+            }
+        }
         rootView?.setOnTouchListener(gestureHelper)
     }
 
@@ -178,10 +209,15 @@ class TikTokJoinOverlayManager(private val context: Context) {
         if (isShowing && rootView != null) {
             try {
                 wm.removeView(rootView)
-                isShowing = false
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
+        isShowing = false
+        rootView = null
+        ivImage = null
+        tvUser = null
+        gestureHelper = null
+        layoutParams = null
     }
 }

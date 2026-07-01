@@ -200,45 +200,54 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
-        if (rootView == null) setupView()
-        val lp = layoutParams ?: return
-        val view = rootView ?: return
+        handler.post {
+            if (rootView == null) setupView()
+            val lp = layoutParams ?: return@post
+            val view = rootView ?: return@post
 
-        lp.x = x
-        lp.y = y
+            lp.x = x
+            lp.y = y
 
-        view.pivotX = 0f
-        view.pivotY = 0f
-        view.scaleX = scale
-        view.scaleY = scale
+            view.pivotX = 0f
+            view.pivotY = 0f
+            view.scaleX = scale
+            view.scaleY = scale
 
-        val density = context.resources.displayMetrics.density
-        val baseW = if (wDp > 0) (wDp * density).toInt() else -2 // WRAP_CONTENT
-        val baseH = if (hDp > 0) (hDp * density).toInt() else -2
+            val density = context.resources.displayMetrics.density
+            val baseW = if (wDp > 0) (wDp * density).toInt() else -2 // WRAP_CONTENT
+            val baseH = if (hDp > 0) (hDp * density).toInt() else -2
 
-        // Measure to get actual size if WRAP_CONTENT
-        view.measure(
-            if (baseW > 0) View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            if (baseH > 0) View.MeasureSpec.makeMeasureSpec(baseH, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
+            // Measure to get actual size if WRAP_CONTENT
+            view.measure(
+                if (baseW > 0) View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+                if (baseH > 0) View.MeasureSpec.makeMeasureSpec(baseH, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
 
-        val actualW = if (baseW > 0) baseW else view.measuredWidth
-        val actualH = if (baseH > 0) baseH else view.measuredHeight
+            val actualW = if (baseW > 0) baseW else view.measuredWidth
+            val actualH = if (baseH > 0) baseH else view.measuredHeight
 
-        lp.width = (actualW * scale).toInt()
-        lp.height = (actualH * scale).toInt()
+            lp.width = (actualW * scale).toInt()
+            lp.height = (actualH * scale).toInt()
 
-        gestureHelper?.let {
-            it.currentScale = scale
-            it.updateBaseSize(actualW, actualH)
+            gestureHelper?.let {
+                it.currentScale = scale
+                it.updateBaseSize(actualW, actualH)
+            }
+
+            try { wm.updateViewLayout(view, lp) } catch (_: Exception) {}
         }
-
-        try { wm.updateViewLayout(view, lp) } catch (_: Exception) {}
     }
 
     private fun setupView() {
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         rootView = LayoutInflater.from(themed).inflate(R.layout.overlay_tiktok_notification, null)
+        
+        // Add default LayoutParams to prevent NPE during manual measurement
+        rootView?.layoutParams = android.widget.FrameLayout.LayoutParams(
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
+            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
+        )
+
         ivImage = rootView?.findViewById(R.id.tiktok_notif_image)
         tvUser = rootView?.findViewById(R.id.tiktok_notif_user)
         tvAction = rootView?.findViewById(R.id.tiktok_notif_action)
@@ -264,14 +273,33 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     }
 
     fun hide() {
+        handler.removeCallbacks(hideRunnable)
         if (isShowing && rootView != null) {
             try {
                 wm.removeView(rootView)
-                isShowing = false
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
+        
+        // Bersihkan resource audio
+        try {
+            mediaPlayer?.stop()
+            mediaPlayer?.release()
+            loudnessEnhancer?.release()
+        } catch (e: Exception) {}
+        
+        mediaPlayer = null
+        loudnessEnhancer = null
+        isShowing = false
+        
+        // Null-kan referensi View untuk membebaskan memori
+        rootView = null
+        ivImage = null
+        tvUser = null
+        tvAction = null
+        gestureHelper = null
+        layoutParams = null
     }
 
     fun resetHideTimer() {

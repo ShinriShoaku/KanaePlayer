@@ -1,5 +1,22 @@
 # Update Notes - KanaePlayer
 
+## Update 9.0.1: Visual Enhancement & Overlays
+
+Update ini menghadirkan fitur visual baru dan peningkatan sistem overlay untuk pengalaman streaming yang lebih interaktif.
+
+### 1. Canvas & Visual Punch (Experimental)
+- **Canvas System**: Dasar baru untuk pergerakan elemen visual yang lebih halus.
+- **Visual Punch**: Efek getaran atau dorongan visual saat terjadi aksi tertentu di dalam aplikasi.
+
+### 2. Like & Join Overlays
+- **Like Interaction**: Overlay khusus yang memberikan respon visual saat penonton memberikan Like.
+- **Join Animation**: Menampilkan notifikasi yang lebih menarik ketika penonton baru bergabung dalam Live.
+
+### 3. Custom Style
+- **Flexible Styling**: Peningkatan kemampuan untuk mengatur gaya visual sesuai keinginan pengguna, memberikan sentuhan personal yang lebih mendalam pada antarmuka aplikasi.
+
+---
+
 ## Update 8.8.4: Perbaikan Layout & Tampilan Bersih
 
 Update ini fokus pada perbaikan visual dan kenyamanan antarmuka pengguna.
