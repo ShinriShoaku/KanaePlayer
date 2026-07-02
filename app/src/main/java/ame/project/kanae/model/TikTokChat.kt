@@ -7,7 +7,8 @@ data class TikTokChat(
     val timestamp: Long = System.currentTimeMillis(),
     // parsed command fields
     val commandType: CommandType = CommandType.NONE,
-    val commandArg: String? = null
+    val commandArg: String? = null,
+    val emotes: List<TikTokEmote> = emptyList()
 ) {
     enum class CommandType {
         NONE,
@@ -19,3 +20,8 @@ data class TikTokChat(
         CLEAR_MUSIC
     }
 }
+
+data class TikTokEmote(
+    val placeInComment: Int,
+    val imageUrl: String
+)

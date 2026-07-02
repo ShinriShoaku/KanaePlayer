@@ -235,6 +235,7 @@ class PlayerForegroundService : Service() {
         }
         likeOverlayManager = TikTokLikeOverlayManager(this).apply {
             updateStyle(prefs.getInt("canvas_like_layout", ame.project.kanae.R.layout.overlay_tiktok_like))
+            setAnimationEnabled(prefs.getBoolean("like_animation_enabled", true))
             
             // Restore last position
             val x = prefs.getInt("like_x", 50)
@@ -575,7 +576,7 @@ class PlayerForegroundService : Service() {
         broadcastChat(chat)
 
         if (chatOverlayManager.isShowing) {
-            chatOverlayManager.addChat(chat.nickname, chat.comment)
+            chatOverlayManager.addChat(chat.nickname, chat.comment, emotes = chat.emotes)
         }
 
         if (System.currentTimeMillis() - tiktokConnectTime < 5000) {
@@ -1006,19 +1007,26 @@ class PlayerForegroundService : Service() {
         broadcastState()
     }
 
-    fun showJoinDummy() {
+    fun updateLikeAnimationEnabled(enabled: Boolean) {
+
+        likeOverlayManager.setAnimationEnabled(enabled)
+    }
+
+
+
+    fun showJoinDummy(persistent: Boolean = false) {
         val x = prefs.getInt("join_x", 100)
         val y = prefs.getInt("join_y", 200)
         val scale = prefs.getFloat("join_scale", 1f)
-        joinOverlayManager.showJoin("Preview", null, isDummy = true)
+        joinOverlayManager.showJoin("Preview", null, isDummy = true, persistent = persistent)
         joinOverlayManager.applyConfig(x, y, scale)
     }
 
-    fun showLikeDummy() {
+    fun showLikeDummy(persistent: Boolean = false) {
         val x = prefs.getInt("like_x", 50)
         val y = prefs.getInt("like_y", 100)
         val scale = prefs.getFloat("like_scale", 1f)
-        likeOverlayManager.showLike("Preview", 1, null, isDummy = true)
+        likeOverlayManager.showLike("Preview", 1, null, isDummy = true, persistent = persistent)
         likeOverlayManager.applyConfig(x, y, scale)
     }
 
@@ -1074,8 +1082,8 @@ class PlayerForegroundService : Service() {
             "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(finalX, finalY, scale, width, height)
             "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(finalX, finalY, scale, width)
             "notif"  -> if (notifOverlayManager.isShowing) notifOverlayManager.applyConfig(finalX, finalY, scale, width, height)
-            "join"   -> if (joinOverlayManager.isShowing) joinOverlayManager.applyConfig(finalX, finalY, scale, width, height)
-            "like"   -> if (likeOverlayManager.isShowing) likeOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "join"   -> if (joinOverlayManager.isShowing) joinOverlayManager.applyConfig(finalX, finalY, scale)
+            "like"   -> if (likeOverlayManager.isShowing) likeOverlayManager.applyConfig(finalX, finalY, scale)
         }
     }
 

@@ -1,5 +1,11 @@
 # Changelog - KanaePlayer
 
+## [9.2.1] - 2025-11-12
+
+### ✨ Improvements & Fixes
+- **Sticker Support**: Menambahkan dukungan tampilan stiker pada Chat Overlay.
+- **Overlay Refinement**: Perbaikan pada Join Overlay dan Like Overlay untuk sinkronisasi tampilan stiker dan animasi yang lebih baik.
+
 ## [9.0.1] - 2025-11-05
 
 ### ✨ New Features & Improvements

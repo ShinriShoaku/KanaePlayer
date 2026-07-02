@@ -39,270 +39,277 @@
                 android:layout_marginLeft="24dp"
                 android:layout_marginBottom="20dp" />
 
-            <LinearLayout
+            <!-- TableLayout ensures every column has the same width across all rows,
+                 so Row 3 (Join, Like) lines up under columns 1 & 2 of the rows above,
+                 instead of being centered on its own like a horizontal LinearLayout would. -->
+            <TableLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
+                android:stretchColumns="0,1,2,3"
                 android:paddingLeft="16dp"
                 android:paddingRight="16dp">
 
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_teal"
-                        android:src="@android:drawable/ic_media_play"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelPlayer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Player"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                <!-- Row 1: Player, Queue, Lyrics, Canvas -->
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnQueueOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_purple"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelQueue"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
-                        android:text="Queue"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_teal"
+                            android:src="@android:drawable/ic_media_play"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelPlayer"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Player"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnLyricsOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_lyrics"
-                        android:src="@android:drawable/ic_menu_edit"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelLyrics"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
-                        android:text="Lyrics"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnQueueOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_purple"
+                            android:src="@android:drawable/ic_menu_sort_by_size"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelQueue"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Queue"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnCanvas"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_canvas"
-                        android:src="@android:drawable/ic_menu_gallery"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelCanvas"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
-                        android:text="Canvas"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </LinearLayout>
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnLyricsOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_lyrics"
+                            android:src="@android:drawable/ic_menu_edit"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelLyrics"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Lyrics"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:layout_marginTop="16dp">
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnSaweriaOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_yellow"
-                        android:src="@android:drawable/btn_star_big_on"
-                        app:tint="@color/bg_dark"
-                        android:scaleType="center" />
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
-                        android:text="Saweria"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnCanvas"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_canvas"
+                            android:src="@android:drawable/ic_menu_gallery"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelCanvas"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Canvas"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+                </TableRow>
 
-                <LinearLayout
-                    android:layout_width="80dp"
+                <!-- Row 2: Saweria, Chat, Notif, Custom -->
+                <TableRow
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnChatOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_teal"
-                        android:src="@android:drawable/stat_notify_chat"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelChat"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Chat"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                    android:layout_marginTop="16dp">
 
-                <LinearLayout
-                    android:layout_width="80dp"
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnSaweriaOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_yellow"
+                            android:src="@android:drawable/btn_star_big_on"
+                            app:tint="@color/bg_dark"
+                            android:scaleType="center" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Saweria"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnChatOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_teal"
+                            android:src="@android:drawable/stat_notify_chat"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelChat"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Chat"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnNotifOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_red"
+                            android:src="@android:drawable/ic_popup_reminder"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelNotif"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/btn_notif"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnCustomOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_purple"
+                            android:src="@android:drawable/ic_menu_share"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Custom"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+                </TableRow>
+
+                <!-- Row 3: Join, Like — only 2 cells, but TableLayout keeps them
+                     pinned to columns 1 & 2 (same width as Player & Queue above) -->
+                <TableRow
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnNotifOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_red"
-                        android:src="@android:drawable/ic_popup_reminder"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelNotif"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/btn_notif"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                    android:layout_marginTop="16dp">
 
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnCustomOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_purple"
-                        android:src="@android:drawable/ic_menu_share"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
-                        android:text="Custom"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </LinearLayout>
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnJoinOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_yellow"
+                            android:src="@android:drawable/ic_menu_add"
+                            app:tint="@color/bg_dark"
+                            android:scaleType="center" />
+                        <TextView
+                            android:id="@+id/tvLabelJoin"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Join"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
 
-            <!-- Row 3: Join, Like -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp"
-                android:layout_marginTop="16dp">
-
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnJoinOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_yellow"
-                        android:src="@android:drawable/ic_menu_add"
-                        app:tint="@color/bg_dark"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelJoin"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="80dp"
                         android:layout_height="wrap_content"
-                        android:text="Join"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnLikeOverlay"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_red"
+                            android:src="@drawable/ic_heart"
+                            app:tint="@color/white"
+                            android:scaleType="center"
+                            android:padding="12dp" />
+                        <TextView
+                            android:id="@+id/tvLabelLike"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Like/Tap"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+                </TableRow>
 
-                <LinearLayout
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnLikeOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_red"
-                        android:src="@drawable/ic_heart"
-                        app:tint="@color/white"
-                        android:scaleType="center"
-                        android:padding="12dp" />
-                    <TextView
-                        android:id="@+id/tvLabelLike"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Like/Tap"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-            </LinearLayout>
+            </TableLayout>
         </LinearLayout>
 
         <!-- SETTINGS PANEL (Dynamically shown) -->
@@ -399,47 +406,53 @@
             </LinearLayout>
 
             <LinearLayout
+                android:id="@+id/sizeSettingsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-                <TextView
-                    android:id="@+id/tvWidthLabel"
-                    android:layout_width="0dp"
+                android:orientation="vertical">
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Width: Auto"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-                <SeekBar
-                    android:id="@+id/sbWidth"
-                    android:layout_width="180dp"
-                    android:layout_height="wrap_content"
-                    android:max="1000"
-                    android:progress="0" />
-            </LinearLayout>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp">
+                    <TextView
+                        android:id="@+id/tvWidthLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Width: Auto"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                    <SeekBar
+                        android:id="@+id/sbWidth"
+                        android:layout_width="180dp"
+                        android:layout_height="wrap_content"
+                        android:max="1000"
+                        android:progress="0" />
+                </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-                <TextView
-                    android:id="@+id/tvHeightLabel"
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Height: Auto"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-                <SeekBar
-                    android:id="@+id/sbHeight"
-                    android:layout_width="180dp"
-                    android:layout_height="wrap_content"
-                    android:max="2000"
-                    android:progress="0" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp">
+                    <TextView
+                        android:id="@+id/tvHeightLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Height: Auto"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                    <SeekBar
+                        android:id="@+id/sbHeight"
+                        android:layout_width="180dp"
+                        android:layout_height="wrap_content"
+                        android:max="2000"
+                        android:progress="0" />
+                </LinearLayout>
             </LinearLayout>
 
             <CheckBox
@@ -626,6 +639,29 @@
                         android:max="30"
                         android:progress="10" />
                 </LinearLayout>
+            </LinearLayout>
+
+            <!-- EXTRA SETTINGS FOR LIKE -->
+            <LinearLayout
+                android:id="@+id/extraLikeSettings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#1AFFFFFF"
+                    android:layout_marginVertical="8dp" />
+
+                <CheckBox
+                    android:id="@+id/cbLikeAnimation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Enable Love/Bubble Animation"
+                    android:textColor="@color/text_primary"
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <!-- EXTRA SETTINGS FOR NOTIF -->

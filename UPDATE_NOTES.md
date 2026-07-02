@@ -1,5 +1,17 @@
 # Update Notes - KanaePlayer
 
+## Update 9.2.1: Sticker Support & Overlay Fixes
+
+Update ini membawa perbaikan pada sistem overlay untuk mendukung tampilan stiker yang lebih baik.
+
+### 1. Sticker Support in Chat
+- **Chat Sticker**: Chat overlay kini dapat menampilkan stiker TikTok secara langsung, membuat interaksi chat terasa lebih hidup.
+
+### 2. Join & Like Overlay Improvements
+- **Visual Fixes**: Perbaikan pada Join dan Like overlay agar elemen visual dan stiker muncul dengan posisi dan animasi yang lebih tepat.
+
+---
+
 ## Update 9.0.1: Visual Enhancement & Overlays
 
 Update ini menghadirkan fitur visual baru dan peningkatan sistem overlay untuk pengalaman streaming yang lebih interaktif.

@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonElement
 import ame.project.kanae.model.TikTokChat
+import ame.project.kanae.model.TikTokEmote
 import kotlinx.coroutines.*
 import okhttp3.*
 
@@ -212,6 +213,7 @@ class TikTokLiveManager(
                     when (type) {
                         "WebcastChatMessage", "chat", "comment", "message" -> {
                             if (!shouldProcessMessage(data)) return@forEach
+                            logLongString("RAW CHAT", data.toString())
                             val chat = buildChat(data) ?: return@forEach
                             scope.launch(Dispatchers.Main) { onChat?.invoke(chat) }
                         }
@@ -254,6 +256,7 @@ class TikTokLiveManager(
                 when (event) {
                     "chat", "comment", "message", "WebcastChatMessage" -> {
                         if (!shouldProcessMessage(data)) return
+                        logLongString("RAW CHAT (Legacy)", data.toString())
                         val msg = buildChat(data) ?: return
                         scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
                     }
@@ -413,12 +416,32 @@ class TikTokLiveManager(
                 ?: data["user"]?.asJsonObject?.get("nickname")?.asString
                 ?: uniqueId
 
-            val comment = data["comment"]?.asString
+            var comment = data["comment"]?.asString
                 ?: data["message"]?.asString
                 ?: data["text"]?.asString
                 ?: data["content"]?.asString
                 ?: data["msg"]?.asString
-                ?: return null
+                ?: ""
+
+            if (comment.isBlank()) {
+                comment = extractEmoteOrSticker(data) ?: ""
+            }
+
+            val emotes = mutableListOf<TikTokEmote>()
+            if (data.has("emotes") && data["emotes"].isJsonArray) {
+                val emotesArray = data.getAsJsonArray("emotes")
+                for (i in 0 until emotesArray.size()) {
+                    val item = emotesArray[i].asJsonObject
+                    val place = item["placeInComment"]?.asInt ?: -1
+                    val emote = item["emote"]?.asJsonObject
+                    val imageUrl = emote?.get("image")?.asJsonObject?.get("imageUrl")?.asString
+                    if (imageUrl != null) {
+                        emotes.add(TikTokEmote(place, imageUrl))
+                    }
+                }
+            }
+
+            if (comment.isBlank() && emotes.isEmpty()) return null
 
             val (cmdType, cmdArg) = parseCommand(comment)
 
@@ -427,7 +450,8 @@ class TikTokLiveManager(
                 nickname    = nickname,
                 comment     = comment,
                 commandType = cmdType,
-                commandArg  = cmdArg
+                commandArg  = cmdArg,
+                emotes      = emotes
             )
         } catch (e: Exception) {
             null
@@ -552,5 +576,26 @@ class TikTokLiveManager(
         // data["user"]?.asJsonObject?.get("profilePicture")?.asJsonObject...
         
         return null
+    }
+
+    private fun extractEmoteOrSticker(data: JsonObject): String? {
+        // Some TikTok APIs return emojis/stickers in a list or specific field
+        // For now, let's look for common patterns or just return a placeholder if we find traces
+        if (data.has("emojis") && data["emojis"].isJsonArray) {
+            val emojis = data.getAsJsonArray("emojis")
+            if (emojis.size() > 0) return "[Emoji]"
+        }
+        if (data.has("stickers") || data.has("sticker")) return "[Sticker]"
+        return null
+    }
+
+    private fun logLongString(tag: String, content: String) {
+        val maxLogSize = 3000
+        for (i in 0..content.length / maxLogSize) {
+            val start = i * maxLogSize
+            var end = (i + 1) * maxLogSize
+            end = if (end > content.length) content.length else end
+            Log.d(TAG, "$tag [$i]: ${content.substring(start, end)}")
+        }
     }
 }

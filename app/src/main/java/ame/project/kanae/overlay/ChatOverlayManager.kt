@@ -12,9 +12,17 @@ import android.view.*
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.text.SpannableStringBuilder
+import android.text.style.ImageSpan
+import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.Drawable
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition
 import androidx.core.graphics.drawable.DrawableCompat
 import ame.project.kanae.R
 import ame.project.kanae.model.CustomTheme
+import ame.project.kanae.model.TikTokEmote
 import kotlinx.coroutines.CoroutineScope
 
 class ChatOverlayManager(
@@ -236,7 +244,7 @@ class ChatOverlayManager(
         }
     }
 
-    fun addChat(nickname: String, message: String, color: Int = 0xFFFFCC00.toInt(), isDummy: Boolean = false) {
+    fun addChat(nickname: String, message: String, color: Int = 0xFFFFCC00.toInt(), isDummy: Boolean = false, emotes: List<TikTokEmote> = emptyList()) {
         if (!isShowing) return
         val container = chatContainer ?: return
 
@@ -250,8 +258,43 @@ class ChatOverlayManager(
 
         tvNick?.text = nickname
         tvNick?.textSize = 12f * currentTextScale
-        tvMsg?.text = message
+        
+        // Handle Emotes
+        val ssb = SpannableStringBuilder(message)
+        tvMsg?.text = ssb
         tvMsg?.textSize = 12f * currentTextScale
+
+        if (emotes.isNotEmpty()) {
+            emotes.forEach { emote ->
+                Glide.with(context)
+                    .asBitmap()
+                    .load(emote.imageUrl)
+                    .into(object : CustomTarget<android.graphics.Bitmap>() {
+                        override fun onResourceReady(resource: android.graphics.Bitmap, transition: Transition<in android.graphics.Bitmap>?) {
+                            val currentText = tvMsg?.text as? SpannableStringBuilder ?: SpannableStringBuilder(tvMsg?.text ?: "")
+                            
+                            val size = (18f * currentTextScale * context.resources.displayMetrics.density).toInt()
+                            val drawable = BitmapDrawable(context.resources, resource)
+                            drawable.setBounds(0, 0, size, size)
+                            val span = ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM)
+                            
+                            var pos = emote.placeInComment
+                            if (pos < 0) pos = 0
+                            if (pos > currentText.length) pos = currentText.length
+                            
+                            if (pos == currentText.length) {
+                                currentText.append(" ")
+                            }
+                            
+                            try {
+                                currentText.setSpan(span, pos, pos + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                                tvMsg?.text = currentText
+                            } catch (e: Exception) {}
+                        }
+                        override fun onLoadCleared(placeholder: Drawable?) {}
+                    })
+            }
+        }
 
         // Apply Theme
         val theme = currentTheme

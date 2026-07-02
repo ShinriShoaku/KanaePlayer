@@ -16,7 +16,8 @@ import com.bumptech.glide.Glide
 
 class TikTokJoinOverlayManager(private val context: Context) {
     private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private var rootView: View? = null
+    private var windowView: android.widget.FrameLayout? = null
+    private var contentView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
 
@@ -32,17 +33,14 @@ class TikTokJoinOverlayManager(private val context: Context) {
     private val handler = Handler(Looper.getMainLooper())
     var isShowing = false
         private set
-    private val displayDurationMs = 3000L
+    private var displayDurationMs = 4000L
 
     private val hideRunnable = Runnable { hideWithAnimation() }
 
-    fun showJoin(nickname: String, profileUrl: String?, isDummy: Boolean = false) {
+    fun showJoin(nickname: String, profileUrl: String?, isDummy: Boolean = false, persistent: Boolean = false) {
         handler.post {
-            if (rootView == null) setupView()
+            if (windowView == null) setupView()
             
-            // Apply posisi terakhir
-            applyConfigInternal(lastX, lastY, lastScale)
-
             tvUser?.text = if (isDummy) "$nickname (Preview)" else "$nickname joined"
             profileUrl?.let {
                 ivImage?.let { img -> 
@@ -52,73 +50,86 @@ class TikTokJoinOverlayManager(private val context: Context) {
                 ivImage?.setImageResource(android.R.drawable.ic_menu_gallery)
             }
 
+            // Apply posisi dan measurement SETELAH teks di-set agar ukurannya pas
+            applyConfigInternal(lastX, lastY, lastScale)
+
             if (!isShowing) {
                 try {
-                    wm.addView(rootView, layoutParams)
+                    wm.addView(windowView, layoutParams)
                     isShowing = true
                     startFadeIn()
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
             } else {
+                // Jika sudah tampil, batalkan animasi fade out yang mungkin sedang berjalan
+                contentView?.clearAnimation()
+                contentView?.alpha = 1f
                 handler.removeCallbacks(hideRunnable)
             }
             
-            if (!isDummy) {
-                handler.postDelayed(hideRunnable, displayDurationMs)
+            if (persistent) {
+                handler.removeCallbacks(hideRunnable)
+            } else {
+                resetHideTimer()
             }
         }
     }
 
-    fun applyConfig(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
+    fun resetHideTimer() {
+        if (!isShowing) return
+        handler.removeCallbacks(hideRunnable)
+        handler.postDelayed(hideRunnable, displayDurationMs)
+    }
+
+    fun applyConfig(x: Int, y: Int, scale: Float) {
         handler.post {
             lastX = x
             lastY = y
             lastScale = scale
-            applyConfigInternal(x, y, scale, wDp, hDp)
+            applyConfigInternal(x, y, scale)
         }
     }
 
-    private fun applyConfigInternal(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
-        if (rootView == null) return
+    private fun applyConfigInternal(x: Int, y: Int, scale: Float) {
+        val window = windowView ?: return
+        val content = contentView ?: return
         val lp = layoutParams ?: return
-        val view = rootView ?: return
 
         lp.x = x
         lp.y = y
 
-        view.pivotX = 0f
-        view.pivotY = 0f
-        view.scaleX = scale
-        view.scaleY = scale
+        // Pivot di pojok kiri atas untuk zoom effect
+        content.pivotX = 0f
+        content.pivotY = 0f
+        content.scaleX = scale
+        content.scaleY = scale
 
-        val density = context.resources.displayMetrics.density
-        val baseW = if (wDp > 0) (wDp * density).toInt() else -2 
-        val baseH = if (hDp > 0) (hDp * density).toInt() else -2
-
-        view.measure(
-            if (baseW > 0) View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            if (baseH > 0) View.MeasureSpec.makeMeasureSpec(baseH, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        // Selalu gunakan WRAP_CONTENT untuk Join Overlay agar text tidak terpotong
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
 
-        val actualW = if (baseW > 0) baseW else view.measuredWidth
-        val actualH = if (baseH > 0) baseH else view.measuredHeight
+        val actualW = content.measuredWidth
+        val actualH = content.measuredHeight
 
-        lp.width = (actualW * scale).toInt()
-        lp.height = (actualH * scale).toInt()
+        // Ukuran jendela mengikuti hasil scale (zoom)
+        lp.width = (actualW * scale).toInt().coerceAtLeast(1)
+        lp.height = (actualH * scale).toInt().coerceAtLeast(1)
 
         gestureHelper?.let {
             it.currentScale = scale
             it.updateBaseSize(actualW, actualH)
         }
 
-        try { wm.updateViewLayout(view, lp) } catch (_: Exception) {}
+        try { wm.updateViewLayout(window, lp) } catch (_: Exception) {}
     }
 
     fun setCanvasMode(locked: Boolean, x: Int = 0, y: Int = 0) {
         gestureHelper?.locked = locked
         val lp = layoutParams ?: return
-        val view = rootView ?: return
+        val window = windowView ?: return
         if (locked) {
             lp.x = x; lp.y = y
             lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -127,7 +138,7 @@ class TikTokJoinOverlayManager(private val context: Context) {
             lp.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
                       WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
         }
-        try { wm.updateViewLayout(view, lp) } catch (_: Exception) {}
+        try { wm.updateViewLayout(window, lp) } catch (_: Exception) {}
     }
 
     private var currentLayoutId: Int = R.layout.overlay_tiktok_join
@@ -142,23 +153,24 @@ class TikTokJoinOverlayManager(private val context: Context) {
                     if (wasShowing) showJoin("Preview", null, isDummy = true)
                 }
             } else {
-                rootView = null // Force recreate on next show
+                windowView = null // Force recreate on next show
             }
         }
     }
 
     private fun setupView() {
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
-        rootView = LayoutInflater.from(themed).inflate(currentLayoutId, null)
         
-        // Add default LayoutParams to prevent NPE during manual measurement
-        rootView?.layoutParams = android.widget.FrameLayout.LayoutParams(
-            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
-            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
-        )
+        // Buat FrameLayout sebagai window root untuk menghindari clipping saat scale
+        val container = android.widget.FrameLayout(themed)
+        val content = LayoutInflater.from(themed).inflate(currentLayoutId, container, false)
+        container.addView(content)
+        
+        windowView = container
+        contentView = content
 
-        ivImage = rootView?.findViewById(R.id.join_user_image)
-        tvUser = rootView?.findViewById(R.id.join_user_text)
+        ivImage = content.findViewById(R.id.join_user_image)
+        tvUser = content.findViewById(R.id.join_user_text)
 
         layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -174,19 +186,20 @@ class TikTokJoinOverlayManager(private val context: Context) {
             y = 200
         }
 
-        gestureHelper = OverlayGestureHelper(rootView!!, layoutParams!!, wm).apply {
+        gestureHelper = OverlayGestureHelper(container, layoutParams!!, wm).apply {
             onInteraction = {
+                resetHideTimer()
                 lastX = layoutParams?.x ?: lastX
                 lastY = layoutParams?.y ?: lastY
                 onPositionChanged?.invoke(lastX, lastY)
             }
         }
-        rootView?.setOnTouchListener(gestureHelper)
+        container.setOnTouchListener(gestureHelper)
     }
 
     private fun startFadeIn() {
         val fadeIn = AlphaAnimation(0f, 1f).apply { duration = 500 }
-        rootView?.startAnimation(fadeIn)
+        contentView?.startAnimation(fadeIn)
     }
 
     private fun hideWithAnimation() {
@@ -201,20 +214,21 @@ class TikTokJoinOverlayManager(private val context: Context) {
                 }
             })
         }
-        rootView?.startAnimation(fadeOut)
+        contentView?.startAnimation(fadeOut)
     }
 
     fun hide() {
         handler.removeCallbacks(hideRunnable)
-        if (isShowing && rootView != null) {
+        if (isShowing && windowView != null) {
             try {
-                wm.removeView(rootView)
+                wm.removeView(windowView)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
         isShowing = false
-        rootView = null
+        windowView = null
+        contentView = null
         ivImage = null
         tvUser = null
         gestureHelper = null
