@@ -68,17 +68,9 @@ class TikTokLikeOverlayManager(private val context: Context) {
             tvUser?.text = nickname
             tvCount?.text = if (isDummy) "Tapped (Preview)" else "Tapped x$count"
 
-            profileUrl?.let {
-                ivImage?.let { img ->
-                    Glide.with(context).load(it).circleCrop().into(img)
-                }
-            } ?: run {
-                ivImage?.setImageResource(android.R.drawable.ic_menu_gallery)
-            }
-
-            // Apply posisi dan measurement SETELAH teks di-set agar ukurannya pas
-            applyConfigInternal(lastX, lastY, lastScale)
-
+            // Window HARUS sudah attach ke WindowManager sebelum kita panggil
+            // updateViewLayout (di dalam applyConfigInternal), kalau tidak
+            // panggilan itu gagal diam-diam dan ukuran window jadi salah.
             if (!isShowing) {
                 try {
                     wm.addView(windowView, layoutParams)
@@ -87,6 +79,14 @@ class TikTokLikeOverlayManager(private val context: Context) {
                     e.printStackTrace()
                 }
             }
+
+            loadProfileImage(profileUrl)
+
+            // Apply posisi dan measurement awal (perkiraan, sebelum gambar
+            // profil selesai di-load). loadProfileImage() akan memanggil
+            // applyConfigInternal lagi setelah gambar benar-benar siap,
+            // supaya window ikut resize dan gambar+nama tidak terpotong.
+            applyConfigInternal(lastX, lastY, lastScale)
 
             // Spawn bubbles based on count (but capped to avoid lag)
             if (!isDummy && animationEnabled) {
@@ -103,6 +103,48 @@ class TikTokLikeOverlayManager(private val context: Context) {
                 resetHideTimer()
             }
         }
+    }
+
+    private fun loadProfileImage(profileUrl: String?) {
+        val img = ivImage ?: return
+
+        if (profileUrl.isNullOrEmpty()) {
+            img.setImageResource(android.R.drawable.ic_menu_gallery)
+            return
+        }
+
+        Glide.with(context)
+            .load(profileUrl)
+            .circleCrop()
+            .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
+                override fun onLoadFailed(
+                    e: com.bumptech.glide.load.engine.GlideException?,
+                    model: Any?,
+                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    // Gambar gagal dimuat: tetap resize window supaya
+                    // nama/count tidak ikut kepotong.
+                    handler.post { applyConfigInternal(lastX, lastY, lastScale) }
+                    return false
+                }
+
+                override fun onResourceReady(
+                    resource: android.graphics.drawable.Drawable,
+                    model: Any,
+                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>?,
+                    dataSource: com.bumptech.glide.load.DataSource,
+                    isFirstResource: Boolean
+                ): Boolean {
+                    // Gambar baru selesai dimuat (async) SETELAH window
+                    // pertama kali di-measure/resize. Resize ulang di sini
+                    // supaya window mengikuti ukuran konten yang sudah
+                    // termasuk gambar profil, bukan ukuran lama (kosong).
+                    handler.post { applyConfigInternal(lastX, lastY, lastScale) }
+                    return false
+                }
+            })
+            .into(img)
     }
 
     fun setAnimationEnabled(enabled: Boolean) {

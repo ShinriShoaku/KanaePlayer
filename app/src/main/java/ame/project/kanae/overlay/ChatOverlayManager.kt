@@ -2,6 +2,8 @@ package ame.project.kanae.overlay
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.graphics.Color
 import android.graphics.PixelFormat
@@ -9,7 +11,9 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.*
+import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.text.SpannableStringBuilder
@@ -38,7 +42,7 @@ class ChatOverlayManager(
     private var chatContainer: LinearLayout? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
-    
+
     private var overlayWidth: Int = 150
     private var displayDurationMs: Long = 6000
     private val handler = Handler(Looper.getMainLooper())
@@ -50,6 +54,14 @@ class ChatOverlayManager(
     private var currentTheme: CustomTheme = CustomTheme()
     private val activeChats = mutableListOf<View>()
     private val dummyAutoHideRunnable = Runnable { clearDummyChat() }
+
+    // Animation Window for Stickers
+    private var animWindowView: ViewGroup? = null
+    private var animBubbleContainer: FrameLayout? = null
+    private var animLayoutParams: WindowManager.LayoutParams? = null
+    private var isAnimShowing = false
+    private var stickerAnimationEnabled = true
+    private val random = java.util.Random()
 
     var isShowing: Boolean = false
         private set
@@ -66,7 +78,7 @@ class ChatOverlayManager(
 
     fun show(x: Int = 16, y: Int = 500, scale: Float = 1f, width: Int = 150) {
         if (isShowing) return
-        
+
         this.overlayWidth = width
         this.currentTextScale = scale
 
@@ -119,10 +131,10 @@ class ChatOverlayManager(
             params = params,
             wm = wm,
             onSingleTap = null
-        ).also { 
+        ).also {
             it.currentScale = 1f // Visual scale remains 1
-            it.updateBaseSize(baseW, 100) 
-            if (visualPunchEnabled) view.setOnTouchListener(null) 
+            it.updateBaseSize(baseW, 100)
+            if (visualPunchEnabled) view.setOnTouchListener(null)
             else view.setOnTouchListener(it)
         }
 
@@ -143,12 +155,12 @@ class ChatOverlayManager(
     fun addDummyChat(autoHideMs: Long = 0) {
         if (!isShowing) return
         handler.removeCallbacks(dummyAutoHideRunnable)
-        
+
         if (!isDummyActive) {
             isDummyActive = true
             addChat("System", "Chat Overlay Active (Drag me!)", isDummy = true)
         }
-        
+
         if (autoHideMs > 0) {
             handler.postDelayed(dummyAutoHideRunnable, autoHideMs)
         }
@@ -171,6 +183,7 @@ class ChatOverlayManager(
     fun hide() {
         if (!isShowing) return
         handler.removeCallbacksAndMessages(null)
+        hideAnimationWindow()
         punchLayout?.let {
             runCatching { wm.removeView(it) }
         }
@@ -205,10 +218,10 @@ class ChatOverlayManager(
     private fun applyThemeToRoot() {
         val root = rootView ?: return
         if (isTransparent) return
-        
+
         val theme = currentTheme
         val bgAlpha = theme.alpha
-        
+
         theme.bgPrimary?.let { color ->
             val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
             root.background?.let { bg ->
@@ -236,7 +249,7 @@ class ChatOverlayManager(
     fun applyTheme(theme: CustomTheme) {
         this.currentTheme = theme
         applyThemeToRoot()
-        // Refresh existing chats if possible? 
+        // Refresh existing chats if possible?
         // For simplicity, we just apply to new ones, but we can clear dummy
         if (isDummyActive) {
             clearDummyChat()
@@ -248,6 +261,13 @@ class ChatOverlayManager(
         if (!isShowing) return
         val container = chatContainer ?: return
 
+        // Batasi jumlah animasi sticker yang terbang per 1 chat, walaupun
+        // pesannya berisi banyak emote (mis. orang spam sticker yang sama
+        // berulang kali dalam 1 comment). Gambar emote di teks tetap tampil
+        // semua, hanya animasi "terbang"-nya yang dibatasi.
+        var stickerSpawnCount = 0
+        val maxStickerSpawnPerChat = 2
+
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val chatView = LayoutInflater.from(themed).inflate(currentLayoutId, container, false)
         if (isDummy) chatView.tag = "dummy"
@@ -258,7 +278,7 @@ class ChatOverlayManager(
 
         tvNick?.text = nickname
         tvNick?.textSize = 12f * currentTextScale
-        
+
         // Handle Emotes
         val ssb = SpannableStringBuilder(message)
         tvMsg?.text = ssb
@@ -272,23 +292,30 @@ class ChatOverlayManager(
                     .into(object : CustomTarget<android.graphics.Bitmap>() {
                         override fun onResourceReady(resource: android.graphics.Bitmap, transition: Transition<in android.graphics.Bitmap>?) {
                             val currentText = tvMsg?.text as? SpannableStringBuilder ?: SpannableStringBuilder(tvMsg?.text ?: "")
-                            
+
                             val size = (18f * currentTextScale * context.resources.displayMetrics.density).toInt()
                             val drawable = BitmapDrawable(context.resources, resource)
                             drawable.setBounds(0, 0, size, size)
                             val span = ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM)
-                            
+
                             var pos = emote.placeInComment
                             if (pos < 0) pos = 0
                             if (pos > currentText.length) pos = currentText.length
-                            
+
                             if (pos == currentText.length) {
                                 currentText.append(" ")
                             }
-                            
+
                             try {
                                 currentText.setSpan(span, pos, pos + 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                                 tvMsg?.text = currentText
+
+                                // Trigger sticker animation if enabled, dibatasi
+                                // maksimal 2 animasi per chat agar tidak spam.
+                                if (stickerAnimationEnabled && !isDummy && stickerSpawnCount < maxStickerSpawnPerChat) {
+                                    stickerSpawnCount++
+                                    spawnSticker(emote.imageUrl)
+                                }
                             } catch (e: Exception) {}
                         }
                         override fun onLoadCleared(placeholder: Drawable?) {}
@@ -348,13 +375,13 @@ class ChatOverlayManager(
 
         // Text Colors
         theme.textPrimary?.let { tvMsg?.setTextColor(it) }
-        theme.textSecondary?.let { tvNick?.setTextColor(it) } 
+        theme.textSecondary?.let { tvNick?.setTextColor(it) }
             ?: theme.textPrimary?.let { tvNick?.setTextColor(it) }
             ?: run { if (currentBgId != 0) tvNick?.setTextColor(color) }
 
         // Fade in animation
         chatView.alpha = 0f
-        
+
         if (isDummy) {
             // Remove old dummy if exists
             for (i in 0 until container.childCount) {
@@ -368,9 +395,9 @@ class ChatOverlayManager(
             container.addView(chatView)
             activeChats.add(chatView)
         }
-        
+
         chatView.animate().alpha(1f).setDuration(300).start()
-        
+
         // Update window size to accommodate new message
         syncWindowSize()
 
@@ -433,9 +460,9 @@ class ChatOverlayManager(
         this.overlayWidth = widthDp
         val params = layoutParams ?: return
         val view = rootView ?: return
-        
+
         // Update root view internal layout params as well
-        view.layoutParams?.let { 
+        view.layoutParams?.let {
             it.width = widthDp.dp
             view.layoutParams = it
         }
@@ -450,9 +477,9 @@ class ChatOverlayManager(
     private fun syncWindowSize() {
         val view = rootView ?: return
         val params = layoutParams ?: return
-        
+
         val baseW = overlayWidth.dp
-        
+
         // Sync root view layout params width
         view.layoutParams?.let {
             if (it.width != baseW) {
@@ -469,16 +496,17 @@ class ChatOverlayManager(
 
         params.width = baseW
         params.height = baseH
-        
+
         gestureHelper?.updateBaseSize(baseW, baseH)
         punchLayout?.let { runCatching { wm.updateViewLayout(it, params) } }
+        updateAnimationWindowPos()
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0) {
         val params = layoutParams ?: return
         val view = punchLayout ?: return
         val content = rootView ?: return
-        
+
         params.x = x
         params.y = y
         this.currentTextScale = scale
@@ -488,16 +516,16 @@ class ChatOverlayManager(
         content.pivotY = 0f
         content.scaleX = 1f
         content.scaleY = 1f
-        
+
         // Update window size agar mencakup seluruh layout
-        val dp = context!!.resources.displayMetrics.density
+        val dp = context.resources.displayMetrics.density
         val baseW = if (width > 0) {
             this.overlayWidth = width
             (width * dp).toInt()
         } else {
             overlayWidth.dp
         }
-        
+
         // Sync root view layout params width
         view.layoutParams?.let {
             it.width = baseW
@@ -522,7 +550,7 @@ class ChatOverlayManager(
 
         params.width = baseW
         params.height = baseH
-        
+
         // Sinkronkan ke gesture helper
         gestureHelper?.let {
             it.currentScale = 1f
@@ -530,6 +558,132 @@ class ChatOverlayManager(
         }
 
         runCatching { wm.updateViewLayout(view, params) }
+        updateAnimationWindowPos()
+    }
+
+    // --- Sticker Animation Logic ---
+
+    fun setStickerAnimationEnabled(enabled: Boolean) {
+        this.stickerAnimationEnabled = enabled
+        if (!enabled) hideAnimationWindow()
+    }
+
+    private fun showAnimationWindow() {
+        if (!stickerAnimationEnabled || isAnimShowing) return
+        if (animWindowView == null) setupAnimationWindow()
+
+        try {
+            updateAnimationWindowPos()
+            wm.addView(animWindowView, animLayoutParams)
+            isAnimShowing = true
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun updateAnimationWindowPos() {
+        val lp = layoutParams ?: return
+        val alp = animLayoutParams ?: return
+        val window = animWindowView ?: return
+
+        alp.x = lp.x
+        val density = context.resources.displayMetrics.density
+        val baseAnimH = (250 * density).toInt()
+
+        alp.width = lp.width
+        alp.height = baseAnimH
+        alp.y = lp.y - alp.height
+
+        if (isAnimShowing) {
+            try { wm.updateViewLayout(window, alp) } catch (_: Exception) {}
+        }
+    }
+
+    private fun setupAnimationWindow() {
+        val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
+        val root = LayoutInflater.from(themed)
+            .inflate(R.layout.item_sticker_bubble, null, false) as ViewGroup
+        animWindowView = root
+        animBubbleContainer = root.findViewById(R.id.sticker_bubble_container)
+
+        animLayoutParams = WindowManager.LayoutParams(
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else WindowManager.LayoutParams.TYPE_PHONE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+        }
+    }
+
+    private fun hideAnimationWindow() {
+        if (isAnimShowing && animWindowView != null) {
+            try { wm.removeView(animWindowView) } catch (_: Exception) {}
+        }
+        isAnimShowing = false
+        animWindowView = null
+        animBubbleContainer = null
+        animLayoutParams = null
+    }
+
+    private fun spawnSticker(imageUrl: String) {
+        handler.post {
+            if (!isAnimShowing) showAnimationWindow()
+            val container = animBubbleContainer ?: return@post
+
+            val sticker = ImageView(context).apply {
+                val size = (60 + random.nextInt(20)).dp
+                layoutParams = FrameLayout.LayoutParams(size, size).apply {
+                    gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                }
+                alpha = 0f
+                scaleX = 0.5f
+                scaleY = 0.5f
+            }
+            container.addView(sticker)
+
+            Glide.with(context).load(imageUrl).into(sticker)
+
+            // Jitter horizontal dibuat proporsional terhadap lebar window
+            // sticker (yang mengikuti lebar chat overlay), bukan angka dp
+            // tetap. Kalau pakai angka tetap, di overlay yang sempit
+            // (overlayWidth kecil) jitter-nya jadi kegedean relatif dan
+            // sticker keliatan sering geser ke pinggir, bukan center.
+            val windowWidthPx = (animLayoutParams?.width?.takeIf { it > 0 })
+                ?: (overlayWidth.dp)
+            val maxJitter = windowWidthPx * 0.18f
+            val startX = (random.nextFloat() - 0.5f) * maxJitter
+            val endX = startX + (random.nextFloat() - 0.5f) * (maxJitter * 0.5f)
+            val endY = -(150 + random.nextInt(100)).dp.toFloat()
+            val duration = 2000L + random.nextInt(1000)
+            val rotation = (random.nextFloat() - 0.5f) * 40f
+
+            sticker.translationX = startX
+
+            val fadeIn = ObjectAnimator.ofFloat(sticker, View.ALPHA, 0f, 1f).setDuration(400)
+            val fadeOut = ObjectAnimator.ofFloat(sticker, View.ALPHA, 1f, 0f).setDuration(500)
+            fadeOut.startDelay = duration - 500
+
+            val scaleUpX = ObjectAnimator.ofFloat(sticker, View.SCALE_X, 0.5f, 1f).setDuration(500)
+            val scaleUpY = ObjectAnimator.ofFloat(sticker, View.SCALE_Y, 0.5f, 1f).setDuration(500)
+
+            val moveUp = ObjectAnimator.ofFloat(sticker, View.TRANSLATION_Y, 0f, endY).setDuration(duration)
+            val sway = ObjectAnimator.ofFloat(sticker, View.TRANSLATION_X, startX, endX).setDuration(duration)
+            val spin = ObjectAnimator.ofFloat(sticker, View.ROTATION, 0f, rotation).setDuration(duration)
+
+            val set = AnimatorSet()
+            set.playTogether(fadeIn, fadeOut, scaleUpX, scaleUpY, moveUp, sway, spin)
+            set.interpolator = AccelerateDecelerateInterpolator()
+            set.addListener(object : AnimatorListenerAdapter() {
+                override fun onAnimationEnd(animation: Animator) {
+                    container.removeView(sticker)
+                }
+            })
+            set.start()
+        }
     }
 
     fun setCanvasMode(locked: Boolean, x: Int = 0, y: Int = 0) {
@@ -546,5 +700,6 @@ class ChatOverlayManager(
                     WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         }
         runCatching { wm.updateViewLayout(view, params) }
+        updateAnimationWindowPos()
     }
 }

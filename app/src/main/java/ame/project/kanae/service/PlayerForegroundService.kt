@@ -199,6 +199,7 @@ class PlayerForegroundService : Service() {
             onClose = { broadcastState() }
         ).apply {
             setTransparent(prefs.getBoolean("chat_transparent", true))
+            setStickerAnimationEnabled(prefs.getBoolean("chat_sticker_animation", true))
             setOverlayWidth(prefs.getInt("chat_width", 300))
             setDisplayDuration(prefs.getInt("chat_duration", 6))
             updateStyle(
@@ -1008,8 +1009,11 @@ class PlayerForegroundService : Service() {
     }
 
     fun updateLikeAnimationEnabled(enabled: Boolean) {
-
         likeOverlayManager.setAnimationEnabled(enabled)
+    }
+
+    fun updateStickerAnimationEnabled(enabled: Boolean) {
+        chatOverlayManager.setStickerAnimationEnabled(enabled)
     }
 
 
