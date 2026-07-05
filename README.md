@@ -7,13 +7,12 @@
 
 **KanaePlayer** adalah aplikasi pemutar audio YouTube revolusioner yang dirancang khusus untuk streamer TikTok. Aplikasi ini memungkinkan penonton Anda melakukan request lagu secara real-time melalui chat TikTok Live, lengkap dengan sistem overlay yang canggih dan stabil.
 
-Evolusi dari `main.py` (FastAPI + yt-dlp + mpv) menjadi aplikasi Android native yang ditenagai oleh **NewPipeExtractor**.
 
 ---
 
 ## ✨ Fitur Unggulan
 
-- **🚀 YouTube Audio Streaming**: Pemutaran audio super ringan langsung dari YouTube.
+- **🚀 YouTube Audio Streaming**: Pemutaran audio super ringan dengan arsitektur dual-engine (**NewPipeExtractor** + **yt-dlp** sebagai fallback).
 - **💬 TikTok Live Chat Sync**: Integrasi mulus dengan TikTok Live menggunakan **EulerStream API**.
 - **🖼️ Advanced Floating Overlays**:
   - **Playing Overlay**: Menampilkan informasi lagu saat ini.
@@ -40,7 +39,7 @@ Evolusi dari `main.py` (FastAPI + yt-dlp + mpv) menjadi aplikasi Android native 
 | Kategori | Teknologi |
 |---|---|
 | **Audio Engine** | Media3 ExoPlayer |
-| **Extraction** | NewPipeExtractor |
+| **Extraction** | NewPipeExtractor (Primary) + yt-dlp (Fallback) |
 | **Bypass Logic** | Custom Po-Token Generator (WebView + BotGuard VM) |
 | **Live Sync** | EulerStream API (WebSocket + HTTP Fallback) |
 | **UI/UX** | XML Layouts + Material Components + WindowManager |
@@ -75,6 +74,16 @@ Evolusi dari `main.py` (FastAPI + yt-dlp + mpv) menjadi aplikasi Android native 
 
 > [!TIP]
 > Semua prefix dan nama perintah dapat diubah melalui menu **Settings** di dalam aplikasi!
+
+---
+
+## 📂 Arsitektur Proyek
+
+- **`YtDlpHelper`**: Mengelola arsitektur *dual-library*. Jika **NewPipeExtractor** gagal (misal: karena update YouTube yang mematahkan extractor), aplikasi akan otomatis beralih ke **yt-dlp** untuk menjamin keberhasilan streaming.
+- **`PlayerForegroundService`**: Jantung aplikasi yang mengelola audio, chat socket, dan lifecycle overlay.
+- **`NewPipeDownloader`**: Menangani otentikasi YouTube dengan menyuntikkan `X-Goog-Po-Token`.
+- **`PoTokenGenerator`**: Generator token otomatis menggunakan skrip BotGuard tersembunyi.
+- **`OverlayManager`**: Sistem manajemen jendela melayang yang mendukung interaksi drag-and-drop.
 
 ---
 
