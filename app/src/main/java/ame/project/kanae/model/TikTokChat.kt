@@ -17,7 +17,9 @@ data class TikTokChat(
         STOP,
         QUEUE,
         /** #cm <position>  →  commandArg = "1", "2", etc. (1-indexed) */
-        CLEAR_MUSIC
+        CLEAR_MUSIC,
+        /** #seekbar on/off to enable/disable all commands */
+        COMMAND_TOGGLE
     }
 }
 

@@ -31,7 +31,8 @@ class CanvasActivity : AppCompatActivity() {
         LYRICS("Lyrics Card", "🎤"),
         NOTIF("Notification", "🔔"),
         JOIN("User Join", "👋"),
-        LIKE("Like/Tap", "💖")
+        LIKE("Like/Tap", "💖"),
+        FOLLOW("Follow", "👤")
     }
 
     data class ThemeStyle(
@@ -82,7 +83,12 @@ class CanvasActivity : AppCompatActivity() {
         
         ThemeStyle("Like Card", R.layout.overlay_tiktok_like, 0, UIComponent.LIKE),
         ThemeStyle("Like Compact", R.layout.overlay_tiktok_like_compact, 0, UIComponent.LIKE),
-        ThemeStyle("Like Neon", R.layout.overlay_tiktok_like_neon, 0, UIComponent.LIKE)
+        ThemeStyle("Like Neon", R.layout.overlay_tiktok_like_neon, 0, UIComponent.LIKE),
+        
+        ThemeStyle("Follow Standard", R.layout.overlay_tiktok_follow, 0, UIComponent.FOLLOW),
+        ThemeStyle("Follow Glass", R.layout.overlay_tiktok_follow_glass, 0, UIComponent.FOLLOW),
+        ThemeStyle("Follow Neon", R.layout.overlay_tiktok_follow_neon, 0, UIComponent.FOLLOW),
+        ThemeStyle("Follow Compact", R.layout.overlay_tiktok_follow_compact, 0, UIComponent.FOLLOW)
     )
 
     private var service: PlayerForegroundService? = null
@@ -377,6 +383,7 @@ class CanvasActivity : AppCompatActivity() {
                 }
                 UIComponent.JOIN   -> service?.updateJoinStyle(pair.first)
                 UIComponent.LIKE   -> service?.updateLikeStyle(pair.first)
+                UIComponent.FOLLOW -> service?.updateFollowStyle(pair.first)
                 else -> {}
             }
         }
@@ -448,6 +455,10 @@ class CanvasActivity : AppCompatActivity() {
                     view.layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT
                     view.layoutParams.height = (200 * resources.displayMetrics.density).toInt()
                 }
+                UIComponent.FOLLOW -> {
+                    view.findViewById<TextView>(R.id.follow_user_text)?.text = "Preview User followed"
+                    view.layoutParams.width = ViewGroup.LayoutParams.WRAP_CONTENT
+                }
             }
             previewFrame.addView(view)
             applyCustomColors(view)
@@ -505,7 +516,7 @@ class CanvasActivity : AppCompatActivity() {
                 textPrimary?.let { tvMsg?.setTextColor(it) }
                 textSecondary?.let { (userTag as? TextView)?.setTextColor(it) } ?: textPrimary?.let { (userTag as? TextView)?.setTextColor(it) }
             }
-            UIComponent.QUEUE, UIComponent.PLAYER, UIComponent.LYRICS, UIComponent.NOTIF, UIComponent.JOIN, UIComponent.LIKE -> {
+            UIComponent.QUEUE, UIComponent.PLAYER, UIComponent.LYRICS, UIComponent.NOTIF, UIComponent.JOIN, UIComponent.LIKE, UIComponent.FOLLOW -> {
                 bgPrimary?.let { color ->
                     val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
                     view.background?.let { bg ->
@@ -523,7 +534,8 @@ class CanvasActivity : AppCompatActivity() {
                     R.id.overlay_queue_count_badge, R.id.overlay_title, 
                     R.id.overlay_lyrics_current, R.id.overlay_lyrics_prev, R.id.overlay_lyrics_next,
                     R.id.tiktok_notif_user, R.id.tiktok_notif_action,
-                    R.id.join_user_text, R.id.like_user_name, R.id.like_count_text
+                    R.id.join_user_text, R.id.like_user_name, R.id.like_count_text,
+                    R.id.follow_user_text
                 )
                 textIds.forEach { id -> textPrimary?.let { view.findViewById<TextView>(id)?.setTextColor(it) } }
             }
@@ -590,6 +602,9 @@ class CanvasActivity : AppCompatActivity() {
                     UIComponent.LIKE -> {
                         view.findViewById<TextView>(R.id.like_user_name)?.text = "User"
                         view.findViewById<TextView>(R.id.like_count_text)?.text = "x99"
+                    }
+                    UIComponent.FOLLOW -> {
+                        view.findViewById<TextView>(R.id.follow_user_text)?.text = "User followed"
                     }
                 }
 

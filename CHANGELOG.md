@@ -1,5 +1,13 @@
 # Changelog - KanaePlayer
 
+## [9.3.0] - 2025-02-13
+
+### ✨ New Features
+- **Follow Overlay**: Menambahkan fitur overlay baru untuk mendeteksi dan menampilkan notifikasi saat penonton mem-follow akun secara real-time.
+- **Custom Style for Follow Overlay**: Dukungan kustomisasi gaya visual khusus untuk Follow Overlay.
+- **Duration Settings**: Menambahkan pengaturan durasi tampilan untuk Join, Like, dan Follow Overlay agar pengguna dapat mengatur berapa lama notifikasi muncul di layar.
+- **Seekbar Chat Command**: Penambahan perintah chat untuk mengaktifkan atau menonaktifkan seekbar secara dinamis (misal: `#seekbar on` / `#seekbar off`).
+
 ## [9.2.1] - 2025-11-12
 
 ### ✨ Improvements & Fixes

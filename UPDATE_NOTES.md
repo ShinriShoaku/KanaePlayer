@@ -1,5 +1,21 @@
 # Update Notes - KanaePlayer
 
+## Update 9.3.0: Follow Overlay & Duration Settings
+
+Update ini memperkenalkan fitur Follow Overlay, kustomisasi durasi, dan perintah chat baru untuk kontrol seekbar.
+
+### 1. Follow Overlay & Customization
+- **New Follow Overlay**: Sekarang aplikasi dapat merespon aksi Follow dari penonton dengan notifikasi visual yang menarik.
+- **Follow Style**: Kamu dapat mengatur tampilan Follow Overlay agar sesuai dengan tema streaming kamu melalui menu pengaturan.
+
+### 2. Duration Settings
+- **Display Duration**: Kontrol penuh atas durasi kemunculan overlay. Kamu bisa mengatur waktu tampil untuk Join, Like, dan Follow overlay secara terpisah.
+
+### 3. Seekbar Control Command
+- **Chat Command**: Admin atau moderator dapat mengaktifkan atau menyembunyikan seekbar player menggunakan perintah chat, memberikan kontrol lebih tanpa harus membuka aplikasi.
+
+---
+
 ## Update 9.2.1: Sticker Support & Overlay Fixes
 
 Update ini membawa perbaikan pada sistem overlay untuk mendukung tampilan stiker yang lebih baik.

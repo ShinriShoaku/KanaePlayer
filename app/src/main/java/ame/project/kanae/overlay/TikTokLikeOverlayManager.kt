@@ -18,6 +18,8 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.TextView
 import ame.project.kanae.R
+import ame.project.kanae.model.CustomTheme
+import android.graphics.Color
 import com.bumptech.glide.Glide
 import java.util.Random
 
@@ -50,7 +52,13 @@ class TikTokLikeOverlayManager(private val context: Context) {
     private val handler = Handler(Looper.getMainLooper())
     var isShowing = false
         private set
-    private val displayDurationMs = 4000L
+    private var displayDurationMs = 4000L
+    private var currentTheme = CustomTheme()
+
+    fun setDuration(seconds: Int) {
+        displayDurationMs = seconds.toLong() * 1000L
+    }
+
     private val random = Random()
     private val heartTints = intArrayOf(
         0xFFFF4081.toInt(), // pink
@@ -60,6 +68,37 @@ class TikTokLikeOverlayManager(private val context: Context) {
     )
 
     private val hideRunnable = Runnable { hide() }
+
+    fun applyTheme(theme: CustomTheme) {
+        this.currentTheme = theme
+        if (isShowing) {
+            handler.post { applyThemeToView(contentView) }
+        }
+    }
+
+    private fun applyThemeToView(view: View?) {
+        val v = view ?: return
+        val theme = currentTheme
+        val bgAlpha = theme.alpha
+        
+        theme.bgPrimary?.let { color ->
+            val colorWithAlpha = Color.argb(bgAlpha, Color.red(color), Color.green(color), Color.blue(color))
+            v.background?.let { bg ->
+                val wrapped = androidx.core.graphics.drawable.DrawableCompat.wrap(bg.mutate())
+                androidx.core.graphics.drawable.DrawableCompat.setTint(wrapped, colorWithAlpha)
+                v.background = wrapped
+            } ?: run {
+                v.setBackgroundColor(colorWithAlpha)
+            }
+        } ?: run {
+            v.background?.mutate()?.alpha = bgAlpha
+        }
+        
+        theme.textPrimary?.let { color ->
+            tvUser?.setTextColor(color)
+            tvCount?.setTextColor(color)
+        }
+    }
 
     fun showLike(nickname: String, count: Int, profileUrl: String?, isDummy: Boolean = false, persistent: Boolean = false) {
         handler.post {
@@ -317,6 +356,8 @@ class TikTokLikeOverlayManager(private val context: Context) {
         ivImage = content.findViewById(R.id.like_user_image)
         tvUser = content.findViewById(R.id.like_user_name)
         tvCount = content.findViewById(R.id.like_count_text)
+
+        applyThemeToView(content)
 
         layoutParams = WindowManager.LayoutParams(
             WindowManager.LayoutParams.WRAP_CONTENT,

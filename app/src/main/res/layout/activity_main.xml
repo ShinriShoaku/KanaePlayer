@@ -675,7 +675,35 @@
                     android:textColor="@color/orange"
                     android:textSize="11sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="24dp" />
+                    android:layout_marginBottom="16dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="24dp">
+
+                    <TextView
+                        android:id="@+id/tvEnableCommandsLabel"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/enable_commands_label"
+                        android:textColor="@color/text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                    <SeekBar
+                        android:id="@+id/sbEnableCommands"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:max="1"
+                        android:progress="1"
+                        android:progressTint="@color/orange"
+                        android:thumbTint="@color/orange"
+                        android:splitTrack="false" />
+                </LinearLayout>
 
                 <!-- Request Limit -->
                 <com.google.android.material.textfield.TextInputLayout

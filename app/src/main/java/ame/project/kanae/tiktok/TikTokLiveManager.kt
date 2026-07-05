@@ -24,6 +24,7 @@ class TikTokLiveManager(
     }
 
     data class CommandConfig(
+        val enabled: Boolean = true,
         val requestPrefixes: List<String>    = listOf("#req", "#request", "#lagu", "#song"),
         val skipPrefixes: List<String>       = listOf("#skip", "#next", "#lewat"),
         val stopPrefixes: List<String>       = listOf("#stop"),
@@ -36,6 +37,7 @@ class TikTokLiveManager(
     var onLike: ((String, String, Int, String?) -> Unit)? = null // nick, uid, count, profile
     var onGift: ((String, String, String, Int, String?) -> Unit)? = null
     var onShare: ((String, String) -> Unit)? = null
+    var onFollow: ((String, String, String?) -> Unit)? = null // nick, uid, profile
     var onJoin: ((String, String, String?) -> Unit)? = null // nick, uid, profile
     var onConnected: (() -> Unit)? = null
     var onDisconnected: (() -> Unit)? = null
@@ -233,9 +235,24 @@ class TikTokLiveManager(
                             
                             scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
                         }
-                        "WebcastSocialMessage", "share" -> {
-                            val (uniqueId, nickname, _) = getUserInfo(data)
-                            scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
+                        "WebcastSocialMessage", "share", "follow" -> {
+                            logLongString("RAW SOCIAL", data.toString())
+                            val (uniqueId, nickname, profile) = getUserInfo(data)
+                            
+                            // Ambil tipe display dari berbagai kemungkinan lokasi
+                            val displayType = data["displayType"]?.asString 
+                                ?: data["common"]?.asJsonObject?.get("displayType")?.asString
+                                ?: data["displayText"]?.asJsonObject?.get("key")?.asString
+                                ?: ""
+                            
+                            val action = data["action"]?.asString ?: ""
+                                
+                            // Action "1" biasanya adalah Follow di protokol TikTok
+                            if (displayType.contains("follow", ignoreCase = true) || action == "1") {
+                                scope.launch(Dispatchers.Main) { onFollow?.invoke(nickname, uniqueId, profile) }
+                            } else {
+                                scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
+                            }
                         }
                         "WebcastMemberMessage", "member", "join" -> {
                             val (uniqueId, nickname, profile) = getUserInfo(data)
@@ -274,9 +291,22 @@ class TikTokLiveManager(
                         val giftIcon = extractGiftIcon(data)
                         scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
                     }
-                    "share", "WebcastSocialMessage" -> {
-                        val (uniqueId, nickname, _) = getUserInfo(data)
-                        scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
+                    "share", "follow", "WebcastSocialMessage" -> {
+                        logLongString("RAW SOCIAL (Legacy)", data.toString())
+                        val (uniqueId, nickname, profile) = getUserInfo(data)
+                        
+                        val displayType = data["displayType"]?.asString 
+                            ?: data["common"]?.asJsonObject?.get("displayType")?.asString
+                            ?: data["displayText"]?.asJsonObject?.get("key")?.asString
+                            ?: ""
+
+                        val action = data["action"]?.asString ?: ""
+
+                        if (displayType.contains("follow", ignoreCase = true) || action == "1") {
+                            scope.launch(Dispatchers.Main) { onFollow?.invoke(nickname, uniqueId, profile) }
+                        } else {
+                            scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
+                        }
                     }
                     "member", "WebcastMemberMessage" -> {
                         val (uniqueId, nickname, profile) = getUserInfo(data)
@@ -467,6 +497,14 @@ class TikTokLiveManager(
      */
     private fun parseCommand(text: String): Pair<TikTokChat.CommandType, String?> {
         val lower = text.lowercase().trim()
+
+        // Handle #seekbar command separately so it can be used even when commands are disabled
+        if (lower.startsWith("#seekbar")) {
+            val arg = text.substring("#seekbar".length).trim()
+            return TikTokChat.CommandType.COMMAND_TOGGLE to arg.ifBlank { null }
+        }
+
+        if (!commandConfig.enabled) return TikTokChat.CommandType.NONE to null
 
         // REQUEST (must extract arg = everything after prefix)
         commandConfig.requestPrefixes.forEach { prefix ->

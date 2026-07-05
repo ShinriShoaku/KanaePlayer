@@ -142,7 +142,7 @@ class QueueOverlayManager(
             punchEnabled = visualPunchEnabled
             // Use FrameLayout.LayoutParams for the inner view to avoid ClassCastException
             val lp = FrameLayout.LayoutParams(
-                300.dp, 
+                300.dp,
                 FrameLayout.LayoutParams.WRAP_CONTENT
             )
             addView(view, lp)

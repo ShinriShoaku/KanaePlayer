@@ -48,4 +48,5 @@
     <string name="label_gift_config">GIFT CONFIG</string>
     <string name="btn_image">IMAGE</string>
     <string name="btn_audio">AUDIO</string>
+    <string name="enable_commands_label">ENABLE CHAT COMMANDS</string>
 </resources>

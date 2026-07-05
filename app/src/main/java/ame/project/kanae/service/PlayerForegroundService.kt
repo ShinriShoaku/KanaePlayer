@@ -19,6 +19,7 @@ import ame.project.kanae.overlay.QueueOverlayManager
 import ame.project.kanae.overlay.TikTokNotificationOverlayManager
 import ame.project.kanae.overlay.TikTokJoinOverlayManager
 import ame.project.kanae.overlay.TikTokLikeOverlayManager
+import ame.project.kanae.overlay.TikTokFollowOverlayManager
 import ame.project.kanae.player.AudioPlayer
 import ame.project.kanae.player.YtDlpHelper
 import ame.project.kanae.tiktok.TikTokLiveManager
@@ -64,6 +65,7 @@ class PlayerForegroundService : Service() {
     private lateinit var notifOverlayManager: TikTokNotificationOverlayManager
     private lateinit var joinOverlayManager: TikTokJoinOverlayManager
     private lateinit var likeOverlayManager: TikTokLikeOverlayManager
+    private lateinit var followOverlayManager: TikTokFollowOverlayManager
     private lateinit var customOverlayManager: CustomOverlayManager
 
     private val queue       = ArrayDeque<Song>()
@@ -82,6 +84,7 @@ class PlayerForegroundService : Service() {
     private var useTiktokGiftIcon = true
     private var joinEnabled = true
     private var likeEnabled = true
+    private var followEnabled = true
     private var notifEnabled = true
 
     private var tts: TextToSpeech? = null
@@ -223,6 +226,7 @@ class PlayerForegroundService : Service() {
 
         joinOverlayManager = TikTokJoinOverlayManager(this).apply {
             updateStyle(prefs.getInt("canvas_join_layout", ame.project.kanae.R.layout.overlay_tiktok_join))
+            setDuration(prefs.getInt("join_duration", 4))
             
             // Restore last position
             val x = prefs.getInt("join_x", 100)
@@ -237,6 +241,7 @@ class PlayerForegroundService : Service() {
         likeOverlayManager = TikTokLikeOverlayManager(this).apply {
             updateStyle(prefs.getInt("canvas_like_layout", ame.project.kanae.R.layout.overlay_tiktok_like))
             setAnimationEnabled(prefs.getBoolean("like_animation_enabled", true))
+            setDuration(prefs.getInt("like_duration", 4))
             
             // Restore last position
             val x = prefs.getInt("like_x", 50)
@@ -246,6 +251,21 @@ class PlayerForegroundService : Service() {
 
             onPositionChanged = { nx, ny ->
                 prefs.edit().putInt("like_x", nx).putInt("like_y", ny).apply()
+            }
+        }
+        followOverlayManager = TikTokFollowOverlayManager(this).apply {
+            updateStyle(prefs.getInt("canvas_follow_layout", ame.project.kanae.R.layout.overlay_tiktok_follow))
+            setDuration(prefs.getInt("follow_duration", 4))
+            setVisualPunchEnabled(prefs.getBoolean("follow_visual_punch", false))
+
+            // Restore last position
+            val x = prefs.getInt("follow_x", 100)
+            val y = prefs.getInt("follow_y", 300)
+            val scale = prefs.getFloat("follow_scale", 1f)
+            applyConfig(x, y, scale)
+
+            onPositionChanged = { nx, ny ->
+                prefs.edit().putInt("follow_x", nx).putInt("follow_y", ny).apply()
             }
         }
 
@@ -315,6 +335,7 @@ class PlayerForegroundService : Service() {
         notifOverlayManager.hide()
         joinOverlayManager.hide()
         likeOverlayManager.hide()
+        followOverlayManager.hide()
 
         customOverlayManager.hideAll()
         serviceScope.cancel()
@@ -332,6 +353,7 @@ class PlayerForegroundService : Service() {
         useTiktokGiftIcon = prefs.getBoolean("use_tiktok_gift_icon", true)
         joinEnabled    = prefs.getBoolean("join_enabled", true)
         likeEnabled    = prefs.getBoolean("like_enabled", true)
+        followEnabled  = prefs.getBoolean("follow_enabled", true)
         notifEnabled   = prefs.getBoolean("notif_enabled", true)
 
         ttsEnabled = prefs.getBoolean("chat_tts_enabled", false)
@@ -344,6 +366,7 @@ class PlayerForegroundService : Service() {
         canvasQueueY   = prefs.getInt("canvas_qy", 440)
 
         commandConfig = TikTokLiveManager.CommandConfig(
+            enabled            = prefs.getBoolean("commands_enabled", true),
             requestPrefixes    = splitPref("cmd_request",    "#req,#request,#lagu,#song"),
             skipPrefixes       = splitPref("cmd_skip",       "#skip,#next,#lewat"),
             stopPrefixes       = splitPref("cmd_stop",       "#stop"),
@@ -384,6 +407,7 @@ class PlayerForegroundService : Service() {
         cmdConfig?.let { cfg ->
             this.commandConfig = cfg
             prefs.edit()
+                .putBoolean("commands_enabled", cfg.enabled)
                 .putString("cmd_request",     cfg.requestPrefixes.joinToString(","))
                 .putString("cmd_skip",         cfg.skipPrefixes.joinToString(","))
                 .putString("cmd_stop",         cfg.stopPrefixes.joinToString(","))
@@ -643,6 +667,24 @@ class PlayerForegroundService : Service() {
                     Log.d(TAG, "#cm judul \"$arg\" → removed=${removed ?: "not found"}")
                 }
             }
+            TikTokChat.CommandType.COMMAND_TOGGLE -> {
+                if (!isAdmin) return
+                val arg = chat.commandArg?.lowercase()?.trim()
+                val newState = when (arg) {
+                    "on", "enable", "1" -> true
+                    "off", "disable", "0" -> false
+                    else -> !commandConfig.enabled // Toggle if no specific arg
+                }
+                
+                commandConfig = commandConfig.copy(enabled = newState)
+                tiktokManager.setCommandConfig(commandConfig)
+                
+                // Simpan ke SharedPreferences
+                prefs.edit().putBoolean("commands_enabled", newState).apply()
+                
+                broadcastSystemChat("Commands ${if (newState) "ENABLED" else "DISABLED"} via @${chat.uniqueId}")
+                broadcastState()
+            }
             TikTokChat.CommandType.NONE -> { }
         }
     }
@@ -692,6 +734,11 @@ class PlayerForegroundService : Service() {
             val ly = prefs.getInt("like_y", 100)
             likeOverlayManager.setCanvasMode(locked = true, x = lx, y = ly)
         }
+        if (followOverlayManager.isShowing) {
+            val fx = prefs.getInt("follow_x", 100)
+            val fy = prefs.getInt("follow_y", 300)
+            followOverlayManager.setCanvasMode(locked = true, x = fx, y = fy)
+        }
 
         broadcastState()
     }
@@ -709,6 +756,8 @@ class PlayerForegroundService : Service() {
             joinOverlayManager.setCanvasMode(locked = false)
         if (likeOverlayManager.isShowing)
             likeOverlayManager.setCanvasMode(locked = false)
+        if (followOverlayManager.isShowing)
+            followOverlayManager.setCanvasMode(locked = false)
         broadcastState()
     }
 
@@ -829,6 +878,13 @@ class PlayerForegroundService : Service() {
         likeOverlayManager.updateStyle(layoutId)
     }
 
+    fun updateFollowStyle(layoutId: Int) {
+        prefs.edit()
+            .putInt("canvas_follow_layout", layoutId)
+            .apply()
+        followOverlayManager.updateStyle(layoutId)
+    }
+
     fun updatePlayerStyle(layoutId: Int) {
         prefs.edit()
             .putInt("canvas_player_layout", layoutId)
@@ -861,6 +917,9 @@ class PlayerForegroundService : Service() {
         lyricsOverlayManager.applyTheme(loadTheme("lyrics"))
         chatOverlayManager.applyTheme(loadTheme("chat"))
         notifOverlayManager.applyTheme(loadTheme("notif"))
+        joinOverlayManager.applyTheme(loadTheme("join"))
+        likeOverlayManager.applyTheme(loadTheme("like"))
+        followOverlayManager.applyTheme(loadTheme("follow"))
     }
 
     fun updateTtsEnabled(enabled: Boolean) {
@@ -958,6 +1017,10 @@ class PlayerForegroundService : Service() {
         likeOverlayManager.hide()
     }
 
+    fun hideFollowOverlay() {
+        followOverlayManager.hide()
+    }
+
     fun updateVisualPunchEnabled(key: String, enabled: Boolean) {
         prefs.edit().putBoolean("${key}_visual_punch", enabled).apply()
         when (key) {
@@ -966,6 +1029,7 @@ class PlayerForegroundService : Service() {
             "lyrics" -> lyricsOverlayManager.setVisualPunchEnabled(enabled)
             "chat"   -> chatOverlayManager.setVisualPunchEnabled(enabled)
             "notif"  -> notifOverlayManager.setVisualPunchEnabled(enabled)
+            "follow" -> followOverlayManager.setVisualPunchEnabled(enabled)
         }
     }
 
@@ -973,6 +1037,7 @@ class PlayerForegroundService : Service() {
     val notifOverlayVisible get() = notifOverlayManager.isShowing
     val joinOverlayVisible get() = joinOverlayManager.isShowing
     val likeOverlayVisible get() = likeOverlayManager.isShowing
+    val followOverlayVisible get() = followOverlayManager.isShowing
 
     fun toggleJoinOverlay() {
         joinEnabled = !joinEnabled
@@ -996,6 +1061,17 @@ class PlayerForegroundService : Service() {
         broadcastState()
     }
 
+    fun toggleFollowOverlay() {
+        followEnabled = !followEnabled
+        prefs.edit().putBoolean("follow_enabled", followEnabled).apply()
+        if (followEnabled) {
+            showFollowDummy()
+        } else {
+            followOverlayManager.hide()
+        }
+        broadcastState()
+    }
+
     fun updateJoinEnabled(enabled: Boolean) {
         joinEnabled = enabled
         prefs.edit().putBoolean("join_enabled", enabled).apply()
@@ -1008,8 +1084,29 @@ class PlayerForegroundService : Service() {
         broadcastState()
     }
 
+    fun updateFollowEnabled(enabled: Boolean) {
+        followEnabled = enabled
+        prefs.edit().putBoolean("follow_enabled", enabled).apply()
+        broadcastState()
+    }
+
     fun updateLikeAnimationEnabled(enabled: Boolean) {
         likeOverlayManager.setAnimationEnabled(enabled)
+    }
+
+    fun updateJoinDuration(seconds: Int) {
+        prefs.edit().putInt("join_duration", seconds).apply()
+        joinOverlayManager.setDuration(seconds)
+    }
+
+    fun updateLikeDuration(seconds: Int) {
+        prefs.edit().putInt("like_duration", seconds).apply()
+        likeOverlayManager.setDuration(seconds)
+    }
+
+    fun updateFollowDuration(seconds: Int) {
+        prefs.edit().putInt("follow_duration", seconds).apply()
+        followOverlayManager.setDuration(seconds)
     }
 
     fun updateStickerAnimationEnabled(enabled: Boolean) {
@@ -1032,6 +1129,14 @@ class PlayerForegroundService : Service() {
         val scale = prefs.getFloat("like_scale", 1f)
         likeOverlayManager.showLike("Preview", 1, null, isDummy = true, persistent = persistent)
         likeOverlayManager.applyConfig(x, y, scale)
+    }
+
+    fun showFollowDummy(persistent: Boolean = false) {
+        val x = prefs.getInt("follow_x", 100)
+        val y = prefs.getInt("follow_y", 300)
+        val scale = prefs.getFloat("follow_scale", 1f)
+        followOverlayManager.showFollow("Preview", null, isDummy = true, persistent = persistent)
+        followOverlayManager.applyConfig(x, y, scale)
     }
 
     fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
@@ -1058,6 +1163,7 @@ class PlayerForegroundService : Service() {
                 "notif"  -> getCurrentPos(notifOverlayManager)
                 "join"   -> getCurrentPos(joinOverlayManager)
                 "like"   -> getCurrentPos(likeOverlayManager)
+                "follow" -> getCurrentPos(followOverlayManager)
                 else -> null
             }
             if (current != null) {
@@ -1088,6 +1194,7 @@ class PlayerForegroundService : Service() {
             "notif"  -> if (notifOverlayManager.isShowing) notifOverlayManager.applyConfig(finalX, finalY, scale, width, height)
             "join"   -> if (joinOverlayManager.isShowing) joinOverlayManager.applyConfig(finalX, finalY, scale)
             "like"   -> if (likeOverlayManager.isShowing) likeOverlayManager.applyConfig(finalX, finalY, scale)
+            "follow" -> if (followOverlayManager.isShowing) followOverlayManager.applyConfig(finalX, finalY, scale)
         }
     }
 
@@ -1112,6 +1219,7 @@ class PlayerForegroundService : Service() {
             "notif"  -> getPos(notifOverlayManager)
             "join"   -> getPos(joinOverlayManager)
             "like"   -> getPos(likeOverlayManager)
+            "follow" -> getPos(followOverlayManager)
             else -> Pair(0, 0)
         }
     }
@@ -1137,14 +1245,20 @@ class PlayerForegroundService : Service() {
         "notif_enabled"     to notifEnabled,
         "join_visible"      to joinOverlayManager.isShowing,
         "like_visible"      to likeOverlayManager.isShowing,
+        "follow_visible"    to followOverlayManager.isShowing,
         "join_enabled"      to joinEnabled,
         "like_enabled"      to likeEnabled,
+        "follow_enabled"    to followEnabled,
+        "join_duration"     to prefs.getInt("join_duration", 4),
+        "like_duration"     to prefs.getInt("like_duration", 4),
+        "follow_duration"   to prefs.getInt("follow_duration", 4),
         "chat_max_lines"    to prefs.getInt("chat_max_lines", 5),
         "chat_width"        to prefs.getInt("chat_width", 300),
         "chat_duration"     to prefs.getInt("chat_duration", 6),
         "chat_tts_enabled"  to ttsEnabled,
         "chat_tts_volume"   to ttsVolume,
         "chat_tts_max_length" to ttsMaxLength,
+        "commands_enabled"  to commandConfig.enabled,
         "music_volume"      to musicVolume,
         "notif_volume"      to notifVolume,
         "use_tiktok_gift_icon" to useTiktokGiftIcon
@@ -1382,6 +1496,11 @@ class PlayerForegroundService : Service() {
             t.onJoin = { nick, uid, profile ->
                 if (joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
                     joinOverlayManager.showJoin(nick, profile)
+                }
+            }
+            t.onFollow = { nick, uid, profile ->
+                if (followEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    followOverlayManager.showFollow(nick, profile)
                 }
             }
             t.onGift = { uid, nick, gift, count, iconUrl ->
