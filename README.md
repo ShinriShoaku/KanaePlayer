@@ -95,4 +95,4 @@ Proyek ini dikembangkan dengan ❤️ untuk komunitas streamer.
 - **Disclaimer**: Gunakan aplikasi ini dengan bijak sesuai kebijakan platform YouTube dan TikTok.
 
 ---
-Copyright © 2025 **KanaePlayer Team**.
+Copyright © 2026 **KanaePlayer Team**.
