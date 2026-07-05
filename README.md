@@ -78,14 +78,6 @@ Evolusi dari `main.py` (FastAPI + yt-dlp + mpv) menjadi aplikasi Android native 
 
 ---
 
-## 📂 Arsitektur Proyek
-
-- **`PlayerForegroundService`**: Jantung aplikasi yang mengelola audio, chat socket, dan lifecycle overlay.
-- **`NewPipeDownloader`**: Menangani otentikasi YouTube dengan menyuntikkan `X-Goog-Po-Token`.
-- **`PoTokenGenerator`**: Generator token otomatis menggunakan skrip BotGuard tersembunyi.
-- **`OverlayManager`**: Sistem manajemen jendela melayang yang mendukung interaksi drag-and-drop.
-
----
 
 ## ⚠️ Troubleshooting
 
