@@ -25,12 +25,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v10.0.0)
+## 🆕 Pembaruan Terkini (v10.0.5)
 
-- **Custom Styles (Lyric & Queue)**: Berbagai pilihan gaya visual baru (Card, Neon, Glass, Minimal).
-- **Landscape Mode**: Dukungan penuh mode landscape untuk menu Settings dan Canvas.
-- **Position Persistence**: Perbaikan sistem penyimpanan koordinat overlay yang lebih akurat.
-- **UI Simplification**: Optimasi menu pengaturan dengan menghapus kontrol dimensi manual yang redundan.
+- **Firebase Integration**: Penambahan Firebase Crashlytics untuk deteksi error dan stabilitas aplikasi yang lebih baik.
+- **Android 11 Stability**: Perbaikan menyeluruh untuk masalah *force close* di Android 11 (Oppo/Vivo) saat request lagu.
+- **Java API Desugaring**: Dukungan fitur Java modern di HP lama tanpa crash.
+- **Improved Thread Safety**: Sinkronisasi chat yang lebih stabil untuk mencegah *race condition*.
 
 ---
 
