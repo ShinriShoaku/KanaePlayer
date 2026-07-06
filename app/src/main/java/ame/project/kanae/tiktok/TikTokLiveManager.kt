@@ -1,9 +1,11 @@
 package ame.project.kanae.tiktok
 
 import android.util.Log
+import android.os.Build
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonElement
+import java.util.concurrent.ConcurrentHashMap
 import ame.project.kanae.model.TikTokChat
 import ame.project.kanae.model.TikTokEmote
 import kotlinx.coroutines.*
@@ -54,7 +56,13 @@ class TikTokLiveManager(
     private val gson = Gson()
     private var wsConnection: WebSocket? = null
     private var pollJob: Job? = null
-    private var lastChatIds = mutableSetOf<String>()
+
+    private var lastChatIds: MutableSet<String> = if (Build.VERSION.SDK_INT == 30) {
+        ConcurrentHashMap.newKeySet<String>()
+    } else {
+        mutableSetOf<String>()
+    }
+
     private var commandConfig = CommandConfig()
     private var connectTime = 0L
     private var isConnectCallbackTriggered = false
@@ -211,7 +219,7 @@ class TikTokLiveManager(
                     if (!el.isJsonObject) return@forEach
                     val msgObj = el.asJsonObject
                     val type = msgObj["type"]?.asString ?: ""
-                    val data = msgObj["data"]?.asJsonObject ?: return@forEach
+                    val data = msgObj["data"].optObj() ?: return@forEach
                     when (type) {
                         "WebcastChatMessage", "chat", "comment", "message" -> {
                             if (!shouldProcessMessage(data)) return@forEach
@@ -241,8 +249,8 @@ class TikTokLiveManager(
                             
                             // Ambil tipe display dari berbagai kemungkinan lokasi
                             val displayType = data["displayType"]?.asString 
-                                ?: data["common"]?.asJsonObject?.get("displayType")?.asString
-                                ?: data["displayText"]?.asJsonObject?.get("key")?.asString
+                                ?: data["common"].optObj()?.get("displayType")?.asString
+                                ?: data["displayText"].optObj()?.get("key")?.asString
                                 ?: ""
                             
                             val action = data["action"]?.asString ?: ""
@@ -269,7 +277,7 @@ class TikTokLiveManager(
             // 2. Legacy wrapped: { "event": "chat", "data": {...} }
             if (obj.has("event") && obj.has("data") && obj["data"].isJsonObject) {
                 val event = obj["event"].asString
-                val data = obj["data"].asJsonObject
+                val data = obj["data"].optObj() ?: return
                 when (event) {
                     "chat", "comment", "message", "WebcastChatMessage" -> {
                         if (!shouldProcessMessage(data)) return
@@ -296,8 +304,8 @@ class TikTokLiveManager(
                         val (uniqueId, nickname, profile) = getUserInfo(data)
                         
                         val displayType = data["displayType"]?.asString 
-                            ?: data["common"]?.asJsonObject?.get("displayType")?.asString
-                            ?: data["displayText"]?.asJsonObject?.get("key")?.asString
+                            ?: data["common"].optObj()?.get("displayType")?.asString
+                            ?: data["displayText"].optObj()?.get("key")?.asString
                             ?: ""
 
                         val action = data["action"]?.asString ?: ""
@@ -386,15 +394,15 @@ class TikTokLiveManager(
 
     private fun getUserInfo(data: JsonObject): Triple<String, String, String?> {
         // 1. Find user object (could be at root, or nested in displayText for some events like Join)
-        var uObj = data["user"]?.asJsonObject
+        var uObj = data["user"].optObj()
         
         if (uObj == null && data.has("displayText")) {
             try {
-                val pieces = data["displayText"].asJsonObject["piecesList"]?.asJsonArray
+                val pieces = data["displayText"].optObj()?.get("piecesList")?.asJsonArray
                 pieces?.forEach { piece ->
-                    val uv = piece.asJsonObject["userValue"]?.asJsonObject
+                    val uv = piece.optObj()?.get("userValue").optObj()
                     if (uv != null && uv.has("user")) {
-                        uObj = uv["user"].asJsonObject
+                        uObj = uv["user"].optObj()
                         return@forEach
                     }
                 }
@@ -416,7 +424,7 @@ class TikTokLiveManager(
 
         uObj?.let { user ->
             for (container in containers) {
-                val imgObj = user[container]?.asJsonObject
+                val imgObj = user[container].optObj()
                 if (imgObj != null) {
                     for (field in fields) {
                         val arr = imgObj[field]?.asJsonArray
@@ -437,13 +445,13 @@ class TikTokLiveManager(
         return try {
             val uniqueId = data["uniqueId"]?.asString
                 ?: data["unique_id"]?.asString
-                ?: data["user"]?.asJsonObject?.get("uniqueId")?.asString
-                ?: data["user"]?.asJsonObject?.get("unique_id")?.asString
+                ?: data["user"].optObj()?.get("uniqueId")?.asString
+                ?: data["user"].optObj()?.get("unique_id")?.asString
                 ?: data["nickname"]?.asString
                 ?: return null
 
             val nickname = data["nickname"]?.asString
-                ?: data["user"]?.asJsonObject?.get("nickname")?.asString
+                ?: data["user"].optObj()?.get("nickname")?.asString
                 ?: uniqueId
 
             var comment = data["comment"]?.asString
@@ -461,10 +469,10 @@ class TikTokLiveManager(
             if (data.has("emotes") && data["emotes"].isJsonArray) {
                 val emotesArray = data.getAsJsonArray("emotes")
                 for (i in 0 until emotesArray.size()) {
-                    val item = emotesArray[i].asJsonObject
-                    val place = item["placeInComment"]?.asInt ?: -1
-                    val emote = item["emote"]?.asJsonObject
-                    val imageUrl = emote?.get("image")?.asJsonObject?.get("imageUrl")?.asString
+                    val item = emotesArray[i].optObj()
+                    val place = item?.get("placeInComment")?.asInt ?: -1
+                    val emote = item?.get("emote").optObj()
+                    val imageUrl = emote?.get("image").optObj()?.get("imageUrl")?.asString
                     if (imageUrl != null) {
                         emotes.add(TikTokEmote(place, imageUrl))
                     }
@@ -533,8 +541,8 @@ class TikTokLiveManager(
         val msgId = data["id"]?.asString
             ?: data["msgId"]?.asString
             ?: data["msg_id"]?.asString
-            ?: data["common"]?.asJsonObject?.get("msgId")?.asString
-            ?: data["common"]?.asJsonObject?.get("msg_id")?.asString
+            ?: data["common"].optObj()?.get("msgId")?.asString
+            ?: data["common"].optObj()?.get("msg_id")?.asString
             ?: ""
         
         if (msgId.isEmpty()) return true // No ID, assume not duplicate
@@ -552,7 +560,7 @@ class TikTokLiveManager(
 
     private fun extractGiftName(data: JsonObject): String {
         // 1. Check in giftDetails (Found in log!)
-        data["giftDetails"]?.asJsonObject?.let { gd ->
+        data["giftDetails"].optObj()?.let { gd ->
             gd["giftName"]?.asString?.let { return it }
         }
 
@@ -561,7 +569,7 @@ class TikTokLiveManager(
         data["gift_name"]?.asString?.let { return it }
 
         // 3. Nested in gift object
-        data["gift"]?.asJsonObject?.let { g ->
+        data["gift"].optObj()?.let { g ->
             g["name"]?.asString?.let { return it }
             g["describe"]?.asString?.let { return it }
         }
@@ -591,8 +599,8 @@ class TikTokLiveManager(
 
     private fun extractGiftIcon(data: JsonObject): String? {
         // 1. Check in giftDetails -> icon or giftImage (Found in log!)
-        data["giftDetails"]?.asJsonObject?.let { gd ->
-            val iconObj = gd["icon"]?.asJsonObject ?: gd["giftImage"]?.asJsonObject
+        data["giftDetails"].optObj()?.let { gd ->
+            val iconObj = gd["icon"].optObj() ?: gd["giftImage"].optObj()
             iconObj?.get("url")?.asJsonArray?.let { list ->
                 if (list.size() > 0) return list[0].asString
             }
@@ -603,8 +611,8 @@ class TikTokLiveManager(
         data["gift_icon"]?.asString?.let { return it }
 
         // 3. Nested in gift object
-        data["gift"]?.asJsonObject?.let { g ->
-            val img = g["image"]?.asJsonObject ?: g["icon"]?.asJsonObject
+        data["gift"].optObj()?.let { g ->
+            val img = g["image"].optObj() ?: g["icon"].optObj()
             img?.get("url_list")?.asJsonArray?.let { list ->
                 if (list.size() > 0) return list[0].asString
             }
@@ -635,5 +643,12 @@ class TikTokLiveManager(
             end = if (end > content.length) content.length else end
             Log.d(TAG, "$tag [$i]: ${content.substring(start, end)}")
         }
+    }
+
+    private fun JsonElement?.optObj(): JsonObject? {
+        if (Build.VERSION.SDK_INT == 30) {
+            return if (this != null && this.isJsonObject) this.asJsonObject else null
+        }
+        return this?.asJsonObject
     }
 }

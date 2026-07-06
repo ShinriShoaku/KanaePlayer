@@ -1,5 +1,5 @@
 {
-  "versionCode": 10,
-  "versionName": "10.0.0",
-  "updateMessage": "Custom Styles Lyric & Queue, Landscape Mode, Overlay Position Fix, dan Optimasi UI Settings"
+  "versionCode": 12,
+  "versionName": "10.0.5",
+  "updateMessage": "Integrasi Firebase, Perbaikan Fatal Crash Android 11, dan Optimasi Stabilitas Engine"
 }

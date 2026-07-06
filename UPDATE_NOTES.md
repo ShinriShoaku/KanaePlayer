@@ -1,5 +1,22 @@
 # Update Notes - KanaePlayer
 
+## Update 10.0.5: Stability & Android 11 Fixes
+
+Update ini berfokus pada stabilitas aplikasi melalui integrasi Firebase dan perbaikan bug fatal yang terjadi pada perangkat Android 11.
+
+### 1. Firebase Crashlytics
+- **Real-time Monitoring**: Kini pengembang dapat mendeteksi dan memperbaiki crash lebih cepat berkat integrasi sistem pelaporan error otomatis.
+
+### 2. Android 11 Compatibility (The "Oppo Fix")
+- **URLDecoder Patch**: Memperbaiki error `NoSuchMethodError` yang terjadi saat memproses link YouTube pada perangkat dengan sistem operasi Android 11.
+- **Modern Java Support**: Mengaktifkan sistem *Desugaring* sehingga HP lama bisa menjalankan instruksi Java terbaru tanpa kendala.
+- **Background WebView Fix**: Menjamin proses pengambilan token YouTube (PoToken) berjalan lancar meskipun di background service.
+
+### 3. Engine Stability
+- **Concurrent Processing**: Peningkatan manajemen memori saat menerima ribuan chat TikTok sekaligus guna mencegah aplikasi tertutup tiba-tiba.
+
+---
+
 ## Update 10.0.0: Style Customization & Landscape Support
 
 Update besar ini membawa fleksibilitas desain yang lebih luas, dukungan orientasi layar baru, dan perbaikan pada sistem penyimpanan posisi overlay.

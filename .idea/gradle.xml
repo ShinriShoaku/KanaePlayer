@@ -9,6 +9,9 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/NewPipeExtractor" />
+            <option value="$PROJECT_DIR$/NewPipeExtractor/extractor" />
+            <option value="$PROJECT_DIR$/NewPipeExtractor/timeago-generator" />
             <option value="$PROJECT_DIR$/app" />
           </set>
         </option>

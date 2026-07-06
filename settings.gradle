@@ -16,6 +16,14 @@ dependencyResolutionManagement {
         // NewPipe Extractor & Glide
         maven { url "https://jitpack.io" }
     }
+    versionCatalogs {
+        libs {
+            from(files("NewPipeExtractor/gradle/libs.versions.toml"))
+        }
+    }
 }
 rootProject.name = "YTTikTokPlayer"
 include ':app'
+include ":NewPipeExtractor"
+include ":NewPipeExtractor:extractor"
+include ":NewPipeExtractor:timeago-generator"

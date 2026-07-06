@@ -64,6 +64,7 @@
         <service
             android:name=".service.PlayerForegroundService"
             android:exported="false"
+            android:theme="@style/Theme.YTTikTokPlayer"
             android:foregroundServiceType="mediaPlayback"
             android:stopWithTask="false" />
 

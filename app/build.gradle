@@ -1,6 +1,8 @@
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
 }
 
 android {
@@ -11,8 +13,8 @@ android {
         applicationId "ame.project.kanae"
         minSdk 26
         targetSdk 35
-        versionCode 10
-        versionName "10.0.0"
+        versionCode 12
+        versionName "10.0.5"
         ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -25,6 +27,7 @@ android {
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
@@ -42,6 +45,7 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
     implementation 'androidx.core:core-ktx:1.18.0'
     implementation 'androidx.appcompat:appcompat:1.7.1'
     implementation 'com.google.android.material:material:1.14.0'
@@ -60,7 +64,10 @@ dependencies {
     // ── NewPipe Extractor ─────────────────────────────────────────────────────
     // Pengganti yt-dlp — pure Java, extract YouTube stream URL langsung
     // Tidak butuh binary, tidak ada SELinux issue
-    implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.26.3'
+    //implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.26.3'
+    implementation(project(":NewPipeExtractor:extractor"))
+
+    implementation 'com.google.firebase:firebase-crashlytics:20.0.6'
 
     // fallback
     implementation 'io.github.junkfood02.youtubedl-android:library:0.18.1'

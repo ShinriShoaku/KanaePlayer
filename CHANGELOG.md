@@ -1,5 +1,17 @@
 # Changelog - KanaePlayer
 
+## [10.0.5] - 2025-07-06
+
+### ✨ New Features
+- **Firebase Crashlytics Integration**: Implementasi Firebase Crashlytics untuk pemantauan crash dan error aplikasi secara real-time, memudahkan pelacakan bug pada berbagai perangkat.
+
+### 🐞 Android 11 & Compatibility Fixes
+- **Core Library Desugaring**: Mengaktifkan Java 8+ API desugaring untuk mendukung fungsi-fungsi Java modern pada perangkat Android lama (API < 33).
+- **URLDecoder Fix**: Patch pada library **NewPipeExtractor** untuk mengatasi `NoSuchMethodError` pada `URLDecoder.decode(String, Charset)` yang sering menyebabkan crash di Android 11 (terutama perangkat Oppo).
+- **Collectors Fix**: Penanganan otomatis untuk fitur `java.util.stream` (seperti `toUnmodifiableList`) agar berjalan stabil di Android lama via desugaring.
+- **Thread-Safety Improvements**: Menggunakan `ConcurrentHashMap` khusus pada Android 11 untuk mencegah `ConcurrentModificationException` saat sinkronisasi chat TikTok.
+- **WebView Theme Fix**: Menambahkan tema Material pada Foreground Service untuk mencegah crash saat inisialisasi WebView (PoToken) di background pada Android 11.
+
 ## [10.0.0] - 2025-02-25
 
 ### ✨ New Features
