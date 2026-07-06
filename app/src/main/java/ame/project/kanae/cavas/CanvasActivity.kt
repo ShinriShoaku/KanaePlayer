@@ -66,6 +66,7 @@ class CanvasActivity : AppCompatActivity() {
         ThemeStyle("Queue Neon", R.layout.overlay_queue_neon, 0, UIComponent.QUEUE, R.layout.item_queue_neon),
         ThemeStyle("Queue Card", R.layout.overlay_queue_card, 0, UIComponent.QUEUE, R.layout.item_queue_card),
         ThemeStyle("Queue Minimal", R.layout.overlay_queue_minimal, 0, UIComponent.QUEUE, R.layout.item_queue_minimal),
+        ThemeStyle("Queue Sketch", R.layout.overlay_queue_sketch, 0, UIComponent.QUEUE, R.layout.item_queue_sketch),
         
         ThemeStyle("Player Standard", R.layout.overlay_layout, 0, UIComponent.PLAYER),
         ThemeStyle("Player Modern", R.layout.overlay_layout_modern, 0, UIComponent.PLAYER),
@@ -75,6 +76,11 @@ class CanvasActivity : AppCompatActivity() {
         ThemeStyle("Player Compact", R.layout.overlay_layout_compact, 0, UIComponent.PLAYER),
         
         ThemeStyle("Lyrics Standard", R.layout.overlay_lyrics_layout, 0, UIComponent.LYRICS),
+        ThemeStyle("Lyrics Glass", R.layout.overlay_lyrics_glass, 0, UIComponent.LYRICS),
+        ThemeStyle("Lyrics Neon", R.layout.overlay_lyrics_neon, 0, UIComponent.LYRICS),
+        ThemeStyle("Lyrics Sketch", R.layout.overlay_lyrics_sketch, 0, UIComponent.LYRICS),
+        ThemeStyle("Lyrics Minimal", R.layout.overlay_lyrics_minimal, 0, UIComponent.LYRICS),
+
         ThemeStyle("Notif Standard", R.layout.overlay_tiktok_notification, R.drawable.overlay_bg, UIComponent.NOTIF),
         
         ThemeStyle("Join Card", R.layout.overlay_tiktok_join, 0, UIComponent.JOIN),
@@ -384,6 +390,7 @@ class CanvasActivity : AppCompatActivity() {
                 UIComponent.JOIN   -> service?.updateJoinStyle(pair.first)
                 UIComponent.LIKE   -> service?.updateLikeStyle(pair.first)
                 UIComponent.FOLLOW -> service?.updateFollowStyle(pair.first)
+                UIComponent.LYRICS -> service?.updateLyricsStyle(pair.first)
                 else -> {}
             }
         }
@@ -531,8 +538,10 @@ class CanvasActivity : AppCompatActivity() {
                 }
                 
                 val textIds = listOf(
-                    R.id.overlay_queue_count_badge, R.id.overlay_title, 
+                    R.id.overlay_queue_count_badge, R.id.overlay_queue_empty, R.id.overlay_title,
                     R.id.overlay_lyrics_current, R.id.overlay_lyrics_prev, R.id.overlay_lyrics_next,
+                    R.id.overlay_lyrics_prefix, R.id.overlay_lyrics_suffix,
+                    R.id.overlay_lyrics_time,
                     R.id.tiktok_notif_user, R.id.tiktok_notif_action,
                     R.id.join_user_text, R.id.like_user_name, R.id.like_count_text,
                     R.id.follow_user_text

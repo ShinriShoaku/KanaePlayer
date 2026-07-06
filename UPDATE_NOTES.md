@@ -1,5 +1,25 @@
 # Update Notes - KanaePlayer
 
+## Update 10.0.0: Style Customization & Landscape Support
+
+Update besar ini membawa fleksibilitas desain yang lebih luas, dukungan orientasi layar baru, dan perbaikan pada sistem penyimpanan posisi overlay.
+
+### 1. New Custom Styles (Lyric & Queue)
+- **Visual Variety**: Kini tersedia berbagai pilihan gaya layout untuk Lyric dan Queue overlay:
+    - **Card Style**: Tampilan modern berbasis kartu dengan bayangan halus.
+    - **Neon Style**: Efek cahaya neon yang mencolok untuk tema gaming.
+    - **Glass Style**: Efek transparansi kaca (Frosted Glass) yang elegan.
+    - **Minimal Style**: Desain ringkas tanpa banyak gangguan visual.
+
+### 2. Full Landscape Support
+- **Adaptive UI**: Menu Pengaturan (Settings) dan area interaksi Canvas kini mendukung mode Landscape secara penuh, memudahkan penggunaan saat perangkat diletakkan secara horizontal.
+
+### 3. Overlay Stability & UI Cleanup
+- **Save Position Fix**: Masalah posisi overlay yang sering kembali ke default setelah restart aplikasi kini telah diperbaiki sepenuhnya.
+- **Streamlined Settings**: Menghapus fungsi pengatur lebar dan tinggi manual pada menu Bottom Sheet. Sistem kini secara cerdas mengatur ukuran optimal berdasarkan gaya layout yang dipilih untuk menjaga estetika dan integritas visual.
+
+---
+
 ## Update 9.3.0: Follow Overlay & Duration Settings
 
 Update ini memperkenalkan fitur Follow Overlay, kustomisasi durasi, dan perintah chat baru untuk kontrol seekbar.

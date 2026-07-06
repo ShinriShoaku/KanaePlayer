@@ -149,7 +149,14 @@ class SaweriaOverlayManager(
 
         val gesture = OverlayGestureHelper(rootView = root, params = params, wm = wm, onSingleTap = {
             showAdjuster(widget)
-        })
+        }).apply {
+            onInteraction = {
+                prefs.edit().putInt("pos_x_${widget.name}", params.x)
+                            .putInt("pos_y_${widget.name}", params.y)
+                            .putFloat("s_${widget.name}", currentScale)
+                            .apply()
+            }
+        }
         
         root.pivotX = 0f
         root.pivotY = 0f

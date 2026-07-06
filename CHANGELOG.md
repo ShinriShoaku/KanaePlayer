@@ -1,5 +1,15 @@
 # Changelog - KanaePlayer
 
+## [10.0.0] - 2025-02-25
+
+### ✨ New Features
+- **Custom Style Layouts**: Menambahkan berbagai pilihan gaya visual untuk **Lyric Overlay** dan **Queue Overlay** (Card, Neon, Glass, Minimal).
+- **Landscape Layout Mode**: Optimalisasi tampilan antarmuka untuk mode landscape pada menu **Settings** dan **Canvas**, memberikan pengalaman pengguna yang lebih baik pada perangkat tablet atau saat orientasi layar mendatar.
+
+### ⚙️ UI & UX Improvements
+- **Overlay Position Persistence**: Perbaikan bug dimana posisi overlay tidak tersimpan dengan benar. Kini posisi (X, Y) tersinkronisasi dan tersimpan secara permanen di database lokal setelah digeser.
+- **Settings Optimization**: Menghapus opsi pengaturan lebar (width) dan tinggi (height) manual pada Bottom Sheet Settings untuk semua overlay guna menyederhanakan konfigurasi dan mencegah distorsi layout yang tidak diinginkan.
+
 ## [9.3.0] - 2025-02-13
 
 ### ✨ New Features

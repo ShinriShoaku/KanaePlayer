@@ -46,6 +46,12 @@ class QueueOverlayManager(
     private var tvBadge: TextView?           = null
     private var rvQueue: RecyclerView?       = null
 
+    private var lastX: Int = 16
+    private var lastY: Int = 420
+    private var lastScale: Float = 1f
+    
+    var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
+
     private var autoHideEnabled = false
     private var displayDurationMs = 10000L
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -140,9 +146,11 @@ class QueueOverlayManager(
 
         val punch = PunchThroughLayout(themed).apply {
             punchEnabled = visualPunchEnabled
+            clipChildren = false
+            clipToPadding = false
             // Use FrameLayout.LayoutParams for the inner view to avoid ClassCastException
             val lp = FrameLayout.LayoutParams(
-                300.dp,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT
             )
             addView(view, lp)
@@ -171,7 +179,7 @@ class QueueOverlayManager(
 
         val type = overlayWindowType()
         val params = WindowManager.LayoutParams(
-            300.dp, WindowManager.LayoutParams.WRAP_CONTENT,
+            WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT,
             type,
             // FLAG_LAYOUT_NO_LIMITS allows window to extend beyond screen edges during rotation
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
@@ -179,7 +187,7 @@ class QueueOverlayManager(
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 16; y = 420
+            x = lastX; y = lastY
         }
         layoutParams = params
 
@@ -189,6 +197,13 @@ class QueueOverlayManager(
             wm          = wm,
             onSingleTap = null
         ).also { 
+            it.currentScale = lastScale
+            it.onInteraction = {
+                lastX = params.x
+                lastY = params.y
+                lastScale = it.currentScale
+                onPositionChanged?.invoke(lastX, lastY, lastScale)
+            }
             if (visualPunchEnabled) view.setOnTouchListener(null)
             else view.setOnTouchListener(it)
         }
@@ -197,6 +212,11 @@ class QueueOverlayManager(
         isShowing = true
 
         updateQueue(queue)
+        
+        // Apply scaling immediately after adding view
+        rootView?.post {
+            applyConfig(lastX, lastY, lastScale)
+        }
         
         if (autoHideEnabled) {
             startHideTimer()
@@ -296,6 +316,10 @@ class QueueOverlayManager(
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
+        this.lastX = x
+        this.lastY = y
+        this.lastScale = scale
+
         val params = layoutParams ?: return
         val view   = punchLayout ?: return
         val content = rootView ?: return
@@ -309,19 +333,25 @@ class QueueOverlayManager(
         content.scaleX = scale
         content.scaleY = scale
 
-        // Hitung ukuran dasar (1.0x)
-        val dp = context!!.resources.displayMetrics.density
-        val baseW = if (width > 0) (width * dp).toInt() else (300 * dp).toInt()
-        
-        view.measure(
-            View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY),
+        // Selalu gunakan WRAP_CONTENT agar ukurannya pas dengan konten
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
-        val baseH = if (height > 0) (height * dp).toInt() else view.measuredHeight
+        val baseW = content.measuredWidth
+        val baseH = content.measuredHeight
 
-        // Update ukuran jendela
-        params.width  = (baseW * scale).toInt()
-        params.height = (baseH * scale).toInt()
+        // FIX: Paksa ukuran content tetap di ukuran aslinya
+        val contentLp = content.layoutParams as? FrameLayout.LayoutParams
+        if (contentLp != null) {
+            contentLp.width = baseW
+            contentLp.height = baseH
+            content.layoutParams = contentLp
+        }
+
+        // Update ukuran jendela sesuai scale
+        params.width  = (baseW * scale).toInt().coerceAtLeast(1)
+        params.height = (baseH * scale).toInt().coerceAtLeast(1)
 
         gestureHelper?.let {
             it.currentScale = scale

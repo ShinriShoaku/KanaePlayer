@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/canvas_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/canvas_default">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:baselineAligned="false"
+        android:orientation="horizontal">
+
+        <!-- ── LEFT PREVIEW AREA ────────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/canvas_preview_container"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1.2"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="16dp">
+
+            <TextView
+                android:id="@+id/tv_preview_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="PREVIEW"
+                android:textColor="#55FFFFFF"
+                android:textSize="10sp"
+                android:layout_marginBottom="16dp"
+                android:letterSpacing="0.2" />
+
+            <FrameLayout
+                android:id="@+id/preview_content_frame"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+        </LinearLayout>
+
+        <!-- ── RIGHT CONTROL PANEL ──────────────────────────────────────── -->
+        <ScrollView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="#CC1A1A2E"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- COLOR BOXES HEADER -->
+                <HorizontalScrollView
+                    android:id="@+id/scroll_color_parts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="#990F0F1A"
+                    android:paddingVertical="10dp"
+                    android:paddingHorizontal="16dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/container_color_parts"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical" />
+                </HorizontalScrollView>
+
+                <LinearLayout
+                    android:id="@+id/chat_style_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_selector_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="💬 Choose Chat Style"
+                        android:textColor="@color/orange"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:layout_marginBottom="12dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_chat_styles"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- Transparency Slider -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Transparency"
+                            android:textColor="#AAAAAA"
+                            android:textSize="11sp"
+                            android:layout_marginEnd="8dp" />
+
+                        <SeekBar
+                            android:id="@+id/sb_canvas_alpha"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:max="255"
+                            android:progress="255" />
+                    </LinearLayout>
+
+                    <!-- ACTION BUTTONS -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <Button
+                            android:id="@+id/canvas_btn_toggle_lock"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="💾 Simpan Semua"
+                            android:textSize="13sp"
+                            android:backgroundTint="@color/orange"
+                            android:textColor="@color/bg_dark"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/pick_custom_theme"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:text="⚙️"
+                            android:textSize="18sp"
+                            android:backgroundTint="#555555"
+                            android:textColor="#FFFFFF" />
+
+                        <Button
+                            android:id="@+id/canvas_btn_save_temporary"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:text="✔️"
+                            android:textSize="18sp"
+                            android:backgroundTint="#2D2D2D"
+                            android:textColor="#FFFFFF"
+                            android:layout_marginStart="8dp" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <!-- ── DRAGGABLE COLOR PICKER ── -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/container_inline_picker"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="#F21A1A2E"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="24dp"
+        app:strokeColor="@color/orange"
+        app:strokeWidth="1dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
+
+            <RelativeLayout
+                android:id="@+id/picker_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="4dp"
+                android:paddingBottom="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackground">
+
+                <TextView
+                    android:id="@+id/tv_inline_picker_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerInParent="true"
+                    android:text="Pick Color"
+                    android:textColor="@color/orange"
+                    android:textStyle="bold"
+                    android:textSize="14sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerInParent="true"
+                    android:text="🖐️ Drag to Move"
+                    android:textColor="#55FFFFFF"
+                    android:textSize="10sp" />
+            </RelativeLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginVertical="8dp">
+                <View android:id="@+id/preset_white" android:layout_width="24dp" android:layout_height="24dp" android:background="@android:color/white" android:layout_margin="2dp"/>
+                <View android:id="@+id/preset_black" android:layout_width="24dp" android:layout_height="24dp" android:background="@android:color/black" android:layout_margin="2dp"/>
+                <View android:id="@+id/preset_red" android:layout_width="24dp" android:layout_height="24dp" android:background="#FF0000" android:layout_margin="2dp"/>
+                <View android:id="@+id/preset_green" android:layout_width="24dp" android:layout_height="24dp" android:background="#00FF00" android:layout_margin="2dp"/>
+                <View android:id="@+id/preset_blue" android:layout_width="24dp" android:layout_height="24dp" android:background="#0000FF" android:layout_margin="2dp"/>
+                <View android:id="@+id/preset_yellow" android:layout_width="24dp" android:layout_height="24dp" android:background="#FFFF00" android:layout_margin="2dp"/>
+            </LinearLayout>
+
+            <top.defaults.colorpicker.ColorPickerView
+                android:id="@+id/wheel_color_picker"
+                android:layout_width="match_parent"
+                android:layout_height="180dp" />
+
+            <Button
+                android:id="@+id/btn_close_inline_picker"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="12dp"
+                android:text="CLOSE"
+                android:textSize="12sp"
+                android:backgroundTint="@color/orange"
+                android:textColor="@color/bg_dark"
+                android:textStyle="bold"
+                app:cornerRadius="8dp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+</FrameLayout>

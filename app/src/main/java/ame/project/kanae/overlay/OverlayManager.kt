@@ -42,6 +42,12 @@ class OverlayManager(
     private var ivThumbnail: ImageView?  = null
     private var expandedSection: View? = null
 
+    private var lastX: Int = 16
+    private var lastY: Int = 100
+    private var lastScale: Float = 1f
+
+    var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
+
     private var isExpanded      = false
     private var currentSongId: String? = null
     private val http = OkHttpClient()
@@ -135,8 +141,10 @@ class OverlayManager(
     }
 
     // ─────────────────────────────────────────────────────────────────
-    fun show(x: Int = 16, y: Int = 100) {
+    fun show(x: Int = lastX, y: Int = lastY) {
         if (isShowing) return
+        this.lastX = x
+        this.lastY = y
 
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val view   = LayoutInflater.from(themed).inflate(currentLayoutId, null)
@@ -144,6 +152,8 @@ class OverlayManager(
 
         val punch = PunchThroughLayout(themed).apply {
             punchEnabled = visualPunchEnabled
+            clipChildren = false
+            clipToPadding = false
             // Use FrameLayout.LayoutParams for the inner view to avoid ClassCastException
             val lp = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
@@ -192,7 +202,7 @@ class OverlayManager(
             PixelFormat.TRANSLUCENT
         ).also {
             it.gravity = Gravity.TOP or Gravity.START
-            it.x = x; it.y = y
+            it.x = lastX; it.y = lastY
         }
         layoutParams = params
 
@@ -203,12 +213,24 @@ class OverlayManager(
             wm          = wm,
             onSingleTap = ::toggleExpand
         ).also { 
+            it.currentScale = lastScale
+            it.onInteraction = {
+                lastX = params.x
+                lastY = params.y
+                lastScale = it.currentScale
+                onPositionChanged?.invoke(lastX, lastY, lastScale)
+            }
             if (visualPunchEnabled) view.setOnTouchListener(null)
             else view.setOnTouchListener(it)
         }
 
         wm.addView(punch, params)
         isShowing = true
+        
+        // Apply scaling immediately after adding view
+        rootView?.post {
+            applyConfig(lastX, lastY, lastScale)
+        }
     }
 
     fun hide() {
@@ -296,6 +318,10 @@ class OverlayManager(
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
+        this.lastX = x
+        this.lastY = y
+        this.lastScale = scale
+
         val params = layoutParams ?: return
         val view   = punchLayout ?: return
         val content = rootView ?: return
@@ -309,27 +335,24 @@ class OverlayManager(
         content.scaleX = scale
         content.scaleY = scale
 
-        // Hitung ukuran dasar (1.0x)
-        val density = context.resources.displayMetrics.density
-        
-        // If specific width/height in DP are provided, use them as base
-        val baseW: Int
-        val baseH: Int
-        
-        if (width > 0 || height > 0) {
-            baseW = if (width > 0) (width * density).toInt() else content.measuredWidth
-            baseH = if (height > 0) (height * density).toInt() else content.measuredHeight
-        } else {
-            // Measure to get WRAP_CONTENT size
-            content.measure(
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            baseW = content.measuredWidth
-            baseH = content.measuredHeight
+        // Selalu gunakan WRAP_CONTENT (UNSPECIFIED) agar text dll tidak terpotong
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        val baseW = content.measuredWidth
+        val baseH = content.measuredHeight
+
+        // FIX: Paksa ukuran child tetap di ukuran naturalnya (unscaled)
+        // agar tidak terjadi re-wrapping text saat window dikecilkan.
+        val contentLp = content.layoutParams as? FrameLayout.LayoutParams
+        if (contentLp != null) {
+            contentLp.width = baseW
+            contentLp.height = baseH
+            content.layoutParams = contentLp
         }
 
-        // Update ukuran jendela agar tidak terpotong
+        // Update ukuran jendela agar tidak terpotong (scaled size)
         params.width  = (baseW * scale).toInt().coerceAtLeast(1)
         params.height = (baseH * scale).toInt().coerceAtLeast(1)
 

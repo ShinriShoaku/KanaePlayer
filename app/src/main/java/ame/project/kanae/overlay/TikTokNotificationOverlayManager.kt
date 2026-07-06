@@ -30,9 +30,16 @@ import com.bumptech.glide.Glide
  */
 class TikTokNotificationOverlayManager(private val context: Context) {
     private val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private var rootView: View? = null
+    private var windowView: android.widget.FrameLayout? = null
+    private var contentView: View? = null
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
+
+    private var lastX: Int = 100
+    private var lastY: Int = 100
+    private var lastScale: Float = 1.0f
+
+    var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
 
     private var ivImage: ImageView? = null
     private var tvUser: TextView? = null
@@ -58,7 +65,7 @@ class TikTokNotificationOverlayManager(private val context: Context) {
 
     fun applyTheme(theme: CustomTheme) {
         this.currentTheme = theme
-        val view = rootView ?: return
+        val view = contentView ?: return
         val bgAlpha = theme.alpha
 
         theme.bgPrimary?.let { color ->
@@ -118,12 +125,13 @@ class TikTokNotificationOverlayManager(private val context: Context) {
 
     @Synchronized
     fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null) {
-        if (rootView == null) {
+        if (windowView == null) {
             setupView()
         }
 
         tvUser?.text = userName
         tvAction?.text = action
+        // ... (rest of the logic stays same, will handle in next block)
 
         val imageUri = if (type == "gift") giftImageUri else shareImageUri
         val audioUri = if (type == "gift") giftAudioUri else shareAudioUri
@@ -178,14 +186,16 @@ class TikTokNotificationOverlayManager(private val context: Context) {
 
         if (!isShowing) {
             try {
-                // Defensive guard: if rootView somehow still has a stale parent
-                // (e.g. a previous removeView failed/raced), detach it first,
-                // to avoid ever attaching a view that's already parented.
-                val currentParent = rootView?.parent
+                // Defensive guard: if windowView somehow still has a stale parent
+                val currentParent = windowView?.parent
                 if (currentParent is android.view.ViewGroup) {
-                    currentParent.removeView(rootView)
+                    currentParent.removeView(windowView)
                 }
-                wm.addView(rootView, layoutParams)
+                
+                // Apply last known config before adding
+                applyConfigInternal(lastX, lastY, lastScale)
+                
+                wm.addView(windowView, layoutParams)
                 isShowing = true
             } catch (e: Exception) {
                 Log.e("NotifOverlay", "Failed to attach notif overlay", e)
@@ -201,56 +211,70 @@ class TikTokNotificationOverlayManager(private val context: Context) {
 
     fun applyConfig(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
         handler.post {
-            if (rootView == null) setupView()
-            val lp = layoutParams ?: return@post
-            val view = rootView ?: return@post
+            lastX = x
+            lastY = y
+            lastScale = scale
+            applyConfigInternal(x, y, scale)
+        }
+    }
 
-            lp.x = x
-            lp.y = y
+    private fun applyConfigInternal(x: Int, y: Int, scale: Float) {
+        if (windowView == null) setupView()
+        val lp = layoutParams ?: return
+        val content = contentView ?: return
 
-            view.pivotX = 0f
-            view.pivotY = 0f
-            view.scaleX = scale
-            view.scaleY = scale
+        lp.x = x
+        lp.y = y
 
-            val density = context.resources.displayMetrics.density
-            val baseW = if (wDp > 0) (wDp * density).toInt() else -2 // WRAP_CONTENT
-            val baseH = if (hDp > 0) (hDp * density).toInt() else -2
+        content.pivotX = 0f
+        content.pivotY = 0f
+        content.scaleX = scale
+        content.scaleY = scale
 
-            // Measure to get actual size if WRAP_CONTENT
-            view.measure(
-                if (baseW > 0) View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-                if (baseH > 0) View.MeasureSpec.makeMeasureSpec(baseH, View.MeasureSpec.EXACTLY) else View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
+        // Selalu gunakan WRAP_CONTENT agar ukurannya pas dengan konten
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
 
-            val actualW = if (baseW > 0) baseW else view.measuredWidth
-            val actualH = if (baseH > 0) baseH else view.measuredHeight
+        val actualW = content.measuredWidth
+        val actualH = content.measuredHeight
 
-            lp.width = (actualW * scale).toInt()
-            lp.height = (actualH * scale).toInt()
+        // FIX: Paksa ukuran content tetap di ukuran aslinya
+        val contentLp = content.layoutParams as? android.widget.FrameLayout.LayoutParams
+        if (contentLp != null) {
+            contentLp.width = actualW
+            contentLp.height = actualH
+            content.layoutParams = contentLp
+        }
 
-            gestureHelper?.let {
-                it.currentScale = scale
-                it.updateBaseSize(actualW, actualH)
-            }
+        lp.width = (actualW * scale).toInt().coerceAtLeast(1)
+        lp.height = (actualH * scale).toInt().coerceAtLeast(1)
 
-            try { wm.updateViewLayout(view, lp) } catch (_: Exception) {}
+        gestureHelper?.let {
+            it.currentScale = scale
+            it.updateBaseSize(actualW, actualH)
+        }
+
+        if (isShowing) {
+            try { wm.updateViewLayout(windowView, lp) } catch (_: Exception) {}
         }
     }
 
     private fun setupView() {
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
-        rootView = LayoutInflater.from(themed).inflate(R.layout.overlay_tiktok_notification, null)
         
-        // Add default LayoutParams to prevent NPE during manual measurement
-        rootView?.layoutParams = android.widget.FrameLayout.LayoutParams(
-            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT,
-            android.widget.FrameLayout.LayoutParams.WRAP_CONTENT
-        )
+        // Wrap dalam FrameLayout agar scaling tidak merusak layout (re-wrapping)
+        val container = android.widget.FrameLayout(themed)
+        val content = LayoutInflater.from(themed).inflate(R.layout.overlay_tiktok_notification, container, false)
+        container.addView(content)
+        
+        windowView = container
+        contentView = content
 
-        ivImage = rootView?.findViewById(R.id.tiktok_notif_image)
-        tvUser = rootView?.findViewById(R.id.tiktok_notif_user)
-        tvAction = rootView?.findViewById(R.id.tiktok_notif_action)
+        ivImage = content.findViewById(R.id.tiktok_notif_image)
+        tvUser = content.findViewById(R.id.tiktok_notif_user)
+        tvAction = content.findViewById(R.id.tiktok_notif_action)
 
         applyTheme(currentTheme)
 
@@ -266,17 +290,23 @@ class TikTokNotificationOverlayManager(private val context: Context) {
             y = 100
         }
 
-        gestureHelper = OverlayGestureHelper(rootView!!, layoutParams!!, wm).apply {
-            onInteraction = { resetHideTimer() }
+        gestureHelper = OverlayGestureHelper(container, layoutParams!!, wm).apply {
+            onInteraction = { 
+                resetHideTimer()
+                lastX = layoutParams?.x ?: lastX
+                lastY = layoutParams?.y ?: lastY
+                lastScale = currentScale
+                onPositionChanged?.invoke(lastX, lastY, lastScale)
+            }
         }
-        rootView?.setOnTouchListener(gestureHelper)
+        container.setOnTouchListener(gestureHelper)
     }
 
     fun hide() {
         handler.removeCallbacks(hideRunnable)
-        if (isShowing && rootView != null) {
+        if (isShowing && windowView != null) {
             try {
-                wm.removeView(rootView)
+                wm.removeView(windowView)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -293,8 +323,8 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         loudnessEnhancer = null
         isShowing = false
         
-        // Null-kan referensi View untuk membebaskan memori
-        rootView = null
+        windowView = null
+        contentView = null
         ivImage = null
         tvUser = null
         tvAction = null

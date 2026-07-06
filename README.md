@@ -25,12 +25,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v9.3.0)
+## 🆕 Pembaruan Terkini (v10.0.0)
 
-- **Follow Overlay**: Notifikasi real-time saat penonton mem-follow akun Anda.
-- **Seekbar Chat Command**: Kontrol tampilan seekbar via chat (`#seekbar on`/`off`).
-- **Duration Settings**: Atur berapa lama notifikasi Join, Like, dan Follow muncul.
-- **Sticker Support**: Tampilan stiker TikTok kini didukung di Chat Overlay.
+- **Custom Styles (Lyric & Queue)**: Berbagai pilihan gaya visual baru (Card, Neon, Glass, Minimal).
+- **Landscape Mode**: Dukungan penuh mode landscape untuk menu Settings dan Canvas.
+- **Position Persistence**: Perbaikan sistem penyimpanan koordinat overlay yang lebih akurat.
+- **UI Simplification**: Optimasi menu pengaturan dengan menghapus kontrol dimensi manual yang redundan.
 
 ---
 

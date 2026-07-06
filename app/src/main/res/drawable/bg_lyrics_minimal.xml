@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Menentukan sudut melengkung (radius) -->
+    <corners android:radius="1000dp" />
+    <!-- Anda juga bisa menggunakan nilai dp spesifik,misal 24dp -->
+
+    <!-- Warna latar belakang semi-transparan -->
+    <solid android:color="@color/white" /> <!-- Hitam dengan opasitas ~70% -->
+
+    <!-- Opsional: Tambahkan garis tepi (stroke) -->
+    <!-- <stroke android:width="1dp" android:color="#4DFFFFFF" /> -->
+
+</shape>

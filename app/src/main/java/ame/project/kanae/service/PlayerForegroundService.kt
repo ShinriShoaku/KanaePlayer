@@ -175,6 +175,16 @@ class PlayerForegroundService : Service() {
             onClose     = { broadcastState() }
         ).apply {
             updateStyle(prefs.getInt("canvas_player_layout", ame.project.kanae.R.layout.overlay_layout))
+            
+            // Restore last position/scale
+            val x = prefs.getInt("player_x", 16)
+            val y = prefs.getInt("player_y", 100)
+            val scale = prefs.getFloat("player_scale", 1f)
+            applyConfig(x, y, scale)
+
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("player_x", nx).putInt("player_y", ny).putFloat("player_scale", ns).apply()
+            }
         }
 
         queueOverlayManager = QueueOverlayManager(
@@ -186,6 +196,17 @@ class PlayerForegroundService : Service() {
             val container = prefs.getInt("canvas_queue_layout", ame.project.kanae.R.layout.overlay_queue_layout)
             val item = prefs.getInt("canvas_queue_item_layout", ame.project.kanae.R.layout.item_queue)
             updateStyle(container, item)
+
+            // Restore last position/scale
+            val x = prefs.getInt("queue_x", 16)
+            val y = prefs.getInt("queue_y", 420)
+            val scale = prefs.getFloat("queue_scale", 1f)
+            val width = prefs.getInt("queue_width", 300)
+            applyConfig(x, y, scale, width)
+
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("queue_x", nx).putInt("queue_y", ny).putFloat("queue_scale", ns).apply()
+            }
         }
 
         lyricsOverlayManager = LyricsOverlayManager(
@@ -193,7 +214,19 @@ class PlayerForegroundService : Service() {
             scope         = serviceScope,
             preferredLang = loadPreferredLyricsLang(),
             onClose       = { broadcastState() }
-        )
+        ).apply {
+            updateStyle(prefs.getInt("canvas_lyrics_layout", ame.project.kanae.R.layout.overlay_lyrics_layout))
+
+            // Restore last position/scale
+            val x = prefs.getInt("lyrics_x", 16)
+            val y = prefs.getInt("lyrics_y", 750)
+            val scale = prefs.getFloat("lyrics_scale", 1f)
+            applyConfig(x, y, scale)
+
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("lyrics_x", nx).putInt("lyrics_y", ny).putFloat("lyrics_scale", ns).apply()
+            }
+        }
 
         chatOverlayManager = ChatOverlayManager(
             context = this,
@@ -209,6 +242,17 @@ class PlayerForegroundService : Service() {
                 prefs.getInt("canvas_chat_layout", ame.project.kanae.R.layout.item_chat_bubble),
                 prefs.getInt("canvas_chat_bg", ame.project.kanae.R.drawable.bg_chat_bubble)
             )
+
+            // Restore last position/scale
+            val x = prefs.getInt("chat_x", 16)
+            val y = prefs.getInt("chat_y", 500)
+            val scale = prefs.getFloat("chat_scale", 1f)
+            val width = prefs.getInt("chat_width", 150)
+            applyConfig(x, y, scale, width)
+
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("chat_x", nx).putInt("chat_y", ny).putFloat("chat_scale", ns).apply()
+            }
         }
 
         notifOverlayManager = TikTokNotificationOverlayManager(this).apply {
@@ -222,6 +266,16 @@ class PlayerForegroundService : Service() {
             setUseTiktokGiftIcon(prefs.getBoolean("use_tiktok_gift_icon", true))
             setVolume(notifVolume)
             setVisualPunchEnabled(prefs.getBoolean("notif_visual_punch", false))
+
+            // Restore last position/scale
+            val x = prefs.getInt("notif_x", 100)
+            val y = prefs.getInt("notif_y", 100)
+            val scale = prefs.getFloat("notif_scale", 1.0f)
+            applyConfig(x, y, scale)
+
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("notif_x", nx).putInt("notif_y", ny).putFloat("notif_scale", ns).apply()
+            }
         }
 
         joinOverlayManager = TikTokJoinOverlayManager(this).apply {
@@ -234,8 +288,8 @@ class PlayerForegroundService : Service() {
             val scale = prefs.getFloat("join_scale", 1f)
             applyConfig(x, y, scale)
 
-            onPositionChanged = { nx, ny ->
-                prefs.edit().putInt("join_x", nx).putInt("join_y", ny).apply()
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("join_x", nx).putInt("join_y", ny).putFloat("join_scale", ns).apply()
             }
         }
         likeOverlayManager = TikTokLikeOverlayManager(this).apply {
@@ -249,8 +303,8 @@ class PlayerForegroundService : Service() {
             val scale = prefs.getFloat("like_scale", 1f)
             applyConfig(x, y, scale)
 
-            onPositionChanged = { nx, ny ->
-                prefs.edit().putInt("like_x", nx).putInt("like_y", ny).apply()
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("like_x", nx).putInt("like_y", ny).putFloat("like_scale", ns).apply()
             }
         }
         followOverlayManager = TikTokFollowOverlayManager(this).apply {
@@ -264,8 +318,8 @@ class PlayerForegroundService : Service() {
             val scale = prefs.getFloat("follow_scale", 1f)
             applyConfig(x, y, scale)
 
-            onPositionChanged = { nx, ny ->
-                prefs.edit().putInt("follow_x", nx).putInt("follow_y", ny).apply()
+            onPositionChanged = { nx, ny, ns ->
+                prefs.edit().putInt("follow_x", nx).putInt("follow_y", ny).putFloat("follow_scale", ns).apply()
             }
         }
 
@@ -302,7 +356,7 @@ class PlayerForegroundService : Service() {
             ACTION_PLAY_PAUSE    -> togglePlayPause()
             ACTION_SKIP          -> playNext()
             ACTION_STOP          -> stopPlayer()
-            ACTION_SHOW_OVERLAY  -> overlayManager.show()
+            ACTION_SHOW_OVERLAY  -> showOverlay()
             ACTION_LYRICS_TOGGLE -> toggleLyricsOverlay()
             ACTION_CANVAS_MODE   -> {
                 val enable = intent.getBooleanExtra("enabled", false)
@@ -772,7 +826,14 @@ class PlayerForegroundService : Service() {
     )
 
     // ── Overlay passthrough ───────────────────────────────────────────
-    fun showOverlay()  { overlayManager.show() }
+    fun showOverlay() {
+        val x = prefs.getInt("player_x", 16)
+        val y = prefs.getInt("player_y", 100)
+        val scale = prefs.getFloat("player_scale", 1f)
+        overlayManager.show(x, y)
+        overlayManager.applyConfig(x, y, scale)
+        broadcastState()
+    }
     fun hideOverlay()  { overlayManager.hide() }
     val overlayVisible get() = overlayManager.isShowing
 
@@ -892,6 +953,13 @@ class PlayerForegroundService : Service() {
         overlayManager.updateStyle(layoutId)
     }
 
+    fun updateLyricsStyle(layoutId: Int) {
+        prefs.edit()
+            .putInt("canvas_lyrics_layout", layoutId)
+            .apply()
+        lyricsOverlayManager.updateStyle(layoutId)
+    }
+
     fun updateQueueStyle(containerId: Int, itemId: Int) {
         prefs.edit()
             .putInt("canvas_queue_layout", containerId)
@@ -991,8 +1059,13 @@ class PlayerForegroundService : Service() {
     }
 
     fun showNotifDummy(type: String = "gift", persistent: Boolean = false) {
+        val x = prefs.getInt("notif_x", 100)
+        val y = prefs.getInt("notif_y", 100)
+        val scale = prefs.getFloat("notif_scale", 1.0f)
+        
         val action = if (type == "gift") "mengirim Gift (Preview)" else "membagikan live (Preview)"
         notifOverlayManager.showNotification("Preview User", action, type, isDummy = true, persistent = persistent)
+        notifOverlayManager.applyConfig(x, y, scale)
     }
 
     fun resetNotifTimer() {

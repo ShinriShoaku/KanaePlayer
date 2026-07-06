@@ -27,7 +27,7 @@ class TikTokJoinOverlayManager(private val context: Context) {
     private var lastY: Int = 200
     private var lastScale: Float = 1.0f
 
-    var onPositionChanged: ((x: Int, y: Int) -> Unit)? = null
+    var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
     
     private var ivImage: ImageView? = null
     private var tvUser: TextView? = null
@@ -230,7 +230,8 @@ class TikTokJoinOverlayManager(private val context: Context) {
                 resetHideTimer()
                 lastX = layoutParams?.x ?: lastX
                 lastY = layoutParams?.y ?: lastY
-                onPositionChanged?.invoke(lastX, lastY)
+                lastScale = currentScale
+                onPositionChanged?.invoke(lastX, lastY, lastScale)
             }
         }
         container.setOnTouchListener(gestureHelper)

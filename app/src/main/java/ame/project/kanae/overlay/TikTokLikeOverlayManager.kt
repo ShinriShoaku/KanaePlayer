@@ -43,7 +43,7 @@ class TikTokLikeOverlayManager(private val context: Context) {
     private var lastScale: Float = 1.0f
 
     /** Callback saat user menggeser overlay secara manual */
-    var onPositionChanged: ((x: Int, y: Int) -> Unit)? = null
+    var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
 
     private var ivImage: ImageView? = null
     private var tvUser: TextView? = null
@@ -378,7 +378,8 @@ class TikTokLikeOverlayManager(private val context: Context) {
                 resetHideTimer()
                 lastX = layoutParams?.x ?: lastX
                 lastY = layoutParams?.y ?: lastY
-                onPositionChanged?.invoke(lastX, lastY)
+                lastScale = currentScale
+                onPositionChanged?.invoke(lastX, lastY, lastScale)
             }
         }
         container.setOnTouchListener(gestureHelper)

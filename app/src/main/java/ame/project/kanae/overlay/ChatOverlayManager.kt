@@ -43,7 +43,12 @@ class ChatOverlayManager(
     private var layoutParams: WindowManager.LayoutParams? = null
     private var gestureHelper: OverlayGestureHelper? = null
 
+    private var lastX: Int = 16
+    private var lastY: Int = 500
+    private var lastScale: Float = 1f
     private var overlayWidth: Int = 150
+    
+    var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
     private var displayDurationMs: Long = 6000
     private val handler = Handler(Looper.getMainLooper())
     private var isTransparent = true
@@ -76,9 +81,12 @@ class ChatOverlayManager(
         rootView?.isFocusable = !enabled
     }
 
-    fun show(x: Int = 16, y: Int = 500, scale: Float = 1f, width: Int = 150) {
+    fun show(x: Int = lastX, y: Int = lastY, scale: Float = lastScale, width: Int = overlayWidth) {
         if (isShowing) return
 
+        this.lastX = x
+        this.lastY = y
+        this.lastScale = scale
         this.overlayWidth = width
         this.currentTextScale = scale
 
@@ -89,9 +97,11 @@ class ChatOverlayManager(
 
         val punch = PunchThroughLayout(themed).apply {
             punchEnabled = visualPunchEnabled
+            clipChildren = false
+            clipToPadding = false
             // Use FrameLayout.LayoutParams for the inner view to avoid ClassCastException
             val lp = FrameLayout.LayoutParams(
-                overlayWidth.dp,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT
             )
             addView(view, lp)
@@ -111,7 +121,7 @@ class ChatOverlayManager(
         else
             WindowManager.LayoutParams.TYPE_PHONE
 
-        val baseW = overlayWidth.dp
+        val baseW = FrameLayout.LayoutParams.WRAP_CONTENT
         val params = WindowManager.LayoutParams(
             baseW,
             WindowManager.LayoutParams.WRAP_CONTENT, // Start with wrap_content
@@ -121,8 +131,8 @@ class ChatOverlayManager(
             PixelFormat.TRANSLUCENT
         ).also {
             it.gravity = Gravity.TOP or Gravity.START
-            it.x = x
-            it.y = y
+            it.x = lastX
+            it.y = lastY
         }
         layoutParams = params
 
@@ -132,19 +142,24 @@ class ChatOverlayManager(
             wm = wm,
             onSingleTap = null
         ).also {
-            it.currentScale = 1f // Visual scale remains 1
-            it.updateBaseSize(baseW, 100)
+            it.currentScale = lastScale
+            it.onInteraction = {
+                lastX = params.x
+                lastY = params.y
+                lastScale = it.currentScale
+                onPositionChanged?.invoke(lastX, lastY, lastScale)
+            }
             if (visualPunchEnabled) view.setOnTouchListener(null)
             else view.setOnTouchListener(it)
         }
 
         wm.addView(punch, params)
         isShowing = true
-
-        // Force initial size sync
+        
+        // Apply scaling immediately after adding view
         view.post {
             if (isShowing) {
-                syncWindowSize()
+                applyConfig(lastX, lastY, lastScale, overlayWidth)
             }
         }
 
@@ -277,12 +292,12 @@ class ChatOverlayManager(
         val bubble = chatView.findViewById<View>(R.id.chat_bubble_container)
 
         tvNick?.text = nickname
-        tvNick?.textSize = 12f * currentTextScale
+        tvNick?.textSize = 12f
 
         // Handle Emotes
         val ssb = SpannableStringBuilder(message)
         tvMsg?.text = ssb
-        tvMsg?.textSize = 12f * currentTextScale
+        tvMsg?.textSize = 12f
 
         if (emotes.isNotEmpty()) {
             emotes.forEach { emote ->
@@ -293,7 +308,7 @@ class ChatOverlayManager(
                         override fun onResourceReady(resource: android.graphics.Bitmap, transition: Transition<in android.graphics.Bitmap>?) {
                             val currentText = tvMsg?.text as? SpannableStringBuilder ?: SpannableStringBuilder(tvMsg?.text ?: "")
 
-                            val size = (18f * currentTextScale * context.resources.displayMetrics.density).toInt()
+                            val size = (18f * context.resources.displayMetrics.density).toInt()
                             val drawable = BitmapDrawable(context.resources, resource)
                             drawable.setBounds(0, 0, size, size)
                             val span = ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM)
@@ -478,24 +493,26 @@ class ChatOverlayManager(
         val view = rootView ?: return
         val params = layoutParams ?: return
 
-        val baseW = overlayWidth.dp
-
-        // Sync root view layout params width
-        view.layoutParams?.let {
-            if (it.width != baseW) {
-                it.width = baseW
-                view.layoutParams = it
-            }
-        }
-
+        // Gunakan pengukuran otomatis (seperti Join/Follow overlay)
         view.measure(
-            View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
+        
+        val baseW = view.measuredWidth
         val baseH = view.measuredHeight
+        val scale = view.scaleX 
 
-        params.width = baseW
-        params.height = baseH
+        // FIX: Tetapkan ukuran layout params child ke ukuran aslinya
+        val contentLp = view.layoutParams as? FrameLayout.LayoutParams
+        if (contentLp != null) {
+            contentLp.width = baseW
+            contentLp.height = baseH
+            view.layoutParams = contentLp
+        }
+
+        params.width = (baseW * scale).toInt().coerceAtLeast(1)
+        params.height = (baseH * scale).toInt().coerceAtLeast(1)
 
         gestureHelper?.updateBaseSize(baseW, baseH)
         punchLayout?.let { runCatching { wm.updateViewLayout(it, params) } }
@@ -503,57 +520,47 @@ class ChatOverlayManager(
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0) {
+        this.lastX = x
+        this.lastY = y
+        this.lastScale = scale
+        if (width > 0) this.overlayWidth = width
+
         val params = layoutParams ?: return
         val view = punchLayout ?: return
         val content = rootView ?: return
 
         params.x = x
         params.y = y
-        this.currentTextScale = scale
-
-        // Reset visual scale - we use text scaling now
+        
+        // Pivot di pojok kiri atas
         content.pivotX = 0f
         content.pivotY = 0f
-        content.scaleX = 1f
-        content.scaleY = 1f
+        content.scaleX = scale
+        content.scaleY = scale
 
-        // Update window size agar mencakup seluruh layout
-        val dp = context.resources.displayMetrics.density
-        val baseW = if (width > 0) {
-            this.overlayWidth = width
-            (width * dp).toInt()
-        } else {
-            overlayWidth.dp
-        }
-
-        // Sync root view layout params width
-        view.layoutParams?.let {
-            it.width = baseW
-            view.layoutParams = it
-        }
-
-        // Apply scale to ALL existing messages
-        val container = chatContainer
-        if (container != null) {
-            for (i in 0 until container.childCount) {
-                val child = container.getChildAt(i)
-                child.findViewById<TextView>(R.id.tv_username)?.textSize = 12f * scale
-                child.findViewById<TextView>(R.id.tv_message)?.textSize = 12f * scale
-            }
-        }
-
-        view.measure(
-            View.MeasureSpec.makeMeasureSpec(baseW, View.MeasureSpec.EXACTLY),
+        // Selalu gunakan WRAP_CONTENT agar ukurannya pas dengan konten (seperti Join/Like overlay)
+        content.measure(
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
-        val baseH = view.measuredHeight
+        val baseW = content.measuredWidth
+        val baseH = content.measuredHeight
 
-        params.width = baseW
-        params.height = baseH
+        // FIX: Paksa ukuran content tetap di ukuran aslinya
+        val contentLp = content.layoutParams as? FrameLayout.LayoutParams
+        if (contentLp != null) {
+            contentLp.width = baseW
+            contentLp.height = baseH
+            content.layoutParams = contentLp
+        }
+
+        // Update ukuran jendela sesuai scale
+        params.width  = (baseW * scale).toInt().coerceAtLeast(1)
+        params.height = (baseH * scale).toInt().coerceAtLeast(1)
 
         // Sinkronkan ke gesture helper
         gestureHelper?.let {
-            it.currentScale = 1f
+            it.currentScale = scale
             it.updateBaseSize(baseW, baseH)
         }
 

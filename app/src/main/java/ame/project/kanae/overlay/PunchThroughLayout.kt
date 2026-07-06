@@ -35,6 +35,8 @@ class PunchThroughLayout @JvmOverloads constructor(
         // WAJIB: Android secara default tidak me-render ulang layout biasa. 
         // Kita harus set ini ke false agar fungsi onDraw() dipanggil.
         setWillNotDraw(false)
+        clipChildren = false
+        clipToPadding = false
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
