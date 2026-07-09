@@ -1,5 +1,15 @@
 # Changelog - KanaePlayer
 
+## [10.1.4] - 2025-01-20
+
+### ✨ New Features
+- **Keyboard Mapping (Experimental)**: Dukungan pemetaan keyboard untuk kontrol aplikasi yang lebih fleksibel.
+- **Quick Custom Overlay**: Fitur overlay baru yang mencakup soundboard, animasi, dan kustomisasi layout overlay secara cepat.
+- **Custom Gift Sound**: Sekarang kamu bisa menambahkan suara kustom untuk notifikasi gift TikTok.
+
+### ⚙️ UI & UX Improvements
+- **Width Control Restored**: Mengembalikan fungsi pengaturan lebar (width) untuk Player, Queue, Lyrics, dan Chat overlay yang sebelumnya sempat dihapus.
+
 ## [10.0.5] - 2025-07-06
 
 ### ✨ New Features

@@ -221,7 +221,9 @@
             <top.defaults.colorpicker.ColorPickerView
                 android:id="@+id/wheel_color_picker"
                 android:layout_width="match_parent"
-                android:layout_height="180dp" />
+                android:layout_height="180dp"
+                android:minWidth="100dp"
+                android:minHeight="100dp" />
 
             <Button
                 android:id="@+id/btn_close_inline_picker"

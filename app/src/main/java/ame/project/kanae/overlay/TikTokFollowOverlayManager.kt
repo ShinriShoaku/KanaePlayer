@@ -132,7 +132,7 @@ class TikTokFollowOverlayManager(private val context: Context) {
             lastX = x
             lastY = y
             lastScale = scale
-            applyConfigInternal(x, y, scale)
+            applyConfigInternal(lastX, lastY, lastScale)
         }
     }
 

@@ -236,8 +236,13 @@ class CanvasActivity : AppCompatActivity() {
         val filtered = allStyles.filter { it.category == currentCategory }
         
         val selection = tempSelections[currentCategory]
-        previewLayoutId = selection?.first ?: filtered.firstOrNull()?.layoutId ?: 0
-        previewBgId = selection?.second ?: filtered.firstOrNull()?.backgroundId ?: 0
+        // Defensive check: ensure the selection actually belongs to the current category
+        val validSelection = selection?.let { sel -> 
+            filtered.find { it.layoutId == sel.first && it.backgroundId == sel.second } 
+        }
+        
+        previewLayoutId = validSelection?.layoutId ?: filtered.firstOrNull()?.layoutId ?: 0
+        previewBgId = validSelection?.backgroundId ?: filtered.firstOrNull()?.backgroundId ?: 0
 
         // Reset picker state when changing category
         containerInlinePicker.visibility = View.GONE
@@ -316,7 +321,14 @@ class CanvasActivity : AppCompatActivity() {
         containerInlinePicker.visibility = View.VISIBLE
         
         val currentColor = customColors[currentCategory]?.get(key) ?: Color.WHITE
-        wheelColorPicker.setInitialColor(currentColor)
+        
+        // FIX: Delay setting initial color until the view is laid out to avoid
+        // "width and height must be > 0" crash in AlphaSliderView.onSizeChanged
+        wheelColorPicker.post {
+            if (activeColorKey == key) { // Ensure we are still picking the same color
+                wheelColorPicker.setInitialColor(currentColor)
+            }
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -374,40 +386,48 @@ class CanvasActivity : AppCompatActivity() {
     }
 
     private fun saveEverything() {
-        val prefs = getSharedPreferences("ytplayer_prefs", Context.MODE_PRIVATE).edit()
+        val editor = getSharedPreferences("ytplayer_prefs", Context.MODE_PRIVATE).edit()
         
-        tempSelections.forEach { (comp, pair) ->
-            prefs.putInt("canvas_${comp.name.lowercase()}_layout", pair.first)
-            prefs.putInt("canvas_${comp.name.lowercase()}_bg", pair.second)
+        UIComponent.entries.forEach { comp ->
+            val stylesForComp = allStyles.filter { it.category == comp }
+            val selection = tempSelections[comp]
             
-            when (comp) {
-                UIComponent.CHAT   -> service?.updateChatStyle(pair.first, pair.second)
-                UIComponent.PLAYER -> service?.updatePlayerStyle(pair.first)
-                UIComponent.QUEUE  -> {
-                    val s = allStyles.find { it.layoutId == pair.first && it.category == UIComponent.QUEUE }
-                    s?.let { service?.updateQueueStyle(it.layoutId, it.itemLayoutId) }
+            // Verify selection belongs to this category, otherwise use first available style
+            val finalStyle = selection?.let { sel ->
+                stylesForComp.find { it.layoutId == sel.first && it.backgroundId == sel.second }
+            } ?: stylesForComp.firstOrNull()
+
+            finalStyle?.let { s ->
+                editor.putInt("canvas_${comp.name.lowercase()}_layout", s.layoutId)
+                editor.putInt("canvas_${comp.name.lowercase()}_bg", s.backgroundId)
+                
+                // Update service immediately if bound
+                when (comp) {
+                    UIComponent.CHAT   -> service?.updateChatStyle(s.layoutId, s.backgroundId)
+                    UIComponent.PLAYER -> service?.updatePlayerStyle(s.layoutId)
+                    UIComponent.QUEUE  -> service?.updateQueueStyle(s.layoutId, s.itemLayoutId)
+                    UIComponent.JOIN   -> service?.updateJoinStyle(s.layoutId)
+                    UIComponent.LIKE   -> service?.updateLikeStyle(s.layoutId)
+                    UIComponent.FOLLOW -> service?.updateFollowStyle(s.layoutId)
+                    UIComponent.LYRICS -> service?.updateLyricsStyle(s.layoutId)
+                    UIComponent.NOTIF  -> service?.updateNotifStyle(s.layoutId)
                 }
-                UIComponent.JOIN   -> service?.updateJoinStyle(pair.first)
-                UIComponent.LIKE   -> service?.updateLikeStyle(pair.first)
-                UIComponent.FOLLOW -> service?.updateFollowStyle(pair.first)
-                UIComponent.LYRICS -> service?.updateLyricsStyle(pair.first)
-                else -> {}
             }
         }
 
         customColors.forEach { (comp, map) ->
             val baseKey = "canvas_${comp.name.lowercase()}_custom"
-            map["bg_primary"]?.let { prefs.putInt("${baseKey}_bg", it) } ?: prefs.remove("${baseKey}_bg")
-            map["bg_secondary"]?.let { prefs.putInt("${baseKey}_bg_sec", it) } ?: prefs.remove("${baseKey}_bg_sec")
-            map["text_primary"]?.let { prefs.putInt("${baseKey}_text", it) } ?: prefs.remove("${baseKey}_text")
-            map["text_secondary"]?.let { prefs.putInt("${baseKey}_text_sec", it) } ?: prefs.remove("${baseKey}_text_sec")
+            map["bg_primary"]?.let { editor.putInt("${baseKey}_bg", it) } ?: editor.remove("${baseKey}_bg")
+            map["bg_secondary"]?.let { editor.putInt("${baseKey}_bg_sec", it) } ?: editor.remove("${baseKey}_bg_sec")
+            map["text_primary"]?.let { editor.putInt("${baseKey}_text", it) } ?: editor.remove("${baseKey}_text")
+            map["text_secondary"]?.let { editor.putInt("${baseKey}_text_sec", it) } ?: editor.remove("${baseKey}_text_sec")
         }
         
         customAlphas.forEach { (comp, alpha) ->
-            prefs.putInt("canvas_${comp.name.lowercase()}_custom_alpha", alpha)
+            editor.putInt("canvas_${comp.name.lowercase()}_custom_alpha", alpha)
         }
         
-        prefs.apply()
+        editor.apply()
         service?.updateCustomThemes()
         Toast.makeText(this, "All themes saved & applied!", Toast.LENGTH_SHORT).show()
         finish()

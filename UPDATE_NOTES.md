@@ -1,5 +1,26 @@
 # Update Notes - KanaePlayer
 
+## Update 10.1.4: UI Flexibility & Custom Soundboard
+
+Update ini menghadirkan kembali kontrol dimensi overlay yang fleksibel serta fitur audio kustom untuk interaksi yang lebih dinamis.
+
+### 1. Overlay Width Control
+- **Manual Dimensioning**: Menjawab masukan pengguna, kini fungsi pengaturan lebar (width) telah dikembalikan untuk Player, Queue, Lyrics, dan Chat overlay. Kamu bisa menyesuaikan ukuran overlay agar pas dengan layout streaming kamu.
+
+### 2. Quick Custom Overlay & Soundboard
+- **All-in-One Customization**: Menambahkan fitur Quick Custom Overlay yang mencakup:
+    - **Soundboard**: Putar efek suara secara instan melalui overlay.
+    - **Animations**: Pilihan animasi baru untuk tampilan overlay yang lebih hidup.
+    - **Overlay Layout**: Kustomisasi tata letak overlay dengan lebih cepat dan mudah.
+
+### 3. Custom Gift Sound
+- **Personalized Alerts**: Sekarang kamu bisa mengunggah atau memilih file suara sendiri untuk diputar saat mendapatkan Gift di TikTok Live, memberikan ciri khas unik pada stream kamu.
+
+### 4. Keyboard Mapping (Experimental)
+- **Keyboard Control**: Memungkinkan penggunaan keyboard eksternal untuk mengontrol berbagai fungsi aplikasi (masih dalam tahap eksperimental).
+
+---
+
 ## Update 10.0.5: Stability & Android 11 Fixes
 
 Update ini berfokus pada stabilitas aplikasi melalui integrasi Firebase dan perbaikan bug fatal yang terjadi pada perangkat Android 11.

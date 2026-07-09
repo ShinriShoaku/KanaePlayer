@@ -1,5 +1,5 @@
 {
-  "versionCode": 12,
-  "versionName": "10.0.5",
-  "updateMessage": "Integrasi Firebase, Perbaikan Fatal Crash Android 11, dan Optimasi Stabilitas Engine"
+  "versionCode": 13,
+  "versionName": "10.1.4",
+  "updateMessage": "Fitur Width Control, Keyboard Mapping, Quick Custom Overlay (Soundboard & Animasi), dan Custom Gift Sound"
 }

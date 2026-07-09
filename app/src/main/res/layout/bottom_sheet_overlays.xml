@@ -243,13 +243,13 @@
                             android:layout_width="56dp"
                             android:layout_height="56dp"
                             android:background="@drawable/bg_circle_purple"
-                            android:src="@android:drawable/ic_menu_share"
+                            android:src="@android:drawable/ic_menu_today"
                             app:tint="@color/white"
                             android:scaleType="center" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Custom"
+                            android:text="Browser"
                             android:textColor="@color/text_primary"
                             android:textSize="12sp"
                             android:textStyle="bold"
@@ -336,7 +336,87 @@
                             android:textStyle="bold"
                             android:layout_marginTop="8dp" />
                     </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnMapping"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_purple"
+                            android:src="?attr/actionModeSelectAllDrawable"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Keyboards"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
                 </TableRow>
+
+                <TableRow
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp">
+
+                    <LinearLayout
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center">
+                        <ImageButton
+                            android:id="@+id/btnGesture"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_teal"
+                            android:src="@android:drawable/ic_menu_edit"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Quick Custom"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/containerGiftSound"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:visibility="gone">
+                        <ImageButton
+                            android:id="@+id/btnGiftSound"
+                            android:layout_width="56dp"
+                            android:layout_height="56dp"
+                            android:background="@drawable/bg_circle_purple"
+                            android:src="@android:drawable/ic_lock_silent_mode_off"
+                            app:tint="@color/white"
+                            android:scaleType="center" />
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gift Sound"
+                            android:textColor="@color/text_primary"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:layout_marginTop="8dp" />
+                    </LinearLayout>
+
+                </TableRow>
+
 
             </TableLayout>
         </LinearLayout>
@@ -922,6 +1002,15 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Use TikTok Gift Icon"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:layout_marginTop="4dp" />
+
+                <CheckBox
+                    android:id="@+id/cbUseCustomGiftSound"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Use Custom Gift Sound"
                     android:textColor="@color/text_primary"
                     android:textSize="12sp"
                     android:layout_marginTop="4dp" />

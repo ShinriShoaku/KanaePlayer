@@ -58,7 +58,9 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var notificationVolume: Float = 1.0f
     private var useTiktokGiftIcon: Boolean = true
+    private var useCustomGiftSound: Boolean = false
     private var currentTheme: CustomTheme = CustomTheme()
+    private var currentLayoutId: Int = R.layout.overlay_tiktok_notification
 
     var isShowing = false
         private set
@@ -98,6 +100,21 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         }
     }
 
+    fun updateStyle(layoutId: Int) {
+        if (currentLayoutId != layoutId) {
+            currentLayoutId = layoutId
+            if (isShowing) {
+                handler.post {
+                    val wasShowing = isShowing
+                    hide()
+                    if (wasShowing) showNotification("Preview User", "Action Preview", "gift", isDummy = true)
+                }
+            } else {
+                windowView = null // Recreate on next show
+            }
+        }
+    }
+
     fun setVolume(volume: Float) {
         notificationVolume = volume
         val actualVol = if (volume > 1.0f) 1.0f else volume
@@ -115,6 +132,10 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         useTiktokGiftIcon = enabled
     }
 
+    fun setUseCustomGiftSound(enabled: Boolean) {
+        useCustomGiftSound = enabled
+    }
+
     private fun applyGain(gainMb: Int) {
         try {
             loudnessEnhancer?.setTargetGain(gainMb)
@@ -124,17 +145,32 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     }
 
     @Synchronized
-    fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null) {
+    fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null, giftName: String? = null) {
         if (windowView == null) {
             setupView()
         }
 
         tvUser?.text = userName
         tvAction?.text = action
-        // ... (rest of the logic stays same, will handle in next block)
 
-        val imageUri = if (type == "gift") giftImageUri else shareImageUri
-        val audioUri = if (type == "gift") giftAudioUri else shareAudioUri
+        var imageUri = if (type == "gift") giftImageUri else shareImageUri
+        var audioUri = if (type == "gift") giftAudioUri else shareAudioUri
+
+        // Custom Gift Sound Logic with Fallback
+        if (type == "gift" && useCustomGiftSound && giftName != null) {
+            val prefs = context.getSharedPreferences("gift_sounds_prefs", Context.MODE_PRIVATE)
+            // Use trimmed name to avoid mismatch
+            val cleanName = giftName.trim()
+            val customAudio = prefs.getString("gift_sound_$cleanName", null)
+            
+            if (customAudio != null) {
+                Log.d("NotifOverlay", "Using custom sound for $cleanName: $customAudio")
+                audioUri = Uri.parse(customAudio)
+            } else {
+                Log.d("NotifOverlay", "No custom sound for $cleanName, falling back to default gift audio")
+                // audioUri stays as giftAudioUri (the default)
+            }
+        }
 
         ivImage?.let {
             Log.d("NotifOverlay", "Showing $type. useTiktokGiftIcon=$useTiktokGiftIcon, giftIconUrl=$giftIconUrl")
@@ -209,7 +245,7 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         }
     }
 
-    fun applyConfig(x: Int, y: Int, scale: Float, wDp: Int = 0, hDp: Int = 0) {
+    fun applyConfig(x: Int, y: Int, scale: Float) {
         handler.post {
             lastX = x
             lastY = y
@@ -266,7 +302,7 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         
         // Wrap dalam FrameLayout agar scaling tidak merusak layout (re-wrapping)
         val container = android.widget.FrameLayout(themed)
-        val content = LayoutInflater.from(themed).inflate(R.layout.overlay_tiktok_notification, container, false)
+        val content = LayoutInflater.from(themed).inflate(currentLayoutId, container, false)
         container.addView(content)
         
         windowView = container

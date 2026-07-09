@@ -25,12 +25,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v10.0.5)
+## 🆕 Pembaruan Terkini (v10.1.4)
 
-- **Firebase Integration**: Penambahan Firebase Crashlytics untuk deteksi error dan stabilitas aplikasi yang lebih baik.
-- **Android 11 Stability**: Perbaikan menyeluruh untuk masalah *force close* di Android 11 (Oppo/Vivo) saat request lagu.
-- **Java API Desugaring**: Dukungan fitur Java modern di HP lama tanpa crash.
-- **Improved Thread Safety**: Sinkronisasi chat yang lebih stabil untuk mencegah *race condition*.
+- **Width Control Restored**: Fungsi pengaturan lebar (width) kembali tersedia untuk Player, Queue, Lyrics, dan Chat overlay.
+- **Keyboard Mapping (Experimental)**: Fitur awal untuk pemetaan tombol keyboard.
+- **Quick Custom Overlay**: Integrasi Soundboard, animasi, dan layout kustom dalam satu sistem overlay cepat.
+- **Custom Gift Sound**: Dukungan untuk suara notifikasi gift yang dapat dikustomisasi sendiri.
 
 ---
 

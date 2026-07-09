@@ -471,52 +471,63 @@ class ChatOverlayManager(
         this.displayDurationMs = seconds * 1000L
     }
 
-    fun setOverlayWidth(widthDp: Int) {
-        this.overlayWidth = widthDp
-        val params = layoutParams ?: return
-        val view = rootView ?: return
+    private var previewBox: View? = null
+    private var isPreviewingWidth = false
+    private var lastWidth: Int = 0
 
-        // Update root view internal layout params as well
-        view.layoutParams?.let {
-            it.width = widthDp.dp
-            view.layoutParams = it
+    fun showWidthPreview(widthDp: Int) {
+        if (!isShowing) return
+        isPreviewingWidth = true
+        val density = context.resources.displayMetrics.density
+        // Minimal 200dp jika bukan Auto
+        val finalWidthDp = if (widthDp > 0 && widthDp < 200) 200 else widthDp
+        val widthPx = (finalWidthDp * density).toInt()
+
+        if (previewBox == null) {
+            previewBox = View(context).apply {
+                val strokeW = (2 * density).toInt()
+                val dashW = (8 * density).toInt()
+                val dashG = (4 * density).toInt()
+                val drawable = android.graphics.drawable.GradientDrawable().apply {
+                    setStroke(strokeW, Color.parseColor("#FF9800"), dashW.toFloat(), dashG.toFloat())
+                    setColor(Color.parseColor("#26FF9800"))
+                    cornerRadius = (8 * density)
+                }
+                background = drawable
+            }
+            punchLayout?.addView(previewBox)
+        }
+        
+        previewBox?.visibility = View.VISIBLE
+        previewBox?.bringToFront()
+        
+        val lp = previewBox?.layoutParams as? FrameLayout.LayoutParams
+        if (lp != null) {
+            lp.width = if (widthPx > 0) widthPx else FrameLayout.LayoutParams.MATCH_PARENT
+            lp.height = FrameLayout.LayoutParams.MATCH_PARENT
+            lp.gravity = Gravity.START
+            previewBox?.layoutParams = lp
         }
 
-        params.width = widthDp.dp
-        punchLayout?.let { runCatching { wm.updateViewLayout(it, params) } }
+        applyConfig(lastX, lastY, lastScale, widthDp)
+    }
+
+    fun hideWidthPreview() {
+        isPreviewingWidth = false
+        previewBox?.visibility = View.GONE
+        applyConfig(lastX, lastY, lastScale, overlayWidth)
+    }
+
+    fun setOverlayWidth(widthDp: Int) {
+        this.overlayWidth = widthDp
+        applyConfig(lastX, lastY, lastScale, widthDp)
     }
 
     private val Int.dp: Int
         get() = (this * context.resources.displayMetrics.density).toInt()
 
     private fun syncWindowSize() {
-        val view = rootView ?: return
-        val params = layoutParams ?: return
-
-        // Gunakan pengukuran otomatis (seperti Join/Follow overlay)
-        view.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-        
-        val baseW = view.measuredWidth
-        val baseH = view.measuredHeight
-        val scale = view.scaleX 
-
-        // FIX: Tetapkan ukuran layout params child ke ukuran aslinya
-        val contentLp = view.layoutParams as? FrameLayout.LayoutParams
-        if (contentLp != null) {
-            contentLp.width = baseW
-            contentLp.height = baseH
-            view.layoutParams = contentLp
-        }
-
-        params.width = (baseW * scale).toInt().coerceAtLeast(1)
-        params.height = (baseH * scale).toInt().coerceAtLeast(1)
-
-        gestureHelper?.updateBaseSize(baseW, baseH)
-        punchLayout?.let { runCatching { wm.updateViewLayout(it, params) } }
-        updateAnimationWindowPos()
+        applyConfig(lastX, lastY, lastScale, overlayWidth)
     }
 
     fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0) {
@@ -538,9 +549,20 @@ class ChatOverlayManager(
         content.scaleX = scale
         content.scaleY = scale
 
-        // Selalu gunakan WRAP_CONTENT agar ukurannya pas dengan konten (seperti Join/Like overlay)
+        val density = context.resources.displayMetrics.density
+        // Minimal 200dp jika bukan Auto
+        val finalWidth = if (overlayWidth > 0 && overlayWidth < 200) 200 else overlayWidth
+        val maxWidthPx = if (finalWidth > 0) (finalWidth * density).toInt() else 0
+
+        val widthSpec = if (maxWidthPx > 0) {
+            View.MeasureSpec.makeMeasureSpec(maxWidthPx, View.MeasureSpec.AT_MOST)
+        } else {
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        }
+
+        // Selalu gunakan WRAP_CONTENT agar ukurannya pas dengan konten
         content.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            widthSpec,
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
         val baseW = content.measuredWidth
@@ -555,7 +577,12 @@ class ChatOverlayManager(
         }
 
         // Update ukuran jendela sesuai scale
-        params.width  = (baseW * scale).toInt().coerceAtLeast(1)
+        var effectiveBaseW = baseW
+        if (isPreviewingWidth && maxWidthPx > 0) {
+            effectiveBaseW = maxOf(effectiveBaseW, maxWidthPx)
+        }
+
+        params.width  = (effectiveBaseW * scale).toInt().coerceAtLeast(1)
         params.height = (baseH * scale).toInt().coerceAtLeast(1)
 
         // Sinkronkan ke gesture helper

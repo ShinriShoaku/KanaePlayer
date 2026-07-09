@@ -92,11 +92,12 @@ class QueueOverlayManager(
             val lastX = layoutParams?.x ?: 16
             val lastY = layoutParams?.y ?: 420
             val lastScale = gestureHelper?.currentScale ?: 1f
+            val lastW = this.lastWidth
             hide()
             show(lastQueue)
             
             rootView?.post {
-                applyConfig(lastX, lastY, lastScale)
+                applyConfig(lastX, lastY, lastScale, lastW)
             }
         }
     }
@@ -215,7 +216,7 @@ class QueueOverlayManager(
         
         // Apply scaling immediately after adding view
         rootView?.post {
-            applyConfig(lastX, lastY, lastScale)
+            applyConfig(lastX, lastY, lastScale, lastWidth)
         }
         
         if (autoHideEnabled) {
@@ -262,9 +263,11 @@ class QueueOverlayManager(
         tvEmpty?.visibility = if (hasItems) View.GONE  else View.VISIBLE
         rvQueue?.visibility = if (hasItems) View.VISIBLE else View.GONE
 
-        // Notify WindowManager that height may have changed
+        // FIX: Re-apply config to update window size (height) based on new content
         punchLayout?.post {
-            layoutParams?.let { runCatching { wm.updateViewLayout(punchLayout, it) } }
+            if (isShowing) {
+                applyConfig(lastX, lastY, lastScale, lastWidth)
+            }
         }
     }
 
@@ -315,10 +318,58 @@ class QueueOverlayManager(
         runCatching { wm.updateViewLayout(view, params) }
     }
 
-    fun applyConfig(x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
+    private var previewBox: View? = null
+    private var isPreviewingWidth = false
+    private var lastWidth: Int = 0
+
+    fun showWidthPreview(widthDp: Int) {
+        if (!isShowing) return
+        isPreviewingWidth = true
+        val density = context.resources.displayMetrics.density
+        // Minimal 200dp jika bukan Auto
+        val finalWidthDp = if (widthDp > 0 && widthDp < 200) 200 else widthDp
+        val widthPx = (finalWidthDp * density).toInt()
+
+        if (previewBox == null) {
+            previewBox = View(context).apply {
+                val strokeW = (2 * density).toInt()
+                val dashW = (8 * density).toInt()
+                val dashG = (4 * density).toInt()
+                val drawable = android.graphics.drawable.GradientDrawable().apply {
+                    setStroke(strokeW, Color.parseColor("#FF9800"), dashW.toFloat(), dashG.toFloat())
+                    setColor(Color.parseColor("#26FF9800"))
+                    cornerRadius = (8 * density)
+                }
+                background = drawable
+            }
+            punchLayout?.addView(previewBox)
+        }
+        
+        previewBox?.visibility = View.VISIBLE
+        previewBox?.bringToFront()
+        
+        val lp = previewBox?.layoutParams as? FrameLayout.LayoutParams
+        if (lp != null) {
+            lp.width = if (widthPx > 0) widthPx else FrameLayout.LayoutParams.MATCH_PARENT
+            lp.height = FrameLayout.LayoutParams.MATCH_PARENT
+            lp.gravity = Gravity.START
+            previewBox?.layoutParams = lp
+        }
+
+        applyConfig(lastX, lastY, lastScale, widthDp)
+    }
+
+    fun hideWidthPreview() {
+        isPreviewingWidth = false
+        previewBox?.visibility = View.GONE
+        applyConfig(lastX, lastY, lastScale, lastWidth)
+    }
+
+    fun applyConfig(x: Int, y: Int, scale: Float, width: Int = -1, height: Int = 0) {
         this.lastX = x
         this.lastY = y
         this.lastScale = scale
+        if (width != -1) this.lastWidth = width
 
         val params = layoutParams ?: return
         val view   = punchLayout ?: return
@@ -333,25 +384,46 @@ class QueueOverlayManager(
         content.scaleX = scale
         content.scaleY = scale
 
-        // Selalu gunakan WRAP_CONTENT agar ukurannya pas dengan konten
+        val density = context.resources.displayMetrics.density
+        // Minimal 200dp jika bukan Auto
+        val finalWidth = if (lastWidth > 0 && lastWidth < 200) 200 else lastWidth
+        val maxWidthPx = if (finalWidth > 0) (finalWidth * density).toInt() else 0
+
+        // FIX: Update LayoutParams BEFORE measure to ensure the view respects the new width
+        val contentLp = content.layoutParams as? FrameLayout.LayoutParams
+        if (contentLp != null) {
+            contentLp.width = if (maxWidthPx > 0) maxWidthPx else FrameLayout.LayoutParams.WRAP_CONTENT
+            contentLp.height = FrameLayout.LayoutParams.WRAP_CONTENT
+            content.layoutParams = contentLp
+        }
+
+        // FIX: Gunakan EXACTLY agar layout mengikuti ukuran yang di-set
+        val widthSpec = if (maxWidthPx > 0) {
+            View.MeasureSpec.makeMeasureSpec(maxWidthPx, View.MeasureSpec.EXACTLY)
+        } else {
+            val dm = context.resources.displayMetrics
+            View.MeasureSpec.makeMeasureSpec(dm.widthPixels, View.MeasureSpec.AT_MOST)
+        }
+
+        // Measure content
         content.measure(
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED),
+            widthSpec,
             View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
         )
         val baseW = content.measuredWidth
         val baseH = content.measuredHeight
 
-        // FIX: Paksa ukuran content tetap di ukuran aslinya
-        val contentLp = content.layoutParams as? FrameLayout.LayoutParams
+        // FIX: Kunci ukuran LayoutParams agar tidak berubah saat diproses parent
         if (contentLp != null) {
             contentLp.width = baseW
             contentLp.height = baseH
+            contentLp.gravity = Gravity.TOP or Gravity.START
             content.layoutParams = contentLp
         }
 
-        // Update ukuran jendela sesuai scale
-        params.width  = (baseW * scale).toInt().coerceAtLeast(1)
-        params.height = (baseH * scale).toInt().coerceAtLeast(1)
+        // Update window size to match scaled measured size
+        params.width  = (baseW * scale).toInt().coerceAtLeast(1) + 2
+        params.height = (baseH * scale).toInt().coerceAtLeast(1) + 2
 
         gestureHelper?.let {
             it.currentScale = scale

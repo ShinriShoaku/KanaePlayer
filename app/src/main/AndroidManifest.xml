@@ -60,6 +60,24 @@
             android:label="Authorized Users"
             android:theme="@style/Theme.YTTikTokPlayer"
             android:exported="false" />
+
+        <activity
+            android:name=".MappingActivity"
+            android:label="Keyboard Mapping"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+
+        <activity
+            android:name=".QuickOverlayActivity"
+            android:label="Quick Overlay"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+
+        <activity
+            android:name=".tiktok.GiftSoundActivity"
+            android:label="Gift Custom Sound"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
         <!-- ─── Foreground Service ────────────────────────────── -->
         <service
             android:name=".service.PlayerForegroundService"

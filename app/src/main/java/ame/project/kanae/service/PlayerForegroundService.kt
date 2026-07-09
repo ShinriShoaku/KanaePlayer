@@ -82,9 +82,10 @@ class PlayerForegroundService : Service() {
     private var tiktokConnectTime = 0L
     private var requestLimit  = 3
     private var useTiktokGiftIcon = true
+    private var useCustomGiftSound = false
     private var joinEnabled = true
     private var likeEnabled = true
-    private var followEnabled = true
+    private var followEnabled = false
     private var notifEnabled = true
 
     private var tts: TextToSpeech? = null
@@ -256,6 +257,7 @@ class PlayerForegroundService : Service() {
         }
 
         notifOverlayManager = TikTokNotificationOverlayManager(this).apply {
+            updateStyle(prefs.getInt("canvas_notif_layout", ame.project.kanae.R.layout.overlay_tiktok_notification))
             setConfig(
                 prefs.getString("notif_share_img", null),
                 prefs.getString("notif_gift_img", null),
@@ -264,6 +266,7 @@ class PlayerForegroundService : Service() {
                 prefs.getInt("notif_duration", 5)
             )
             setUseTiktokGiftIcon(prefs.getBoolean("use_tiktok_gift_icon", true))
+            setUseCustomGiftSound(prefs.getBoolean("use_custom_gift_sound", false))
             setVolume(notifVolume)
             setVisualPunchEnabled(prefs.getBoolean("notif_visual_punch", false))
 
@@ -405,9 +408,10 @@ class PlayerForegroundService : Service() {
         musicVolume    = prefs.getFloat("music_volume", 1.0f)
         notifVolume    = prefs.getFloat("notif_volume", 1.0f)
         useTiktokGiftIcon = prefs.getBoolean("use_tiktok_gift_icon", true)
+        useCustomGiftSound = prefs.getBoolean("use_custom_gift_sound", false)
         joinEnabled    = prefs.getBoolean("join_enabled", true)
         likeEnabled    = prefs.getBoolean("like_enabled", true)
-        followEnabled  = prefs.getBoolean("follow_enabled", true)
+        followEnabled  = prefs.getBoolean("follow_enabled", false)
         notifEnabled   = prefs.getBoolean("notif_enabled", true)
 
         ttsEnabled = prefs.getBoolean("chat_tts_enabled", false)
@@ -953,6 +957,13 @@ class PlayerForegroundService : Service() {
         overlayManager.updateStyle(layoutId)
     }
 
+    fun updateNotifStyle(layoutId: Int) {
+        prefs.edit()
+            .putInt("canvas_notif_layout", layoutId)
+            .apply()
+        notifOverlayManager.updateStyle(layoutId)
+    }
+
     fun updateLyricsStyle(layoutId: Int) {
         prefs.edit()
             .putInt("canvas_lyrics_layout", layoutId)
@@ -1029,6 +1040,14 @@ class PlayerForegroundService : Service() {
         useTiktokGiftIcon = enabled
         prefs.edit().putBoolean("use_tiktok_gift_icon", enabled).apply()
         notifOverlayManager.setUseTiktokGiftIcon(enabled)
+        broadcastState()
+    }
+
+    fun updateUseCustomGiftSound(enabled: Boolean) {
+        Log.d(TAG, "Setting UseCustomGiftSound changed to: $enabled")
+        useCustomGiftSound = enabled
+        prefs.edit().putBoolean("use_custom_gift_sound", enabled).apply()
+        notifOverlayManager.setUseCustomGiftSound(enabled)
         broadcastState()
     }
 
@@ -1212,6 +1231,24 @@ class PlayerForegroundService : Service() {
         followOverlayManager.applyConfig(x, y, scale)
     }
 
+    fun showWidthPreview(key: String, widthDp: Int) {
+        when (key) {
+            "player" -> overlayManager.showWidthPreview(widthDp)
+            "queue"  -> queueOverlayManager.showWidthPreview(widthDp)
+            "lyrics" -> lyricsOverlayManager.showWidthPreview(widthDp)
+            "chat"   -> chatOverlayManager.showWidthPreview(widthDp)
+        }
+    }
+
+    fun hideWidthPreview(key: String) {
+        when (key) {
+            "player" -> overlayManager.hideWidthPreview()
+            "queue"  -> queueOverlayManager.hideWidthPreview()
+            "lyrics" -> lyricsOverlayManager.hideWidthPreview()
+            "chat"   -> chatOverlayManager.hideWidthPreview()
+        }
+    }
+
     fun applyOverlayConfig(key: String, x: Int, y: Int, scale: Float, width: Int = 0, height: Int = 0) {
         // If x or y is -1, it means "keep current screen position"
         var finalX = x
@@ -1264,7 +1301,7 @@ class PlayerForegroundService : Service() {
             "queue"  -> if (queueOverlayManager.isShowing) queueOverlayManager.applyConfig(finalX, finalY, scale, width, height)
             "lyrics" -> if (lyricsOverlayManager.isShowing) lyricsOverlayManager.applyConfig(finalX, finalY, scale, width, height)
             "chat"   -> if (chatOverlayManager.isShowing) chatOverlayManager.applyConfig(finalX, finalY, scale, width)
-            "notif"  -> if (notifOverlayManager.isShowing) notifOverlayManager.applyConfig(finalX, finalY, scale, width, height)
+            "notif"  -> if (notifOverlayManager.isShowing) notifOverlayManager.applyConfig(finalX, finalY, scale)
             "join"   -> if (joinOverlayManager.isShowing) joinOverlayManager.applyConfig(finalX, finalY, scale)
             "like"   -> if (likeOverlayManager.isShowing) likeOverlayManager.applyConfig(finalX, finalY, scale)
             "follow" -> if (followOverlayManager.isShowing) followOverlayManager.applyConfig(finalX, finalY, scale)
@@ -1334,7 +1371,8 @@ class PlayerForegroundService : Service() {
         "commands_enabled"  to commandConfig.enabled,
         "music_volume"      to musicVolume,
         "notif_volume"      to notifVolume,
-        "use_tiktok_gift_icon" to useTiktokGiftIcon
+        "use_tiktok_gift_icon" to useTiktokGiftIcon,
+        "use_custom_gift_sound" to useCustomGiftSound
     )
 
     // ── Notification ──────────────────────────────────────────────────
@@ -1580,7 +1618,7 @@ class PlayerForegroundService : Service() {
                 Log.d(TAG, "[TikTok] Gift from @$uid ($nick): $gift x$count | Icon: $iconUrl")
                 broadcastSystemChat("$nick mengirim $gift x$count")
                 if (notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
-                    notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl)
+                    notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl, giftName = gift)
                 }
             }
             t.onShare = { _, nick ->

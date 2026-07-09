@@ -39,6 +39,26 @@ class PunchThroughLayout @JvmOverloads constructor(
         clipToPadding = false
     }
 
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        // Biarkan child mengukur dirinya sendiri tanpa batasan ukuran jendela (window size).
+        // Ini penting saat scale < 1.0, di mana layout child lebih besar dari ukuran jendela.
+        val childWidthSpec = MeasureSpec.makeMeasureSpec(10000, MeasureSpec.AT_MOST)
+        val childHeightSpec = MeasureSpec.makeMeasureSpec(10000, MeasureSpec.AT_MOST)
+        
+        for (i in 0 until childCount) {
+            val child = getChildAt(i)
+            if (child.visibility != GONE) {
+                measureChildWithMargins(child, childWidthSpec, 0, childHeightSpec, 0)
+            }
+        }
+
+        // Ukuran layout ini sendiri mengikuti apa yang diminta oleh WindowManager
+        setMeasuredDimension(
+            MeasureSpec.getSize(widthMeasureSpec),
+            MeasureSpec.getSize(heightMeasureSpec)
+        )
+    }
+
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
         if (punchEnabled) {
             updateTouch(ev)

@@ -235,6 +235,18 @@ class TikTokLiveManager(
                         }
                         "WebcastGiftMessage", "gift" -> {
                             if (!shouldProcessMessage(data)) return@forEach
+                            
+                            // Check for combo/repeat to avoid duplicate sound/notification for the same gift sequence
+                            // TikTok often sends multiple messages for combo gifts.
+                            // We only process if it's the first one or if we want to handle every increment.
+                            // But usually, we only want the sound once or on completion.
+                            val isRepeat = data["repeatEnd"]?.asInt == 0 // 0 usually means it's still combo-ing
+                            if (data.has("repeatEnd") && isRepeat) {
+                                Log.d(TAG, "Skipping gift message because repeatEnd is 0 (combo in progress)")
+                                return@forEach
+                            }
+
+                            logLongString("RAW GIFT", data.toString())
                             val (uniqueId, nickname, _) = getUserInfo(data)
                             
                             val giftName = extractGiftName(data)
@@ -293,6 +305,14 @@ class TikTokLiveManager(
                     }
                     "gift", "WebcastGiftMessage" -> {
                         if (!shouldProcessMessage(data)) return
+                        
+                        val isRepeat = data["repeatEnd"]?.asInt == 0
+                        if (data.has("repeatEnd") && isRepeat) {
+                            Log.d(TAG, "Skipping legacy gift message because repeatEnd is 0")
+                            return
+                        }
+
+                        logLongString("RAW GIFT (Legacy)", data.toString())
                         val (uniqueId, nickname, _) = getUserInfo(data)
                         val giftName = extractGiftName(data)
                         val count = extractGiftCount(data)
@@ -328,8 +348,24 @@ class TikTokLiveManager(
             val type = (obj["type"] ?: obj["event"])?.asString
             when (type) {
                 "chat", "comment", "message", "WebcastChatMessage" -> {
+                    if (!shouldProcessMessage(obj)) return
                     val msg = buildChat(obj) ?: return
                     scope.launch(Dispatchers.Main) { onChat?.invoke(msg) }
+                }
+                "gift", "WebcastGiftMessage" -> {
+                    if (!shouldProcessMessage(obj)) return
+                    
+                    val isRepeat = obj["repeatEnd"]?.asInt == 0
+                    if (obj.has("repeatEnd") && isRepeat) {
+                        return
+                    }
+
+                    logLongString("RAW GIFT (Flat)", obj.toString())
+                    val (uniqueId, nickname, _) = getUserInfo(obj)
+                    val giftName = extractGiftName(obj)
+                    val count = extractGiftCount(obj)
+                    val giftIcon = extractGiftIcon(obj)
+                    scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
                 }
             }
         } catch (e: Exception) {
@@ -561,17 +597,17 @@ class TikTokLiveManager(
     private fun extractGiftName(data: JsonObject): String {
         // 1. Check in giftDetails (Found in log!)
         data["giftDetails"].optObj()?.let { gd ->
-            gd["giftName"]?.asString?.let { return it }
+            gd["giftName"]?.asString?.let { return it.trim() }
         }
 
         // 2. Direct fields
-        data["giftName"]?.asString?.let { return it }
-        data["gift_name"]?.asString?.let { return it }
+        data["giftName"]?.asString?.let { return it.trim() }
+        data["gift_name"]?.asString?.let { return it.trim() }
 
         // 3. Nested in gift object
         data["gift"].optObj()?.let { g ->
-            g["name"]?.asString?.let { return it }
-            g["describe"]?.asString?.let { return it }
+            g["name"]?.asString?.let { return it.trim() }
+            g["describe"]?.asString?.let { return it.trim() }
         }
 
         // 3. Fallback from describe string (misal: "user gifted the host 1 Rose")
@@ -579,10 +615,8 @@ class TikTokLiveManager(
             if (desc.contains("gifted the host")) {
                 val parts = desc.split("gifted the host")
                 if (parts.size > 1) {
-                    // Ambil bagian setelah "gifted the host" (misal: "1 Rose")
                     val giftPart = parts[1].trim()
-                    // Hilangkan angka di depan jika ada (misal: "1 Rose" -> "Rose")
-                    return giftPart.replace(Regex("^\\d+\\s+"), "")
+                    return giftPart.replace(Regex("^\\d+\\s+"), "").trim()
                 }
             }
         }
@@ -591,7 +625,12 @@ class TikTokLiveManager(
     }
 
     private fun extractGiftCount(data: JsonObject): Int {
-        return data["repeatCount"]?.asInt
+        // Log specifically for combo/repeat count to debug double sound
+        val repeatCount = data["repeatCount"]?.asInt
+        val comboCount = data["comboCount"]
+        Log.d(TAG, "Gift Count Debug - repeatCount: $repeatCount, comboCount: $comboCount")
+
+        return repeatCount
             ?: data["repeat_count"]?.asInt
             ?: data["comboCount"]?.asInt
             ?: 1
