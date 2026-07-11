@@ -1,5 +1,6 @@
 package ame.project.kanae.overlay
 
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
@@ -18,7 +19,7 @@ class PunchThroughLayout @JvmOverloads constructor(
     private var touchX = -1f
     private var touchY = -1f
     private var eraseRadius = 0f
-    private val maxRadius = 150f // Ukuran lingkaran lubang transparan (dalam pixel)
+    private val maxRadius = 100f // Ukuran lingkaran lubang transparan (dalam pixel)
     
     var punchEnabled = false
         set(value) {
@@ -76,7 +77,7 @@ class PunchThroughLayout @JvmOverloads constructor(
         }
         return super.onTouchEvent(event)
     }
-    
+
     private fun updateTouch(event: MotionEvent) {
         when (event.action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {

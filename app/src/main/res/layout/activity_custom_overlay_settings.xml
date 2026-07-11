@@ -28,7 +28,7 @@
                     android:id="@+id/tv_header_title"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="🌐 Custom Overlay"
+                    android:text="🌐 Web Overlay"
                     android:textSize="24sp"
                     android:textColor="@color/orange"
                     android:fontFamily="sans-serif-black"

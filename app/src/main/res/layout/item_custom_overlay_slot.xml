@@ -113,6 +113,16 @@
                     android:min="1"
                     android:progress="5" />
             </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/cb_visual_punch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Visual Punch (Experimental)"
+                android:textColor="@color/text_primary"
+                android:buttonTint="@color/orange"
+                android:textSize="14sp" />
         </LinearLayout>
 
         <LinearLayout

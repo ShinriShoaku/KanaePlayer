@@ -1,6 +1,5 @@
 package ame.project.kanae.overlay
 
-import android.annotation.SuppressLint
 import android.content.*
 import android.graphics.Color
 import android.net.Uri
@@ -18,7 +17,7 @@ import ame.project.kanae.service.PlayerForegroundService
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 
-class CustomOverlaySettingsActivity : AppCompatActivity() {
+class CustomWebOverlaySettingsActivity : AppCompatActivity() {
 
     private var customMgr: CustomOverlayManager? = null
     private var service: PlayerForegroundService? = null
@@ -35,6 +34,9 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
             
             customMgr?.onWidgetVisibilityChanged = { id, isEnabled ->
                 runOnUiThread { refreshSlotButton(id, isEnabled) }
+            }
+            customMgr?.onConfigUpdated = { updated ->
+                runOnUiThread { syncSlotView(updated) }
             }
             setupUI()
         }
@@ -83,6 +85,29 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
         }
     }
 
+    private fun syncSlotView(config: CustomOverlayConfig) {
+        val holder = activeHolders[config.id] ?: return
+        
+        // Update checkbox Visual Punch tanpa memicu listener (loop)
+        holder.cbVisualPunch.setOnCheckedChangeListener(null)
+        holder.cbVisualPunch.isChecked = config.visualPunch
+        holder.cbVisualPunch.setOnCheckedChangeListener { _, isChecked ->
+            updateConfigById(config.id) { it.visualPunch = isChecked }
+        }
+        
+        // Update Auto-Hide & Duration jika berubah dari bottom sheet (jika nanti ditambahkan)
+        holder.cbAutoHide.setOnCheckedChangeListener(null)
+        holder.cbAutoHide.isChecked = config.autoHide
+        holder.layoutDuration.visibility = if (config.autoHide) View.VISIBLE else View.GONE
+        holder.cbAutoHide.setOnCheckedChangeListener { _, isChecked ->
+            holder.layoutDuration.visibility = if (isChecked) View.VISIBLE else View.GONE
+            updateConfigById(config.id) { it.autoHide = isChecked }
+        }
+        
+        holder.sbDuration.progress = config.durationSec
+        holder.tvDurationLabel.text = "Durasi: ${config.durationSec} detik"
+    }
+
     private fun addSlotView(config: CustomOverlayConfig) {
         val m = customMgr ?: return
         val inflater = LayoutInflater.from(this)
@@ -95,11 +120,15 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
         holder.layoutDuration.visibility = if (config.autoHide) View.VISIBLE else View.GONE
         holder.sbDuration.progress = config.durationSec
         holder.tvDurationLabel.text = "Durasi: ${config.durationSec} detik"
+        holder.cbVisualPunch.isChecked = config.visualPunch
 
         holder.cbAutoHide.setOnCheckedChangeListener { _, isChecked ->
             holder.layoutDuration.visibility = if (isChecked) View.VISIBLE else View.GONE
-            config.autoHide = isChecked
-            m.updateConfig(config)
+            updateConfigById(config.id) { it.autoHide = isChecked }
+        }
+
+        holder.cbVisualPunch.setOnCheckedChangeListener { _, isChecked ->
+            updateConfigById(config.id) { it.visualPunch = isChecked }
         }
 
         holder.sbDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
@@ -107,8 +136,7 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
                 if (b) {
                     val duration = p.coerceAtLeast(1)
                     holder.tvDurationLabel.text = "Durasi: $duration detik"
-                    config.durationSec = duration
-                    m.updateConfig(config)
+                    updateConfigById(config.id) { it.durationSec = duration }
                 }
             }
             override fun onStartTrackingTouch(p: SeekBar?) {}
@@ -124,9 +152,10 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
             
-            config.name = name
-            config.url = url
-            m.updateConfig(config)
+            updateConfigById(config.id) {
+                it.name = name
+                it.url = url
+            }
             
             snack("Overlay '$name' disimpan")
         }
@@ -156,6 +185,14 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
         container.addView(view)
         activeHolders[config.id] = holder
         refreshSlotButton(config.id, m.isEnabled(config.id))
+    }
+
+    private fun updateConfigById(id: String, block: (CustomOverlayConfig) -> Unit) {
+        val m = customMgr ?: return
+        val configs = m.getConfigs()
+        val config = configs.find { it.id == id } ?: return
+        block(config)
+        m.updateConfig(config)
     }
 
     private fun showAddDialog() {
@@ -226,6 +263,7 @@ class CustomOverlaySettingsActivity : AppCompatActivity() {
         val btnSave: Button = view.findViewById(R.id.btn_save)
         val btnDelete: ImageButton = view.findViewById(R.id.btn_delete)
         val cbAutoHide: CheckBox = view.findViewById(R.id.cb_autohide)
+        val cbVisualPunch: CheckBox = view.findViewById(R.id.cb_visual_punch)
         val layoutDuration: View = view.findViewById(R.id.layout_duration)
         val tvDurationLabel: TextView = view.findViewById(R.id.tv_duration_label)
         val sbDuration: SeekBar = view.findViewById(R.id.sb_duration)

@@ -242,6 +242,13 @@ class QuickOverlayActivity : AppCompatActivity() {
                         saveMappings()
                     }
                 }
+                onTextUpdated = { id, text ->
+                    mappings.find { it.id == id }?.let {
+                        it.reactionText = text
+                        saveMappings()
+                        runOnUiThread { adapter.notifyDataSetChanged() }
+                    }
+                }
                 val prefs = getSharedPreferences("quick_overlay_prefs", MODE_PRIVATE)
                 val pos = prefs.getString("position", "MID") ?: "MID"
                 setPosition(pos)

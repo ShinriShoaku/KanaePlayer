@@ -16,6 +16,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.webkit.RenderProcessGoneDetail
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
@@ -35,7 +36,8 @@ data class CustomOverlayConfig(
     var height: Int = 250,
     var bgColor: Int = Color.TRANSPARENT,
     var autoHide: Boolean = false,
-    var durationSec: Int = 5
+    var durationSec: Int = 5,
+    var visualPunch: Boolean = false
 )
 
 class CustomOverlayManager(
@@ -61,6 +63,8 @@ class CustomOverlayManager(
     private data class OverlayEntry(
         var config: CustomOverlayConfig,
         val root: View,
+        val punchLayout: PunchThroughLayout,
+        val gestureLayer: View,
         val webView: WebView,
         val params: WindowManager.LayoutParams,
         val gesture: OverlayGestureHelper,
@@ -74,6 +78,7 @@ class CustomOverlayManager(
     private var adjusterRoot: View? = null
 
     var onWidgetVisibilityChanged: ((String, Boolean) -> Unit)? = null
+    var onConfigUpdated: ((CustomOverlayConfig) -> Unit)? = null
 
     fun getConfigs(): MutableList<CustomOverlayConfig> {
         val json = prefs.getString(PREF_CONFIGS, null) ?: return mutableListOf()
@@ -111,6 +116,7 @@ class CustomOverlayManager(
             val oldConfig = configs[idx].copy()
             configs[idx] = updated
             saveConfigs(configs)
+            onConfigUpdated?.invoke(updated)
 
             active[updated.id]?.let { entry ->
                 // FIX: Jika URL berubah, reload WebView
@@ -146,6 +152,9 @@ class CustomOverlayManager(
                 entry.root.scaleX = updated.scale
                 entry.root.scaleY = updated.scale
                 entry.gesture.currentScale = updated.scale
+                
+                entry.punchLayout.punchEnabled = updated.visualPunch
+                entry.gestureLayer.setOnTouchListener(if (updated.visualPunch) null else entry.gesture)
 
                 try { wm.updateViewLayout(entry.root, entry.params) } catch (_: Exception) {}
 
@@ -309,7 +318,11 @@ class CustomOverlayManager(
 
         val themed = ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val root = LayoutInflater.from(themed).inflate(R.layout.overlay_saweria_widget, null)
+        val punchLayout = root.findViewById<PunchThroughLayout>(R.id.punch_layout)
+        val gestureLayer = root.findViewById<View>(R.id.saweria_gesture_layer)
         val entryCfg = config.copy()
+
+        punchLayout.punchEnabled = entryCfg.visualPunch
 
         // FIX UTAMA: Setiap overlay dapat nama bridge unik pakai ID-nya sendiri
         // "AndroidBridge" yang sama untuk semua WebView bisa konflik
@@ -552,10 +565,10 @@ class CustomOverlayManager(
         root.scaleY = entryCfg.scale
         gesture.currentScale = entryCfg.scale
 
-        root.findViewById<View>(R.id.saweria_gesture_layer).setOnTouchListener(gesture)
+        gestureLayer.setOnTouchListener(if (entryCfg.visualPunch) null else gesture)
 
         wm.addView(root, params)
-        return OverlayEntry(entryCfg, root, wv, params, gesture, uniqueBridgeName)
+        return OverlayEntry(entryCfg, root, punchLayout, gestureLayer, wv, params, gesture, uniqueBridgeName)
     }
 
     fun showAdjuster(id: String) {
@@ -597,8 +610,13 @@ class CustomOverlayManager(
         val skH = view.findViewById<SeekBar>(R.id.seek_height)
         val skS = view.findViewById<SeekBar>(R.id.seek_scale)
         val skA = view.findViewById<SeekBar>(R.id.seek_alpha)
+        val cbPunch = view.findViewById<CheckBox>(R.id.cb_visual_punch)
+        val etName = view.findViewById<android.widget.EditText>(R.id.et_adj_name)
+        val etUrl = view.findViewById<android.widget.EditText>(R.id.et_adj_url)
 
         tvTitle.text = "Adjust: ${config.name}"
+        etName.setText(config.name)
+        etUrl.setText(config.url)
 
         val dp = context.resources.displayMetrics.density
         var currW = config.width
@@ -606,19 +624,24 @@ class CustomOverlayManager(
         var currS = config.scale
         var currAlpha = Color.alpha(config.bgColor)
         var currRGB = config.bgColor and 0x00FFFFFF
+        var currPunch = config.visualPunch
 
         skW.progress = currW; tvW.text = "Width: ${currW}dp"
         skH.progress = currH; tvH.text = "Height: ${currH}dp"
         skS.progress = (currS * 100).toInt(); tvS.text = "Scale: %.2fx".format(currS)
         skA.progress = currAlpha; tvA.text = "BG Opacity: ${(currAlpha * 100 / 255)}%"
+        cbPunch.isChecked = currPunch
 
         val update = let@{
             val e = active[id] ?: return@let
+            e.config.name = etName.text.toString()
+            e.config.url = etUrl.text.toString()
             e.config.width = currW
             e.config.height = currH
             e.config.scale = currS
             e.config.posX = e.params.x
             e.config.posY = e.params.y
+            e.config.visualPunch = currPunch
 
             e.params.width = (currW * dp * currS).toInt()
             e.params.height = (currH * dp * currS).toInt()
@@ -627,6 +650,8 @@ class CustomOverlayManager(
             e.root.scaleX = currS
             e.root.scaleY = currS
             e.gesture.currentScale = currS
+            e.punchLayout.punchEnabled = currPunch
+            e.gestureLayer.setOnTouchListener(if (currPunch) null else e.gesture)
 
             val finalColor = (currAlpha shl 24) or currRGB
             e.config.bgColor = finalColor
@@ -635,6 +660,9 @@ class CustomOverlayManager(
             updateConfig(e.config)
             try { wm.updateViewLayout(e.root, e.params) } catch (_: Exception) {}
         }
+
+        etName.setOnEditorActionListener { _, _, _ -> update(); false }
+        etUrl.setOnEditorActionListener { _, _, _ -> update(); false }
 
         skW.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { if (b) { currW = p.coerceAtLeast(50); tvW.text = "Width: ${currW}dp"; update() } }
@@ -656,6 +684,10 @@ class CustomOverlayManager(
             override fun onStartTrackingTouch(p: SeekBar?) {}
             override fun onStopTrackingTouch(p: SeekBar?) {}
         })
+        cbPunch.setOnCheckedChangeListener { _, isChecked ->
+            currPunch = isChecked
+            update()
+        }
 
         val setRGB = { rgb: Int -> currRGB = rgb; update() }
         view.findViewById<View>(R.id.color_none).setOnClickListener { currAlpha = 0; skA.progress = 0; update() }

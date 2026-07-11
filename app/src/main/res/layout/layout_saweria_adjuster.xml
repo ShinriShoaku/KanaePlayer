@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="#E61A1A2E"
@@ -22,6 +23,40 @@
         android:textColor="#FFFFFF"
         android:textSize="17sp"
         android:textStyle="bold" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Widget Name"
+        app:hintTextColor="@color/orange"
+        app:boxStrokeColor="@color/orange"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_adj_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:inputType="text" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:hint="URL / Source"
+        app:hintTextColor="@color/orange"
+        app:boxStrokeColor="@color/orange"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_adj_url"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp"
+            android:inputType="textUri" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -55,6 +90,16 @@
 
             <TextView android:id="@+id/tv_alpha_label" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="BG Opacity: 100%" android:textColor="#CCCCCC" android:textSize="12sp" />
             <SeekBar android:id="@+id/seek_alpha" android:layout_width="match_parent" android:layout_height="wrap_content" android:max="255" android:progress="0" />
+
+            <CheckBox
+                android:id="@+id/cb_visual_punch"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Visual Punch (Experimental)"
+                android:textColor="#CCCCCC"
+                android:textSize="12sp"
+                android:buttonTint="@color/orange" />
         </LinearLayout>
     </LinearLayout>
 

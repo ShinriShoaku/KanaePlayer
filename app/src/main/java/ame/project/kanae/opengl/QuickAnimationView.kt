@@ -34,18 +34,39 @@ class QuickAnimationView @JvmOverloads constructor(
 
     init {
         setEGLContextClientVersion(2)
-        setEGLConfigChooser(8, 8, 8, 8, 16, 0)
+        // Tidak butuh depth/stencil buffer sama sekali (render 2D GL_POINTS tanpa depth test)
+        // -> hemat memori GPU dan waktu clear tiap frame.
+        setEGLConfigChooser(8, 8, 8, 8, 0, 0)
         holder.setFormat(PixelFormat.TRANSLUCENT)
         setZOrderOnTop(true)
 
-        renderer = MyRenderer()
+        renderer = MyRenderer(this)
         setRenderer(renderer)
-        renderMode = RENDERMODE_CONTINUOUSLY
+
+        // Render on-demand: GPU hanya bekerja saat ada partikel aktif, bukan 60fps terus-menerus
+        // walau layar sedang kosong. renderer akan panggil requestRender() sendiri selama
+        // masih ada partikel hidup, dan berhenti otomatis begitu semuanya mati.
+        renderMode = RENDERMODE_WHEN_DIRTY
     }
 
-    /** Panggil ini sesering yang kamu mau, efek baru akan menumpuk di atas yang lama. */
+    /**
+     * Panggil ini sesering yang kamu mau, efek baru akan menumpuk di atas yang lama.
+     *
+     * PENTING: fungsi ini dipanggil dari UI/main thread, tapi array partikel juga
+     * dibaca-tulis oleh GL render thread di onDrawFrame(). Kalau trigger() dijalankan
+     * langsung di sini, dua thread rebutan akses ke objek Particle yang sama tanpa
+     * sinkronisasi -> race condition -> data partikel bisa korup di tengah render.
+     * Saat di-spam cepat, inilah yang kelihatan sebagai lag/stutter.
+     *
+     * queueEvent() menjadwalkan trigger() supaya dieksekusi di GL thread yang sama
+     * dengan onDrawFrame(), jadi write & read particle pool selalu di satu thread,
+     * tidak ada race lagi walau dipanggil sangat sering.
+     */
     fun startAnimation(effect: AnimationEffect) {
-        renderer.trigger(effect)
+        queueEvent {
+            renderer.trigger(effect)
+        }
+        requestRender()
     }
 
     // ---------------------------------------------------------------------------------------
@@ -87,7 +108,7 @@ class QuickAnimationView @JvmOverloads constructor(
         var curAlpha = 0f
     }
 
-    private class MyRenderer : Renderer {
+    private class MyRenderer(private val view: GLSurfaceView) : Renderer {
         private var program: Int = 0
         private var positionHandle: Int = 0
         private var colorHandle: Int = 0
@@ -95,12 +116,16 @@ class QuickAnimationView @JvmOverloads constructor(
         private var shapeHandle: Int = 0
 
         // Ukuran pool tetap -> beban kerja per frame konstan walaupun animasi di-spam terus.
-        private val poolSize = 900
+        // Diperbesar dari 900 supaya ada cukup ruang napas untuk efek berumur panjang
+        // (SNOW/BUBBLES/LEAVES/HEARTS bisa hidup 2-4.5 detik) saat di-spam tap cepat,
+        // sehingga particle yang masih hidup jarang terpaksa ditimpa (lihat nextAvailableSlot()).
+        private val poolSize = 2500
         private val pool = Array(poolSize) { Particle() }
         private var cursor = 0
 
         // 8 float per partikel: x, y, pointSize, r, g, b, a, shape
         private val floatsPerVertex = 8
+        private val strideBytes = floatsPerVertex * 4
         private val vertexBuffer: FloatBuffer =
             ByteBuffer.allocateDirect(poolSize * floatsPerVertex * 4)
                 .order(ByteOrder.nativeOrder())
@@ -168,6 +193,12 @@ class QuickAnimationView @JvmOverloads constructor(
 
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
             GLES20.glClearColor(0f, 0f, 0f, 0f)
+            GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+
+            // Blending diset sekali di sini, bukan enable/disable tiap frame.
+            GLES20.glEnable(GLES20.GL_BLEND)
+            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE)
+
             val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexShaderCode)
             val fragmentShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode)
             program = GLES20.glCreateProgram().apply {
@@ -175,6 +206,8 @@ class QuickAnimationView @JvmOverloads constructor(
                 GLES20.glAttachShader(this, fragmentShader)
                 GLES20.glLinkProgram(this)
             }
+            GLES20.glUseProgram(program)
+
             positionHandle = GLES20.glGetAttribLocation(program, "vPosition")
             colorHandle = GLES20.glGetAttribLocation(program, "vColor")
             pointSizeHandle = GLES20.glGetAttribLocation(program, "vPointSize")
@@ -186,7 +219,8 @@ class QuickAnimationView @JvmOverloads constructor(
         }
 
         override fun onDrawFrame(gl: GL10?) {
-            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
+            // Tidak ada depth buffer lagi -> cukup clear color saja.
+            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
             val now = System.currentTimeMillis()
             vertexBuffer.clear()
@@ -211,47 +245,74 @@ class QuickAnimationView @JvmOverloads constructor(
                 count++
             }
 
-            if (count == 0) return
+            if (count > 0) {
+                vertexBuffer.position(0)
+                GLES20.glUseProgram(program)
 
-            GLES20.glUseProgram(program)
-            GLES20.glEnable(GLES20.GL_BLEND)
-            GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE)
+                vertexBuffer.position(0)
+                GLES20.glEnableVertexAttribArray(positionHandle)
+                GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
 
-            val strideBytes = floatsPerVertex * 4
+                vertexBuffer.position(2)
+                GLES20.glEnableVertexAttribArray(pointSizeHandle)
+                GLES20.glVertexAttribPointer(pointSizeHandle, 1, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
 
-            vertexBuffer.position(0)
-            GLES20.glEnableVertexAttribArray(positionHandle)
-            GLES20.glVertexAttribPointer(positionHandle, 2, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
+                vertexBuffer.position(3)
+                GLES20.glEnableVertexAttribArray(colorHandle)
+                GLES20.glVertexAttribPointer(colorHandle, 4, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
 
-            vertexBuffer.position(2)
-            GLES20.glEnableVertexAttribArray(pointSizeHandle)
-            GLES20.glVertexAttribPointer(pointSizeHandle, 1, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
+                vertexBuffer.position(7)
+                GLES20.glEnableVertexAttribArray(shapeHandle)
+                GLES20.glVertexAttribPointer(shapeHandle, 1, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
 
-            vertexBuffer.position(3)
-            GLES20.glEnableVertexAttribArray(colorHandle)
-            GLES20.glVertexAttribPointer(colorHandle, 4, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
+                // Satu draw call untuk semua partikel aktif -> ringan walau di-spam.
+                // Data dibaca langsung dari FloatBuffer di RAM (client-side), dijamin selalu
+                // berisi data frame yang baru saja dihitung -> tidak ada risiko GPU merender
+                // isi buffer basi seperti pada pendekatan VBO+orphaning sebelumnya.
+                GLES20.glDrawArrays(GLES20.GL_POINTS, 0, count)
 
-            vertexBuffer.position(7)
-            GLES20.glEnableVertexAttribArray(shapeHandle)
-            GLES20.glVertexAttribPointer(shapeHandle, 1, GLES20.GL_FLOAT, false, strideBytes, vertexBuffer)
+                GLES20.glDisableVertexAttribArray(positionHandle)
+                GLES20.glDisableVertexAttribArray(pointSizeHandle)
+                GLES20.glDisableVertexAttribArray(colorHandle)
+                GLES20.glDisableVertexAttribArray(shapeHandle)
 
-            // Satu draw call untuk semua partikel aktif -> ringan walau di-spam.
-            GLES20.glDrawArrays(GLES20.GL_POINTS, 0, count)
-
-            GLES20.glDisableVertexAttribArray(positionHandle)
-            GLES20.glDisableVertexAttribArray(pointSizeHandle)
-            GLES20.glDisableVertexAttribArray(colorHandle)
-            GLES20.glDisableVertexAttribArray(shapeHandle)
-            GLES20.glDisable(GLES20.GL_BLEND)
+                // Masih ada partikel hidup -> minta frame berikutnya.
+                // Begitu count == 0, render otomatis berhenti (hemat GPU & baterai).
+                view.requestRender()
+            }
         }
 
         fun trigger(effect: AnimationEffect) {
             val count = spawnCountFor(effect)
             repeat(count) {
-                val p = pool[cursor]
-                initParticle(p, effect)
-                cursor = (cursor + 1) % pool.size
+                val idx = findFreeSlot() ?: return@repeat
+                initParticle(pool[idx], effect)
             }
+        }
+
+        /**
+         * Cari slot particle yang sudah MATI, mulai dari `cursor` lalu muter satu putaran
+         * penuh kalau perlu. Kalau tidak ketemu sama sekali (pool 2500 benar-benar penuh
+         * particle yang masih hidup) -> return null, dan particle itu di-SKIP, BUKAN
+         * menimpa particle lain yang masih terbang.
+         *
+         * Ini garansi isolasi antar instance efek: particle yang masih hidup tidak akan
+         * PERNAH disentuh oleh trigger() efek lain, apapun kondisinya. Jadi tiap spam tap
+         * selalu jadi instance baru yang benar-benar independen dari yang sudah berjalan
+         * ("punya ruang sendiri"), tanpa perlu thread sungguhan dan tanpa alokasi objek
+         * sama sekali -> nol tekanan GC.
+         */
+        private fun findFreeSlot(): Int? {
+            val start = cursor
+            var idx = start
+            do {
+                if (!pool[idx].active) {
+                    cursor = (idx + 1) % pool.size
+                    return idx
+                }
+                idx = (idx + 1) % pool.size
+            } while (idx != start)
+            return null
         }
 
         private fun spawnCountFor(effect: AnimationEffect): Int = when (effect) {
@@ -271,11 +332,15 @@ class QuickAnimationView @JvmOverloads constructor(
             AnimationEffect.METEOR -> 15
         }
 
-        private fun hueToRgb(h: Float): Triple<Float, Float, Float> {
-            val rr = (abs(h * 6f - 3f) - 1f).coerceIn(0f, 1f)
-            val gg = (2f - abs(h * 6f - 2f)).coerceIn(0f, 1f)
-            val bb = (2f - abs(h * 6f - 4f)).coerceIn(0f, 1f)
-            return Triple(rr, gg, bb)
+        // Menulis langsung ke field r/g/b particle, TIDAK mengembalikan Triple<Float,Float,Float>.
+        // Triple generic di Kotlin memaksa tiap Float di-box jadi objek (java.lang.Float) ->
+        // tiap panggilan alokasi 1 objek Triple + 3 objek Float. Dipanggil puluhan kali per
+        // trigger (RAINBOW/CONFETTI/SPIRAL spawn 40-55 partikel), jadi kalau di-spam tap cepat,
+        // sampah objek ini menumpuk dan memicu GC berulang -> itu penyebab FPS drop/patah-patah.
+        private fun assignHue(p: Particle, h: Float) {
+            p.r = (abs(h * 6f - 3f) - 1f).coerceIn(0f, 1f)
+            p.g = (2f - abs(h * 6f - 2f)).coerceIn(0f, 1f)
+            p.b = (2f - abs(h * 6f - 4f)).coerceIn(0f, 1f)
         }
 
         private fun fadeInOut(elapsed: Float, life: Float, fadeInDur: Float, fadeOutFrac: Float): Float {
@@ -336,8 +401,7 @@ class QuickAnimationView @JvmOverloads constructor(
                     val speed = Random.nextFloat() * 0.8f + 0.8f
                     p.vx = cos(angle) * speed
                     p.vy = sin(angle) * speed
-                    val (rr, gg, bb) = hueToRgb(Random.nextFloat())
-                    p.r = rr; p.g = gg; p.b = bb
+                    assignHue(p, Random.nextFloat())
                     p.baseSize = Random.nextFloat() * 16f + 20f
                     p.life = Random.nextFloat() * 0.6f + 1f
                     p.shape = Shape.CIRCLE
@@ -348,8 +412,7 @@ class QuickAnimationView @JvmOverloads constructor(
                     p.y0 = 1.1f
                     p.vx = Random.nextFloat() * 0.6f - 0.3f
                     p.vy = -(Random.nextFloat() * 0.5f + 0.5f)
-                    val (rr, gg, bb) = hueToRgb(Random.nextFloat())
-                    p.r = rr; p.g = gg; p.b = bb
+                    assignHue(p, Random.nextFloat())
                     p.baseSize = Random.nextFloat() * 10f + 10f
                     p.life = Random.nextFloat() * 1f + 1.8f
                     p.shape = Shape.DIAMOND
@@ -415,8 +478,7 @@ class QuickAnimationView @JvmOverloads constructor(
                 AnimationEffect.SPIRAL -> {
                     p.x0 = 0f; p.y0 = 0f
                     p.vx = Random.nextFloat() * 0.4f + 0.4f // radial speed
-                    val (rr, gg, bb) = hueToRgb(Random.nextFloat())
-                    p.r = rr; p.g = gg; p.b = bb
+                    assignHue(p, Random.nextFloat())
                     p.baseSize = Random.nextFloat() * 12f + 14f
                     p.life = Random.nextFloat() * 0.6f + 1.4f
                     p.shape = Shape.CIRCLE

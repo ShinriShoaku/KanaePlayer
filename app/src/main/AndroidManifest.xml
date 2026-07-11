@@ -50,7 +50,7 @@
             android:exported="false" />
 
         <activity
-            android:name=".overlay.CustomOverlaySettingsActivity"
+            android:name=".overlay.CustomWebOverlaySettingsActivity"
             android:label="Custom Overlay"
             android:theme="@style/Theme.YTTikTokPlayer"
             android:exported="false" />
