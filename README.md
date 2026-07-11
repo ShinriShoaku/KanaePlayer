@@ -25,12 +25,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v10.1.4)
+## 🆕 Pembaruan Terkini (v10.1.6)
 
+- **Visual Punch in Web Overlay**: Fungsi efek visual punch kini tersedia untuk web browser overlay.
+- **Edit Text Effect in Custom Overlay**: Penambahan efek edit text pada custom overlay untuk kustomisasi lebih lanjut.
 - **Width Control Restored**: Fungsi pengaturan lebar (width) kembali tersedia untuk Player, Queue, Lyrics, dan Chat overlay.
-- **Keyboard Mapping (Experimental)**: Fitur awal untuk pemetaan tombol keyboard.
 - **Quick Custom Overlay**: Integrasi Soundboard, animasi, dan layout kustom dalam satu sistem overlay cepat.
-- **Custom Gift Sound**: Dukungan untuk suara notifikasi gift yang dapat dikustomisasi sendiri.
 
 ---
 

@@ -1,5 +1,11 @@
 # Changelog - KanaePlayer
 
+## [10.1.6] - 2025-02-28
+
+### ✨ New Features
+- **Visual Punch in Web Overlay**: Menambahkan fungsi efek visual punch pada web browser overlay untuk interaksi yang lebih dinamis.
+- **Edit Text Effect in Custom Overlay**: Menambahkan efek edit text pada sistem custom overlay.
+
 ## [10.1.4] - 2025-01-20
 
 ### ✨ New Features

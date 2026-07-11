@@ -1,5 +1,17 @@
 # Update Notes - KanaePlayer
 
+## Update 10.1.6: Visual Punch & Edit Text Effect
+
+Update ini menambahkan fitur visual baru pada sistem overlay untuk memberikan pengalaman yang lebih interaktif.
+
+### 1. Visual Punch in Web Browser Overlay
+- **Dynamic Interaction**: Menambahkan fungsi efek visual punch pada web browser overlay, memungkinkan feedback visual yang lebih kuat saat berinteraksi dengan konten web.
+
+### 2. Edit Text Effect in Custom Overlay
+- **Enhanced Customization**: Kini kamu dapat edit text secara langsung pada custom overlay, memberikan fleksibilitas lebih dalam menampilkan informasi teks yang dinamis.
+
+---
+
 ## Update 10.1.4: UI Flexibility & Custom Soundboard
 
 Update ini menghadirkan kembali kontrol dimensi overlay yang fleksibel serta fitur audio kustom untuk interaksi yang lebih dinamis.
