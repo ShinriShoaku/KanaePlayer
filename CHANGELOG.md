@@ -1,5 +1,15 @@
 # Changelog - KanaePlayer
 
+## [10.1.7] - 2025-03-05
+
+### ✨ New Features
+- **Quick Custom Overlay Scale**: Menambahkan fitur scale untuk mengatur ukuran quick custom overlay secara lebih fleksibel.
+- **New Gift Items**: Menambahkan beberapa item gift baru untuk variasi notifikasi yang lebih kaya.
+
+### 🐞 Bug Fixes
+- **Gift Sound Fixes**: Memperbaiki bug suara gift yang tidak muncul atau salah pada beberapa item tertentu.
+- **Landscape Mode Quick Overlay**: Memperbaiki tampilan landscape untuk menu quick custom overlay agar lebih responsif dan fungsional.
+
 ## [10.1.6] - 2025-02-28
 
 ### ✨ New Features

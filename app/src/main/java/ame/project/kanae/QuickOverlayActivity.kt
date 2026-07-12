@@ -36,6 +36,7 @@ data class SoundMapping(
     var audioDurationMs: Long = 0,
     var posX: Int = 0,
     var posY: Int = 0,
+    var scale: Float = 1.0f,
     var mappingType: Int = 0 // 0: Sound, 1: Overlay, 2: Animation
 )
 
@@ -195,7 +196,7 @@ class QuickOverlayActivity : AppCompatActivity() {
         tvAudioPath?.text = mapping.audioUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No file selected"
         tvImagePath?.text = mapping.reactionImageUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No image selected"
 
-        val layouts = arrayOf("Default", "Sketch", "Glass")
+        val layouts = arrayOf("Default", "Sketch", "Glass", "Transparent")
         spinnerLayout.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, layouts)
         spinnerLayout.setSelection(mapping.layoutType)
 
@@ -242,6 +243,12 @@ class QuickOverlayActivity : AppCompatActivity() {
                         saveMappings()
                     }
                 }
+                onScaleUpdated = { id, scale ->
+                    mappings.find { it.id == id }?.let {
+                        it.scale = scale
+                        saveMappings()
+                    }
+                }
                 onTextUpdated = { id, text ->
                     mappings.find { it.id == id }?.let {
                         it.reactionText = text
@@ -272,7 +279,7 @@ class QuickOverlayActivity : AppCompatActivity() {
         }
 
         overlayManager?.updateButtons(mappings.map { 
-            SoundButtonConfig(it.id, it.label, it.audioUri, it.reactionText, it.reactionImageUri, it.layoutType, it.autoHide, it.audioDurationMs, it.posX, it.posY, it.mappingType)
+            SoundButtonConfig(it.id, it.label, it.audioUri, it.reactionText, it.reactionImageUri, it.layoutType, it.autoHide, it.audioDurationMs, it.posX, it.posY, it.scale, it.mappingType)
         })
     }
     

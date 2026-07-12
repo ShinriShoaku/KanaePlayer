@@ -1,27 +1,33 @@
 {
   "source": "TikTok Live Gifts - Indonesia/Global",
-  "total_gifts": 102,
-  "date_scraped": "2026-07-08",
+  "total_gifts": 108,
+  "date_scraped": "2026-07-12",
   "gifts": [
     {
       "no": 1,
-      "id": 5269,
+      "id": [
+        5269
+      ],
       "name": "TikTok",
       "diamond_count": 1,
       "describe": "sent TikTok",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/802a21ae29f9fae5abe3693de9f874bd~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/802a21ae29f9fae5abe3693de9f874bd~tplv-obj.webp"
     },
     {
       "no": 2,
-      "id": 5655,
+      "id": [
+        5655
+      ],
       "name": "Rose",
       "diamond_count": 1,
       "describe": "sent Rose",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eba3a9bb85c33e017f3648eaf88d7189~tplv-obj.webp"
     },
     {
       "no": 3,
-      "id": 5760,
+      "id": [
+        5760
+      ],
       "name": "Weights",
       "diamond_count": 1,
       "describe": "sent Weights",
@@ -29,15 +35,19 @@
     },
     {
       "no": 4,
-      "id": 5827,
+      "id": [
+        5827
+      ],
       "name": "Ice Cream Cone",
       "diamond_count": 1,
       "describe": "sent Ice Cream Cone",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/968820bc85e274713c795a6aef3f7c67~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/968820bc85e274713c795a6aef3f7c67~tplv-obj.webp"
     },
     {
       "no": 5,
-      "id": 5874,
+      "id": [
+        5874
+      ],
       "name": "Lion 222",
       "diamond_count": 1,
       "describe": "Sent Lion",
@@ -53,19 +63,24 @@
     },
     {
       "no": 7,
-      "id": 6064,
+      "id": [
+        6064
+      ],
       "name": "GG",
       "diamond_count": 1,
       "describe": "sent GG",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/3f02fa9594bd1495ff4e8aa5ae265eef~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/3f02fa9594bd1495ff4e8aa5ae265eef~tplv-obj.webp"
     },
     {
       "no": 8,
-      "id": 6093,
+      "id": [
+        6093,
+        57748
+      ],
       "name": "Football",
       "diamond_count": 1,
       "describe": "sent Football",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/c043cd9e418f13017793ddf6e0c6ee99~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/c043cd9e418f13017793ddf6e0c6ee99~tplv-obj.webp"
     },
     {
       "no": 9,
@@ -77,55 +92,72 @@
     },
     {
       "no": 10,
-      "id": 6224,
+      "id": [
+        14113
+      ],
       "name": "Love Letter",
       "diamond_count": 1,
       "describe": "sent Love Letter",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ba096f4e01e888e6c6d60f3b6eaa12b6~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a220bb2d2b60272a426824d79a1e4071~tplv-obj.webp"
     },
     {
       "no": 11,
-      "id": 13651,
+      "id": [
+        13651
+      ],
       "name": "Go Popular",
       "diamond_count": 1,
       "describe": "sent Go Popular",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/b342e28d73dac6547e0b3e2ad57f6597?fpsig=v1.1783930335.5FTfsKACMPdnnRrSd1AC_oxoGoPTzDPgZY6BmXln2y8"
     },
     {
       "no": 12,
-      "id": 7934,
+      "id": [
+        7934
+      ],
       "name": "Heart Me",
       "diamond_count": 1,
       "describe": "sent Heart Me",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d56945782445b0b8c8658ed44f894c7b~tplv-obj.webp"
     },
     {
       "no": 13,
-      "id": 5333,
-      "name": "Cofe",
+      "id": [
+        5333,
+        5479,
+        17480
+      ],
+      "name": "Coffee",
       "diamond_count": 1,
-      "describe": "sent Cofe",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "describe": "sent Coffee",
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/02492214b9bd50fee2d69fd0d089c025~tplv-obj.webp"
     },
     {
       "no": 14,
-      "id": 5778,
+      "id": [
+        5778,
+        165819
+      ],
       "name": "Orange Juice",
       "diamond_count": 1,
       "describe": "sent Orange Juice",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/7244832db46b7ea5d7d6e280719ddea2~tplv-obj.webp"
     },
     {
       "no": 15,
-      "id": 6788,
+      "id": [
+        6788
+      ],
       "name": "Glow Stick",
       "diamond_count": 1,
       "describe": "sent Glow Stick",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8e1a5d66370c5586545e358e37c10d25~tplv-obj.webp"
     },
     {
       "no": 16,
-      "id": 5650,
+      "id": [
+        5650
+      ],
       "name": "Mic",
       "diamond_count": 5,
       "describe": "sent Mic",
@@ -133,11 +165,13 @@
     },
     {
       "no": 17,
-      "id": 5487,
+      "id": [
+        5487
+      ],
       "name": "Finger Heart",
       "diamond_count": 5,
       "describe": "sent Finger Heart",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a4c4dc437fd3a6632aba149769491f49.png~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/a4c4dc437fd3a6632aba149769491f49?fpsig=v1.1783930764.jZioFopMZCEMx4MskJ1Zme4DogeHSTcDsnq-UN4zQME"
     },
     {
       "no": 18,
@@ -157,11 +191,13 @@
     },
     {
       "no": 20,
-      "id": 15049,
+      "id": [
+        15049
+      ],
       "name": "Padang Rice",
       "diamond_count": 5,
       "describe": "sent Padang Rice",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/bd6e927cd68db696f2a27d4e2c7d0c34?fpsig=v1.1783930764.o658qyIjdkZyi-_X3PsBj7MllQHV_YHY2TnlYHyaVsg"
     },
     {
       "no": 21,
@@ -205,19 +241,23 @@
     },
     {
       "no": 26,
-      "id": 8913,
+      "id": [
+        8913
+      ],
       "name": "Rosa",
       "diamond_count": 10,
       "describe": "sent Rosa",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/eb77ead5c3abb6da6034d3cf6cfeb438~tplv-obj.webp"
     },
     {
       "no": 27,
-      "id": 5658,
+      "id": [
+        5658
+      ],
       "name": "Perfume",
       "diamond_count": 20,
       "describe": "sent Perfume",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/20b8f61246c7b6032777bb81bf4ee055~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/20b8f61246c7b6032777bb81bf4ee055~tplv-obj.webp"
     },
     {
       "no": 28,
@@ -229,11 +269,13 @@
     },
     {
       "no": 29,
-      "id": 5879,
+      "id": [
+        5879
+      ],
       "name": "Doughnut",
       "diamond_count": 30,
       "describe": "sent Doughnut",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4e7ad6bdf0a1d860c538f38026d4e812~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4e7ad6bdf0a1d860c538f38026d4e812~tplv-obj.webp"
     },
     {
       "no": 30,
@@ -253,27 +295,33 @@
     },
     {
       "no": 32,
-      "id": 5659,
+      "id": [
+        5659
+      ],
       "name": "Paper Crane",
       "diamond_count": 99,
       "describe": "sent Paper Crane",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/0f158a08f7886189cdabf496e8a07c21~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/0f158a08f7886189cdabf496e8a07c21~tplv-obj.webp"
     },
     {
       "no": 33,
-      "id": 6097,
+      "id": [
+        6097
+      ],
       "name": "Little Crown",
       "diamond_count": 99,
       "describe": "sent Little Crown",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cf3db11b94a975417043b53401d0afe1~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cf3db11b94a975417043b53401d0afe1~tplv-obj.webp"
     },
     {
       "no": 34,
-      "id": 6104,
+      "id": [
+        6104
+      ],
       "name": "Cap",
       "diamond_count": 99,
       "describe": "sent Cap",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/6c2ab2da19249ea570a2ece5e3377f04~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/6c2ab2da19249ea570a2ece5e3377f04~tplv-obj.webp"
     },
     {
       "no": 35,
@@ -285,19 +333,23 @@
     },
     {
       "no": 36,
-      "id": 5585,
+      "id": [
+        5585
+      ],
       "name": "Confetti",
       "diamond_count": 100,
       "describe": "sent Confetti",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cb4e11b3834e149f08e1cdcc93870b26~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cb4e11b3834e149f08e1cdcc93870b26~tplv-obj.webp"
     },
     {
       "no": 37,
-      "id": 5915,
+      "id": [
+        15821
+      ],
       "name": "Music Note",
       "diamond_count": 169,
       "describe": "sent Music Note",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b0b97078e33e46c8f7b7b3c321f684c3~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b0b97078e33e46c8f7b7b3c321f684c3~tplv-obj.webp"
     },
     {
       "no": 38,
@@ -317,11 +369,13 @@
     },
     {
       "no": 40,
-      "id": 5586,
+      "id": [
+        5586
+      ],
       "name": "Hearts",
       "diamond_count": 199,
       "describe": "sent Hearts",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/934b5a10dee8376df5870a61d2ea5cb6.png~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/934b5a10dee8376df5870a61d2ea5cb6?fpsig=v1.1783931769.szATLdvRld5UmeZSPRusa9BII8Vy7EFVpXC_gowxpn8"
     },
     {
       "no": 41,
@@ -349,11 +403,13 @@
     },
     {
       "no": 44,
-      "id": 5509,
+      "id": [
+        5509
+      ],
       "name": "Sunglasses",
       "diamond_count": 199,
       "describe": "sent Sunglasses",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/08af67ab13a8053269bf539fd27f3873.png~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/08af67ab13a8053269bf539fd27f3873~tplv-obj.webp"
     },
     {
       "no": 45,
@@ -365,19 +421,30 @@
     },
     {
       "no": 46,
-      "id": 6007,
+      "id": [
+        6007
+      ],
       "name": "Boxing Gloves",
       "diamond_count": 299,
       "describe": "sent Boxing Gloves",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9f8bd92363c400c284179f6719b6ba9c~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9f8bd92363c400c284179f6719b6ba9c~tplv-obj.webp"
     },
     {
       "no": 47,
-      "id": 5661,
+      "id": [
+        17171,
+        17179,
+        17271,
+        17296,
+        17298,
+        17309,
+        17463,
+        17578
+      ],
       "name": "Air Dancer",
       "diamond_count": 300,
       "describe": "sent Air Dancer",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/97c975dcce2483027ececde2b6719761~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/97c975dcce2483027ececde2b6719761~tplv-obj.webp"
     },
     {
       "no": 48,
@@ -429,11 +496,13 @@
     },
     {
       "no": 54,
-      "id": 5731,
+      "id": [
+        5731
+      ],
       "name": "Coral",
       "diamond_count": 499,
       "describe": "sent Coral",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d4faa402c32bf4f92bee654b2663d9f1~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d4faa402c32bf4f92bee654b2663d9f1~tplv-obj.webp"
     },
     {
       "no": 55,
@@ -461,11 +530,13 @@
     },
     {
       "no": 58,
-      "id": 5897,
+      "id": [
+        5897
+      ],
       "name": "Swan",
       "diamond_count": 699,
       "describe": "sent Swan",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/97a26919dbf6afe262c97e22a83f4bf1~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/97a26919dbf6afe262c97e22a83f4bf1~tplv-obj.webp"
     },
     {
       "no": 59,
@@ -485,11 +556,13 @@
     },
     {
       "no": 61,
-      "id": 5978,
+      "id": [
+        5978
+      ],
       "name": "Train",
       "diamond_count": 899,
       "describe": "sent Train",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4227ed71f2c494b554f9cbe2147d4899~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4227ed71f2c494b554f9cbe2147d4899~tplv-obj.webp"
     },
     {
       "no": 62,
@@ -501,11 +574,13 @@
     },
     {
       "no": 63,
-      "id": 5587,
+      "id": [
+        5587
+      ],
       "name": "Gold Mine",
       "diamond_count": 1000,
       "describe": "sent Gold Mine",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/58cbff1bd592ae4365a450c4bf767f3a.png~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/58cbff1bd592ae4365a450c4bf767f3a?fpsig=v1.1783934556.hMrDsh00O2mdIkuS8zot-_L1EDqLQx5_hS230KFe-pg"
     },
     {
       "no": 64,
@@ -525,19 +600,23 @@
     },
     {
       "no": 66,
-      "id": 6090,
+      "id": [
+        6090
+      ],
       "name": "Fireworks",
       "diamond_count": 1088,
       "describe": "sent Fireworks",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9494c8a0bc5c03521ef65368e59cc2b8~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9494c8a0bc5c03521ef65368e59cc2b8~tplv-obj.webp"
     },
     {
       "no": 67,
-      "id": 6031,
+      "id": [
+        8964
+      ],
       "name": "Gaming Chair",
       "diamond_count": 1200,
       "describe": "sent Gaming Chair",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/fd53368cacaba5c02fceb38903ed8dd3~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/fd53368cacaba5c02fceb38903ed8dd3~tplv-obj.webp"
     },
     {
       "no": 68,
@@ -637,11 +716,13 @@
     },
     {
       "no": 80,
-      "id": 5765,
+      "id": [
+        5765
+      ],
       "name": "Motorcycle",
       "diamond_count": 2988,
       "describe": "sent Motorcycle",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/7e5d2b6404d04e798d907ddf107a39fa~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/motor_icon_green?fpsig=v1.1783935362.iAOJ_0hLIuGyFb9QADKgWPcWfV_YJNX00HMiJ3I4iMs"
     },
     {
       "no": 81,
@@ -677,11 +758,13 @@
     },
     {
       "no": 85,
-      "id": 5767,
+      "id": [
+        5767
+      ],
       "name": "Private Jet",
       "diamond_count": 4888,
       "describe": "sent Private Jet",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/dee3de6d167fc70354c624c0bd647e43~tplv-obj.png"
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/airplane_icon_gold?fpsig=v1.1783935742.e7ONN-MGHtJt8N-5m6Jjw5F9iNN1QClsvWI-7g-Ygmg"
     },
     {
       "no": 86,
@@ -717,11 +800,13 @@
     },
     {
       "no": 90,
-      "id": 6089,
+      "id": [
+        6089
+      ],
       "name": "Sports Car",
       "diamond_count": 7000,
       "describe": "sent Sports Car",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/e7ce188da898772f18aaffe49a7bd7db~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/e7ce188da898772f18aaffe49a7bd7db~tplv-obj.webp"
     },
     {
       "no": 91,
@@ -749,19 +834,23 @@
     },
     {
       "no": 94,
-      "id": 6149,
+      "id": [
+        6149
+      ],
       "name": "Interstellar",
       "diamond_count": 10000,
       "describe": "sent Interstellar",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8520d47b59c202a4534c1560a355ae06~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/8520d47b59c202a4534c1560a355ae06~tplv-obj.webp"
     },
     {
       "no": 95,
-      "id": 6203,
+      "id": [
+        6203
+      ],
       "name": "Sunset Speedway",
       "diamond_count": 10000,
       "describe": "sent Sunset Speedway",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/df63eee488dc0994f6f5cb2e65f2ae49~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/df63eee488dc0994f6f5cb2e65f2ae49~tplv-obj.webp"
     },
     {
       "no": 96,
@@ -781,11 +870,13 @@
     },
     {
       "no": 98,
-      "id": 6223,
+      "id": [
+        6369
+      ],
       "name": "Lion",
       "diamond_count": 29999,
       "describe": "sent Lion",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4fb89af2082a290b37d704e20f4fe729~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/4fb89af2082a290b37d704e20f4fe729~tplv-obj.webp"
     },
     {
       "no": 99,
@@ -805,19 +896,87 @@
     },
     {
       "no": 101,
-      "id": 10715,
+      "id": [
+        10715
+      ],
       "name": "Headphone",
       "diamond_count": 1,
       "describe": "sent Headphone",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/d250b93197c151c45a08ab5f4db805d6~tplv-obj.webp"
     },
     {
       "no": 102,
-      "id": 10716,
+      "id": [
+        7832,
+        10716
+      ],
       "name": "Blow a kiss",
       "diamond_count": 1,
       "describe": "sent Blow a kiss",
-      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/ff7d237a26868b9588e0d3fc416cb26b~tplv-obj.png"
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/cdb55940740d5c83879b2934f9a7d08e~tplv-obj.webp"
+    },
+    {
+      "no": 103,
+      "id": [
+        5780
+      ],
+      "name": "Bouquet Flower",
+      "diamond_count": 30,
+      "describe": "sent Bouquet Flower",
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/b158b8493b51a3f30c59710c39d1dc96~tplv-obj.webp"
+    },
+    {
+      "no": 104,
+      "id": [
+        6784
+      ],
+      "name": "Cake Slice",
+      "diamond_count": 1,
+      "describe": "sent Cake Slice",
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/f681afb4be36d8a321eac741d387f1e2~tplv-obj.webp"
+    },
+    {
+      "no": 105,
+      "id": [
+        10996
+      ],
+      "name": "Power hug",
+      "diamond_count": 1,
+      "describe": "sent Power hug",
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/9578adce6e3da2d211583212bdfd1b0e~tplv-obj.webp"
+    },
+    {
+      "no": 106,
+      "id": [
+        10131
+      ],
+      "name": "Watermelon",
+      "diamond_count": 10,
+      "describe": "sent Watermelon",
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/a0d009a284645cb562ceac1db843ab24~tplv-obj.webp"
+    },
+    {
+      "no": 107,
+      "id": [
+        10994,
+        13893,
+        13898,
+        14051
+      ],
+      "name": "Bouquet",
+      "diamond_count": 100,
+      "describe": "sent Bouquet",
+      "image_url": "https://p16-webcast.tiktokcdn.com/img/maliva/webcast-va/1bdf0b38142a94af0f71ea53da82a3b1~tplv-obj.webp"
+    },
+    {
+      "no": 108,
+      "id": [
+        15046
+      ],
+      "name": "Fried",
+      "diamond_count": 1,
+      "describe": "sent Fried",
+      "image_url": "https://assets.cdn.eulerstream.com/gifts/images/003103053dbf1fc8c01a81fcec61a28a?fpsig=v1.1783930335.wSIG9-u3BQahG7LS_yabl_RxTUQRyZcWRYvIsNMmH_8"
     }
   ]
 }

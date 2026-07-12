@@ -21,7 +21,7 @@ import java.io.InputStreamReader
 
 class GiftSoundActivity : AppCompatActivity() {
 
-    data class Gift(val id: Int, val name: String, val image_url: String, val diamondCount: Int)
+    data class Gift(val ids: List<Int>, val name: String, val image_url: String, val diamondCount: Int)
 
     private lateinit var rvGifts: RecyclerView
     private lateinit var tvSelectedAudio: TextView
@@ -88,8 +88,16 @@ class GiftSoundActivity : AppCompatActivity() {
             val loadedGifts = mutableListOf<Gift>()
             giftsArray.forEach {
                 val obj = it.asJsonObject
+                val idElement = obj.get("id") ?: return@forEach
+                val idsList = mutableListOf<Int>()
+                if (idElement.isJsonArray) {
+                    idElement.asJsonArray.forEach { el -> idsList.add(el.asInt) }
+                } else if (idElement.isJsonPrimitive) {
+                    idsList.add(idElement.asInt)
+                }
+                
                 loadedGifts.add(Gift(
-                    obj.get("id").asInt,
+                    idsList,
                     obj.get("name").asString,
                     obj.get("image_url").asString,
                     obj.get("diamond_count").asInt
@@ -105,17 +113,17 @@ class GiftSoundActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         adapter = GiftAdapter(gifts) { gift ->
-            val oldId = selectedGift?.id
+            val oldIds = selectedGift?.ids
             selectedGift = gift
             tvInstructions.text = "Mengatur suara untuk: ${gift.name}"
             tvInstructions.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary))
             
             // Efficiently update only the changed items
-            if (oldId != null) {
-                val oldIdx = gifts.indexOfFirst { it.id == oldId }
+            if (oldIds != null) {
+                val oldIdx = gifts.indexOfFirst { it.ids == oldIds }
                 if (oldIdx != -1) adapter.notifyItemChanged(oldIdx)
             }
-            val newIdx = gifts.indexOfFirst { it.id == gift.id }
+            val newIdx = gifts.indexOfFirst { it.ids == gift.ids }
             if (newIdx != -1) adapter.notifyItemChanged(newIdx)
 
             updateUI(false)
@@ -136,7 +144,7 @@ class GiftSoundActivity : AppCompatActivity() {
         }
         
         if (refreshList) {
-            val idx = gifts.indexOfFirst { it.id == gift.id }
+            val idx = gifts.indexOfFirst { it.ids == gift.ids }
             if (idx != -1) adapter.notifyItemChanged(idx)
         }
     }
@@ -187,7 +195,7 @@ class GiftSoundActivity : AppCompatActivity() {
             val hasSound = giftSoundsPrefs.contains("gift_sound_${gift.name}")
             holder.dot.visibility = if (hasSound) View.VISIBLE else View.GONE
             
-            val isSelected = selectedGift?.id == gift.id
+            val isSelected = selectedGift?.ids == gift.ids
             holder.itemView.alpha = if (isSelected) 1.0f else 0.7f
             holder.itemView.setBackgroundColor(if (isSelected) 0xFF3F3F5A.toInt() else 0xFF1F1F3A.toInt())
 

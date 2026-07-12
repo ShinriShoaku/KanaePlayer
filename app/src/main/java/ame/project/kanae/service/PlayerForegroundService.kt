@@ -1614,11 +1614,11 @@ class PlayerForegroundService : Service() {
                     followOverlayManager.showFollow(nick, profile)
                 }
             }
-            t.onGift = { uid, nick, gift, count, iconUrl ->
-                Log.d(TAG, "[TikTok] Gift from @$uid ($nick): $gift x$count | Icon: $iconUrl")
+            t.onGift = { uid, nick, gift, count, giftId, iconUrl ->
+                Log.d(TAG, "[TikTok] Gift from @$uid ($nick): $gift x$count (ID: $giftId) | Icon: $iconUrl")
                 broadcastSystemChat("$nick mengirim $gift x$count")
                 if (notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
-                    notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl, giftName = gift)
+                    notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl, giftName = gift, giftId = giftId)
                 }
             }
             t.onShare = { _, nick ->

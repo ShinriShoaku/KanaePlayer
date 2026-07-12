@@ -1,5 +1,21 @@
 # Update Notes - KanaePlayer
 
+## Update 10.1.7: Quick Overlay Scale & Landscape Fixes
+
+Update ini membawa peningkatan pada fitur Quick Custom Overlay serta perbaikan stabilitas pada sistem Gift.
+
+### 1. Scale Feature for Quick Overlay
+- **Adjustable Size**: Kini kamu bisa mengatur skala (ukuran) dari Quick Custom Overlay secara real-time, memungkinkan penyesuaian yang lebih presisi dengan elemen layar lainnya.
+
+### 2. Gift System Enhancement
+- **Gift Sound Fix**: Memperbaiki masalah dimana beberapa suara gift tidak terdeteksi atau gagal diputar.
+- **More Gift Items**: Penambahan aset visual dan suara untuk item gift baru agar notifikasi terasa lebih variatif.
+
+### 3. Landscape Mode Optimization
+- **Better Layout**: Perbaikan pada antarmuka Quick Custom Overlay saat berada dalam mode landscape, memastikan semua kontrol tetap mudah diakses dan tidak terpotong.
+
+---
+
 ## Update 10.1.6: Visual Punch & Edit Text Effect
 
 Update ini menambahkan fitur visual baru pada sistem overlay untuk memberikan pengalaman yang lebih interaktif.

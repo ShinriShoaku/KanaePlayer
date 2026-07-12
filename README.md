@@ -25,12 +25,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v10.1.6)
+## 🆕 Pembaruan Terkini (v10.1.7)
 
+- **Quick Custom Overlay Scale**: Kontrol skala penuh untuk quick custom overlay.
+- **Gift System Improvements**: Perbaikan bug suara gift dan penambahan item gift baru.
+- **Landscape Optimization**: Perbaikan layout mode landscape untuk pengaturan quick custom overlay.
 - **Visual Punch in Web Overlay**: Fungsi efek visual punch kini tersedia untuk web browser overlay.
-- **Edit Text Effect in Custom Overlay**: Penambahan efek edit text pada custom overlay untuk kustomisasi lebih lanjut.
-- **Width Control Restored**: Fungsi pengaturan lebar (width) kembali tersedia untuk Player, Queue, Lyrics, dan Chat overlay.
-- **Quick Custom Overlay**: Integrasi Soundboard, animasi, dan layout kustom dalam satu sistem overlay cepat.
 
 ---
 

@@ -145,7 +145,7 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     }
 
     @Synchronized
-    fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null, giftName: String? = null) {
+    fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null, giftName: String? = null, giftId: Int? = null) {
         if (windowView == null) {
             setupView()
         }
@@ -157,18 +157,33 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         var audioUri = if (type == "gift") giftAudioUri else shareAudioUri
 
         // Custom Gift Sound Logic with Fallback
-        if (type == "gift" && useCustomGiftSound && giftName != null) {
+        if (type == "gift" && useCustomGiftSound && (giftName != null || giftId != null)) {
             val prefs = context.getSharedPreferences("gift_sounds_prefs", Context.MODE_PRIVATE)
-            // Use trimmed name to avoid mismatch
-            val cleanName = giftName.trim()
-            val customAudio = prefs.getString("gift_sound_$cleanName", null)
+            
+            var customAudio: String? = null
+            
+            // 1. Try matching by giftId first (new system)
+            if (giftId != null && giftId != 0) {
+                // We need to find the gift name associated with this ID from tiktok_gifts.json
+                // OR we can just store sounds by ID in the future.
+                // For now, let's see if we can find the gift name in the JSON.
+                val nameFromId = findGiftNameById(giftId)
+                if (nameFromId != null) {
+                    customAudio = prefs.getString("gift_sound_${nameFromId.trim()}", null)
+                }
+            }
+            
+            // 2. Fallback to giftName matching
+            if (customAudio == null && giftName != null) {
+                val cleanName = giftName.trim()
+                customAudio = prefs.getString("gift_sound_$cleanName", null)
+            }
             
             if (customAudio != null) {
-                Log.d("NotifOverlay", "Using custom sound for $cleanName: $customAudio")
+                Log.d("NotifOverlay", "Using custom sound for ${giftName ?: giftId}: $customAudio")
                 audioUri = Uri.parse(customAudio)
             } else {
-                Log.d("NotifOverlay", "No custom sound for $cleanName, falling back to default gift audio")
-                // audioUri stays as giftAudioUri (the default)
+                Log.d("NotifOverlay", "No custom sound for ${giftName ?: giftId}, falling back to default gift audio")
             }
         }
 
@@ -380,6 +395,42 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         shareAudioUri = shareAud?.let { Uri.parse(it) }
         giftAudioUri = giftAud?.let { Uri.parse(it) }
         displayDurationMs = duration * 1000L
+    }
+
+    private var giftCache: Map<Int, String>? = null
+
+    private fun findGiftNameById(id: Int): String? {
+        if (giftCache == null) {
+            loadGiftCache()
+        }
+        return giftCache?.get(id)
+    }
+
+    private fun loadGiftCache() {
+        val cache = mutableMapOf<Int, String>()
+        try {
+            val inputStream = context.assets.open("tiktok_gifts.json")
+            val reader = java.io.InputStreamReader(inputStream)
+            val jsonObject = com.google.gson.Gson().fromJson(reader, com.google.gson.JsonObject::class.java)
+            val giftsArray = jsonObject.getAsJsonArray("gifts")
+            
+            giftsArray.forEach {
+                val obj = it.asJsonObject
+                val name = obj.get("name")?.asString ?: "Gift"
+                val idElement = obj.get("id") ?: return@forEach
+                if (idElement.isJsonArray) {
+                    val ids = idElement.asJsonArray
+                    for (i in 0 until ids.size()) {
+                        cache[ids[i].asInt] = name
+                    }
+                } else if (idElement.isJsonPrimitive) {
+                    cache[idElement.asInt] = name
+                }
+            }
+            giftCache = cache
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun overlayWindowType(): Int {

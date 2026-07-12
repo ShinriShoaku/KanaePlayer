@@ -37,7 +37,7 @@ class TikTokLiveManager(
 
     var onChat: ((TikTokChat) -> Unit)? = null
     var onLike: ((String, String, Int, String?) -> Unit)? = null // nick, uid, count, profile
-    var onGift: ((String, String, String, Int, String?) -> Unit)? = null
+    var onGift: ((String, String, String, Int, Int, String?) -> Unit)? = null // uid, nick, name, count, giftId, icon
     var onShare: ((String, String) -> Unit)? = null
     var onFollow: ((String, String, String?) -> Unit)? = null // nick, uid, profile
     var onJoin: ((String, String, String?) -> Unit)? = null // nick, uid, profile
@@ -251,9 +251,10 @@ class TikTokLiveManager(
                             
                             val giftName = extractGiftName(data)
                             val count = extractGiftCount(data)
+                            val giftId = extractGiftId(data)
                             val giftIcon = extractGiftIcon(data)
                             
-                            scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
+                            scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftId, giftIcon) }
                         }
                         "WebcastSocialMessage", "share", "follow" -> {
                             logLongString("RAW SOCIAL", data.toString())
@@ -316,8 +317,9 @@ class TikTokLiveManager(
                         val (uniqueId, nickname, _) = getUserInfo(data)
                         val giftName = extractGiftName(data)
                         val count = extractGiftCount(data)
+                        val giftId = extractGiftId(data)
                         val giftIcon = extractGiftIcon(data)
-                        scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
+                        scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftId, giftIcon) }
                     }
                     "share", "follow", "WebcastSocialMessage" -> {
                         logLongString("RAW SOCIAL (Legacy)", data.toString())
@@ -364,8 +366,9 @@ class TikTokLiveManager(
                     val (uniqueId, nickname, _) = getUserInfo(obj)
                     val giftName = extractGiftName(obj)
                     val count = extractGiftCount(obj)
+                    val giftId = extractGiftId(obj)
                     val giftIcon = extractGiftIcon(obj)
-                    scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftIcon) }
+                    scope.launch(Dispatchers.Main) { onGift?.invoke(uniqueId, nickname, giftName, count, giftId, giftIcon) }
                 }
             }
         } catch (e: Exception) {
@@ -592,6 +595,14 @@ class TikTokLiveManager(
             lastChatIds.addAll(keep)
         }
         return true
+    }
+
+    private fun extractGiftId(data: JsonObject): Int {
+        return data["giftId"]?.asInt
+            ?: data["gift_id"]?.asInt
+            ?: data["gift"].optObj()?.get("id")?.asInt
+            ?: data["giftDetails"].optObj()?.get("giftId")?.asInt
+            ?: 0
     }
 
     private fun extractGiftName(data: JsonObject): String {
