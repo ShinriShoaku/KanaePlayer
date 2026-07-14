@@ -69,7 +69,7 @@
 | `#skip` | Melewati lagu saat ini | `#skip` |
 | `#q` | Melihat daftar antrian | `#q` |
 | `#stop` | Menghentikan musik | `#stop` |
-| `#seekbar` | Toggle tampilan progress | `#seekbar on` |
+| `#seekbar` | Toggle Untuk Mematikan fungsi command atau tidak | `#seekbar on` |
 | `#cm` | Menghapus antrian spesifik | `#cm 1` |
 
 > [!TIP]
