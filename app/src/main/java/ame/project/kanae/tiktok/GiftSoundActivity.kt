@@ -14,6 +14,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import ame.project.kanae.R
+import ame.project.kanae.SettingsManager
+import ame.project.kanae.GiftSoundConfig
 import com.bumptech.glide.Glide
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -31,7 +33,7 @@ class GiftSoundActivity : AppCompatActivity() {
     private val gifts = mutableListOf<Gift>()
     private val giftAssets = mutableSetOf<String>()
     private lateinit var adapter: GiftAdapter
-    private lateinit var giftSoundsPrefs: android.content.SharedPreferences
+    private lateinit var settingsManager: SettingsManager
 
     private val pickAudio = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let {
@@ -45,7 +47,7 @@ class GiftSoundActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_gift_sound)
 
-        giftSoundsPrefs = getSharedPreferences("gift_sounds_prefs", MODE_PRIVATE)
+        settingsManager = SettingsManager.getInstance(this)
 
         rvGifts = findViewById(R.id.rv_gifts)
         tvSelectedAudio = findViewById(R.id.tv_selected_audio)
@@ -103,7 +105,6 @@ class GiftSoundActivity : AppCompatActivity() {
                     obj.get("diamond_count").asInt
                 ))
             }
-            // Sort by diamond count
             gifts.clear()
             gifts.addAll(loadedGifts.sortedBy { it.diamondCount })
         } catch (e: Exception) {
@@ -118,7 +119,6 @@ class GiftSoundActivity : AppCompatActivity() {
             tvInstructions.text = "Mengatur suara untuk: ${gift.name}"
             tvInstructions.setTextColor(androidx.core.content.ContextCompat.getColor(this, R.color.text_secondary))
             
-            // Efficiently update only the changed items
             if (oldIds != null) {
                 val oldIdx = gifts.indexOfFirst { it.ids == oldIds }
                 if (oldIdx != -1) adapter.notifyItemChanged(oldIdx)
@@ -134,10 +134,10 @@ class GiftSoundActivity : AppCompatActivity() {
 
     private fun updateUI(refreshList: Boolean) {
         val gift = selectedGift ?: return
-        val audioUri = giftSoundsPrefs.getString("gift_sound_${gift.name}", null)
+        val soundConfig = settingsManager.settings.giftSounds.find { it.giftName == gift.name }
         
-        if (audioUri != null) {
-            val name = Uri.parse(audioUri).path?.split("/")?.lastOrNull() ?: "Selected"
+        if (soundConfig != null) {
+            val name = Uri.parse(soundConfig.soundUri).path?.split("/")?.lastOrNull() ?: "Selected"
             tvSelectedAudio.text = name
         } else {
             tvSelectedAudio.text = "No Audio Selected"
@@ -152,11 +152,13 @@ class GiftSoundActivity : AppCompatActivity() {
     private fun saveGiftSound(uriString: String?) {
         val gift = selectedGift ?: return
         val cleanName = gift.name.trim()
-        if (uriString == null) {
-            giftSoundsPrefs.edit().remove("gift_sound_$cleanName").apply()
-        } else {
-            giftSoundsPrefs.edit().putString("gift_sound_$cleanName", uriString).apply()
+        val giftId = gift.ids.firstOrNull()?.toString() ?: "0"
+        
+        settingsManager.settings.giftSounds.removeAll { it.giftName == cleanName }
+        if (uriString != null) {
+            settingsManager.settings.giftSounds.add(GiftSoundConfig(giftId, cleanName, uriString))
         }
+        settingsManager.saveSettings()
     }
 
     inner class GiftAdapter(
@@ -185,14 +187,14 @@ class GiftSoundActivity : AppCompatActivity() {
             val fileName = when {
                 giftAssets.contains("$baseName.png") -> "$baseName.png"
                 giftAssets.contains("$baseName.webp") -> "$baseName.webp"
-                else -> "$baseName.png" // Fallback
+                else -> "$baseName.png"
             }
             
             Glide.with(holder.itemView).load("file:///android_asset/gift/$fileName")
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .into(holder.iv)
 
-            val hasSound = giftSoundsPrefs.contains("gift_sound_${gift.name}")
+            val hasSound = settingsManager.settings.giftSounds.any { it.giftName == gift.name }
             holder.dot.visibility = if (hasSound) View.VISIBLE else View.GONE
             
             val isSelected = selectedGift?.ids == gift.ids

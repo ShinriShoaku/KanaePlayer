@@ -2,7 +2,6 @@ package ame.project.kanae.overlay
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.os.Build
@@ -15,18 +14,16 @@ import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import ame.project.kanae.R
+import ame.project.kanae.SettingsManager
+import ame.project.kanae.OverlayConfig
 import kotlinx.coroutines.CoroutineScope
-import kotlin.math.roundToInt
 
 class SaweriaOverlayManager(
     private val context: Context,
     private val scope: CoroutineScope
 ) {
     companion object {
-        const val PREF_FILE       = "saweria_prefs"
-        const val PREF_STREAM_KEY = "stream_key"
-        private const val BASE    = "https://saweria.co/widgets"
-
+        private const val BASE = "https://saweria.co/widgets"
         fun widgetPath(widget: SaweriaWidget): String = when (widget) {
             SaweriaWidget.ALERT        -> "alert"
             SaweriaWidget.TOPUP        -> "topup"
@@ -42,7 +39,7 @@ class SaweriaOverlayManager(
     }
 
     private val wm: WindowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    private val prefs: SharedPreferences = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
+    private val settingsManager = SettingsManager.getInstance(context)
 
     private data class OverlayEntry(
         val widget: SaweriaWidget,
@@ -55,12 +52,11 @@ class SaweriaOverlayManager(
     private val active = mutableMapOf<SaweriaWidget, OverlayEntry>()
     private var adjusterRoot: View? = null
 
-    /** Callback to notify UI (Activity) when a widget is shown or hidden from within the manager */
     var onWidgetVisibilityChanged: ((SaweriaWidget, Boolean) -> Unit)? = null
 
     var streamKey: String
-        get() = prefs.getString(PREF_STREAM_KEY, "") ?: ""
-        set(value) { prefs.edit().putString(PREF_STREAM_KEY, value).apply() }
+        get() = settingsManager.settings.saweriaStreamKey
+        set(value) { settingsManager.settings.saweriaStreamKey = value; settingsManager.saveSettings() }
 
     fun isShowing(widget: SaweriaWidget) = active.containsKey(widget)
 
@@ -70,10 +66,10 @@ class SaweriaOverlayManager(
         if (key.isBlank()) return
         
         val url = "$BASE/${widgetPath(widget)}?streamKey=$key"
-        val (w, h, s) = loadSize(widget)
+        val config = loadConfig(widget)
         val dp = context.resources.displayMetrics.density
         
-        active[widget] = buildEntry(widget, url, (w * dp).toInt(), (h * dp).toInt(), s)
+        active[widget] = buildEntry(widget, url, config, dp)
         onWidgetVisibilityChanged?.invoke(widget, true)
     }
 
@@ -100,23 +96,15 @@ class SaweriaOverlayManager(
     private fun buildEntry(
         widget: SaweriaWidget,
         url: String,
-        widthPx: Int,
-        heightPx: Int,
-        savedScale: Float
+        config: OverlayConfig,
+        dp: Float
     ): OverlayEntry {
-
         val root = LayoutInflater.from(context).inflate(R.layout.overlay_saweria_widget, null)
-
         val wv = root.findViewById<WebView>(R.id.saweria_webview).apply {
             settings.apply {
-                javaScriptEnabled = true
-                domStorageEnabled = true
-                mediaPlaybackRequiresUserGesture = false
-                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-                cacheMode = WebSettings.LOAD_NO_CACHE
-                useWideViewPort = true
-                loadWithOverviewMode = true
-                textZoom = 100
+                javaScriptEnabled = true; domStorageEnabled = true; mediaPlaybackRequiresUserGesture = false
+                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW; cacheMode = WebSettings.LOAD_NO_CACHE
+                useWideViewPort = true; loadWithOverviewMode = true; textZoom = 100
             }
             setBackgroundColor(0x00000000)
             webViewClient = object : WebViewClient() {
@@ -134,73 +122,55 @@ class SaweriaOverlayManager(
         else @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
 
         val params = WindowManager.LayoutParams(
-            (widthPx * savedScale).toInt(), (heightPx * savedScale).toInt(), type,
+            (config.width * dp * config.scale).toInt(), (config.height * dp * config.scale).toInt(), type,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
             PixelFormat.TRANSLUCENT
         ).also { 
             it.gravity = Gravity.TOP or Gravity.START
-            it.x = prefs.getInt("pos_x_${widget.name}", 20)
-            it.y = prefs.getInt("pos_y_${widget.name}", 140)
+            it.x = config.x
+            it.y = config.y
         }
 
-        // Load and apply background color
-        val bgColor = prefs.getInt("bg_color_${widget.name}", Color.TRANSPARENT)
-        root.setBackgroundColor(bgColor)
+        root.setBackgroundColor(config.bgColor)
 
         val gesture = OverlayGestureHelper(rootView = root, params = params, wm = wm, onSingleTap = {
             showAdjuster(widget)
         }).apply {
             onInteraction = {
-                prefs.edit().putInt("pos_x_${widget.name}", params.x)
-                            .putInt("pos_y_${widget.name}", params.y)
-                            .putFloat("s_${widget.name}", currentScale)
-                            .apply()
+                config.x = params.x
+                config.y = params.y
+                config.scale = currentScale
+                settingsManager.saveSettings()
             }
         }
         
-        root.pivotX = 0f
-        root.pivotY = 0f
-        root.scaleX = savedScale
-        root.scaleY = savedScale
-        gesture.currentScale = savedScale
-
+        root.pivotX = 0f; root.pivotY = 0f; root.scaleX = config.scale; root.scaleY = config.scale
+        gesture.currentScale = config.scale
         root.findViewById<View>(R.id.saweria_gesture_layer).setOnTouchListener(gesture)
 
         wm.addView(root, params)
         return OverlayEntry(widget, root, wv, params, gesture)
     }
 
-    // ── Adjustment UI (Floating Bottom Sheet) ────────────────────────
-
     fun showAdjuster(widget: SaweriaWidget) {
         hideAdjuster()
         val entry = active[widget] ?: return
-        
         val themed = ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val view = LayoutInflater.from(themed).inflate(R.layout.layout_saweria_adjuster, null)
         adjusterRoot = view
 
         val tvTitle = view.findViewById<TextView>(R.id.adj_title)
-        val tvW = view.findViewById<TextView>(R.id.tv_width_label)
-        val tvH = view.findViewById<TextView>(R.id.tv_height_label)
-        val tvS = view.findViewById<TextView>(R.id.tv_scale_label)
-        val tvA = view.findViewById<TextView>(R.id.tv_alpha_label)
-        
-        val skW = view.findViewById<SeekBar>(R.id.seek_width)
-        val skH = view.findViewById<SeekBar>(R.id.seek_height)
-        val skS = view.findViewById<SeekBar>(R.id.seek_scale)
-        val skA = view.findViewById<SeekBar>(R.id.seek_alpha)
+        val tvW = view.findViewById<TextView>(R.id.tv_width_label); val tvH = view.findViewById<TextView>(R.id.tv_height_label)
+        val tvS = view.findViewById<TextView>(R.id.tv_scale_label); val tvA = view.findViewById<TextView>(R.id.tv_alpha_label)
+        val skW = view.findViewById<SeekBar>(R.id.seek_width); val skH = view.findViewById<SeekBar>(R.id.seek_height)
+        val skS = view.findViewById<SeekBar>(R.id.seek_scale); val skA = view.findViewById<SeekBar>(R.id.seek_alpha)
 
         tvTitle.text = "Adjust ${widget.displayName}"
-        
         val dp = context.resources.displayMetrics.density
-        var currW = (entry.params.width / dp).toInt()
-        var currH = (entry.params.height / dp).toInt()
-        var currS = entry.root.scaleX
+        val config = settingsManager.settings.saweriaWidgets[widget.name] ?: OverlayConfig()
         
-        val savedColor = prefs.getInt("bg_color_${widget.name}", Color.TRANSPARENT)
-        var currAlpha = Color.alpha(savedColor)
-        var currRGB   = savedColor and 0x00FFFFFF
+        var currW = config.width; var currH = config.height; var currS = config.scale
+        var currAlpha = Color.alpha(config.bgColor); var currRGB = config.bgColor and 0x00FFFFFF
 
         skW.progress = currW; tvW.text = "Width: ${currW}dp"
         skH.progress = currH; tvH.text = "Height: ${currH}dp"
@@ -208,93 +178,45 @@ class SaweriaOverlayManager(
         skA.progress = currAlpha; tvA.text = "BG Opacity: ${(currAlpha * 100 / 255)}%"
 
         val update = {
-            entry.params.width = (currW * dp * currS).toInt()
-            entry.params.height = (currH * dp * currS).toInt()
-            entry.root.pivotX = 0f
-            entry.root.pivotY = 0f
-            entry.root.scaleX = currS
-            entry.root.scaleY = currS
+            entry.params.width = (currW * dp * currS).toInt(); entry.params.height = (currH * dp * currS).toInt()
+            entry.root.pivotX = 0f; entry.root.pivotY = 0f; entry.root.scaleX = currS; entry.root.scaleY = currS
             entry.gesture.currentScale = currS
-            
             val finalColor = (currAlpha shl 24) or currRGB
             entry.root.setBackgroundColor(finalColor)
             
-            saveSize(widget, currW, currH, currS, finalColor)
-            
-            prefs.edit().putInt("pos_x_${widget.name}", entry.params.x)
-                        .putInt("pos_y_${widget.name}", entry.params.y).apply()
-            
-            try { wm.updateViewLayout(entry.root, entry.params) } catch(e:Exception){}
+            config.width = currW; config.height = currH; config.scale = currS; config.bgColor = finalColor
+            config.x = entry.params.x; config.y = entry.params.y
+            settingsManager.saveSettings()
+            try { wm.updateViewLayout(entry.root, entry.params) } catch(_:Exception){}
         }
 
-        skW.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { currW = p.coerceAtLeast(50); tvW.text = "Width: ${currW}dp"; update() }
-            override fun onStartTrackingTouch(p: SeekBar?) {}
-            override fun onStopTrackingTouch(p: SeekBar?) {}
-        })
-        skH.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { currH = p.coerceAtLeast(50); tvH.text = "Height: ${currH}dp"; update() }
-            override fun onStartTrackingTouch(p: SeekBar?) {}
-            override fun onStopTrackingTouch(p: SeekBar?) {}
-        })
-        skS.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { currS = p.coerceAtLeast(30) / 100f; tvS.text = "Scale: %.2fx".format(currS); update() }
-            override fun onStartTrackingTouch(p: SeekBar?) {}
-            override fun onStopTrackingTouch(p: SeekBar?) {}
-        })
-        skA.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { currAlpha = p; tvA.text = "BG Opacity: ${(p * 100 / 255)}%"; update() }
-            override fun onStartTrackingTouch(p: SeekBar?) {}
-            override fun onStopTrackingTouch(p: SeekBar?) {}
-        })
+        skW.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener { override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { if(b) { currW = p.coerceAtLeast(50); tvW.text = "Width: ${currW}dp"; update() } }; override fun onStartTrackingTouch(p: SeekBar?) {}; override fun onStopTrackingTouch(p: SeekBar?) {} })
+        skH.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener { override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { if(b) { currH = p.coerceAtLeast(50); tvH.text = "Height: ${currH}dp"; update() } }; override fun onStartTrackingTouch(p: SeekBar?) {}; override fun onStopTrackingTouch(p: SeekBar?) {} })
+        skS.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener { override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { if(b) { currS = p.coerceAtLeast(30) / 100f; tvS.text = "Scale: %.2fx".format(currS); update() } }; override fun onStartTrackingTouch(p: SeekBar?) {}; override fun onStopTrackingTouch(p: SeekBar?) {} })
+        skA.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener { override fun onProgressChanged(s: SeekBar?, p: Int, b: Boolean) { if(b) { currAlpha = p; tvA.text = "BG Opacity: ${(p * 100 / 255)}%"; update() } }; override fun onStartTrackingTouch(p: SeekBar?) {}; override fun onStopTrackingTouch(p: SeekBar?) {} })
 
-        // Color Presets
         val setRGB = { rgb: Int -> currRGB = rgb; update() }
         view.findViewById<View>(R.id.color_none).setOnClickListener { currAlpha = 0; skA.progress = 0; update() }
         view.findViewById<View>(R.id.color_black).setOnClickListener { setRGB(0x000000) }
         view.findViewById<View>(R.id.color_teal).setOnClickListener { setRGB(0x008080) }
         view.findViewById<View>(R.id.color_blue).setOnClickListener { setRGB(0x1A1A2E) }
         view.findViewById<View>(R.id.color_green).setOnClickListener { setRGB(0x00FF00) }
-
         view.findViewById<Button>(R.id.btn_close_adjuster).setOnClickListener { hideAdjuster() }
-
-        val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-            PixelFormat.TRANSLUCENT
-        ).apply { gravity = Gravity.BOTTOM }
-
+        val params = WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT, if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE, WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT).apply { gravity = Gravity.BOTTOM }
         wm.addView(view, params)
     }
 
-    private fun hideAdjuster() {
-        adjusterRoot?.let { runCatching { wm.removeView(it) } }
-        adjusterRoot = null
-    }
+    private fun hideAdjuster() { adjusterRoot?.let { runCatching { wm.removeView(it) } }; adjusterRoot = null }
 
-    private fun saveSize(widget: SaweriaWidget, w: Int, h: Int, s: Float, color: Int) {
-        prefs.edit()
-            .putInt("w_${widget.name}", w)
-            .putInt("h_${widget.name}", h)
-            .putFloat("s_${widget.name}", s)
-            .putInt("bg_color_${widget.name}", color)
-            .apply()
-    }
-
-    private fun loadSize(widget: SaweriaWidget): Triple<Int, Int, Float> {
-        val def = when(widget) {
-            SaweriaWidget.MILESTONE -> Triple(450, 80, 1.0f)
-            SaweriaWidget.LEADERBOARD -> Triple(300, 450, 1.0f)
-            SaweriaWidget.WHEEL -> Triple(400, 400, 1.0f)
-            else -> Triple(400, 250, 1.0f)
+    private fun loadConfig(widget: SaweriaWidget): OverlayConfig {
+        return settingsManager.settings.saweriaWidgets.getOrPut(widget.name) {
+            when(widget) {
+                SaweriaWidget.MILESTONE -> OverlayConfig(x = 20, y = 140, width = 450, height = 80)
+                SaweriaWidget.LEADERBOARD -> OverlayConfig(x = 20, y = 140, width = 300, height = 450)
+                SaweriaWidget.WHEEL -> OverlayConfig(x = 20, y = 140, width = 400, height = 400)
+                else -> OverlayConfig(x = 20, y = 140, width = 400, height = 250)
+            }
         }
-        return Triple(
-            prefs.getInt("w_${widget.name}", def.first),
-            prefs.getInt("h_${widget.name}", def.second),
-            prefs.getFloat("s_${widget.name}", def.third)
-        )
     }
 }
 

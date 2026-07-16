@@ -2,6 +2,7 @@ package ame.project.kanae.player
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import com.google.gson.JsonParser
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
@@ -68,11 +69,11 @@ class YtDlpHelper(private val context: Context) {
 
     // ── yt-dlp init state ─────────────────────────────────────────────────────
 
-    @Volatile private var ytdlpReady = false
-    private val ytdlpInitMutex = Mutex()
-
     companion object {
         private const val TAG = "YtDlpHelper"
+
+        @Volatile private var ytdlpReady = false
+        private val ytdlpInitMutex = Mutex()
 
         private const val INNERTUBE_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
         private const val INNERTUBE_SEARCH =
@@ -134,7 +135,7 @@ class YtDlpHelper(private val context: Context) {
 
                     npeReady = true
                     Log.i(TAG, "NewPipe Extractor ready ✓")
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     Log.e(TAG, "NewPipe init error", e)
                 }
             }
@@ -172,7 +173,7 @@ class YtDlpHelper(private val context: Context) {
                 return@withLock true
             }
             try {
-                onLog("Inisialisasi yt-dlp...")
+                onLog("Menyiapkan yt-dlp...")
                 onProgress(10)
                 YoutubeDL.getInstance().init(context.applicationContext)
                 onProgress(40)
@@ -180,7 +181,7 @@ class YtDlpHelper(private val context: Context) {
                 // Update ke versi terbaru kalau ada koneksi
                 // Ini opsional — kalau tidak ada koneksi, pakai versi yang bundled
                 try {
-                    onLog("Mengecek update yt-dlp...")
+                    onLog("Mengecek update yt-dlp (Mungkin butuh waktu)...")
                     val status = YoutubeDL.getInstance().updateYoutubeDL(context.applicationContext)
                     onLog("yt-dlp update: $status")
                 } catch (e: Exception) {
@@ -227,6 +228,7 @@ class YtDlpHelper(private val context: Context) {
             // ── FALLBACK: yt-dlp ──────────────────────────────────────────────
             if (!ytdlpReady) {
                 Log.w(TAG, "yt-dlp belum diinit — jalankan ensureInstalled() lebih awal")
+                showToast("Music tidak tersedia (yt-dlp belum siap)")
                 return@withContext Result.failure(
                     RuntimeException("NPE gagal dan yt-dlp belum siap")
                 )
@@ -237,12 +239,19 @@ class YtDlpHelper(private val context: Context) {
             // Gunakan resolvedUrl jika tersedia, atau input asli (tambahkan ytsearch1: jika bukan URL).
             val ytDlpInput = when {
                 resolvedUrl != null -> resolvedUrl
-                input.contains("youtube.com") || input.contains("youtu.be") -> input
+                input.contains("youtube.com") || input.contains("youtu.be") || input.startsWith("ytsearch", ignoreCase = true) -> input
                 else -> "ytsearch1:$input"
             }
 
             Log.d(TAG, "[yt-dlp] Menjalankan fallback akhir dengan input: $ytDlpInput")
-            tryExtractWithYtdlp(ytDlpInput)
+            val ytDlpResult = tryExtractWithYtdlp(ytDlpInput)
+            
+            if (ytDlpResult.isFailure) {
+                Log.e(TAG, "Semua ekstraktor gagal untuk: $input")
+                showToast("Music tidak tersedia atau gagal dimuat")
+            }
+            
+            ytDlpResult
         }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -278,37 +287,46 @@ class YtDlpHelper(private val context: Context) {
             initNpe()
             ensureVisitorData()
 
-            val url = resolveToUrl(input) ?: return@withContext null
+            val url = resolveToUrl(input)
 
-            // ── PRIMARY: NPE ──────────────────────────────────────────────────
-            try {
-                extractVideoId(url)?.let { ensurePoToken(it) }
-                val info = getStreamInfo(url)
-                Log.d(TAG, "fetchMetadata via NPE ✓: ${info.name}")
-                return@withContext VideoMeta(
-                    title     = info.name,
-                    duration  = info.duration.toInt(),
-                    thumbnail = info.thumbnails.firstOrNull()?.url,
-                    channel   = info.uploaderName,
-                    videoUrl  = url
-                )
-            } catch (e: Exception) {
-                Log.w(TAG, "NPE fetchMetadata gagal (${e.message}) → fallback ke yt-dlp")
+            if (url != null) {
+                // ── PRIMARY: NPE ──────────────────────────────────────────────────
+                try {
+                    extractVideoId(url)?.let { ensurePoToken(it) }
+                    val info = getStreamInfo(url)
+                    Log.d(TAG, "fetchMetadata via NPE ✓: ${info.name}")
+                    return@withContext VideoMeta(
+                        title     = info.name,
+                        duration  = info.duration.toInt(),
+                        thumbnail = info.thumbnails.firstOrNull()?.url,
+                        channel   = info.uploaderName,
+                        videoUrl  = url
+                    )
+                } catch (e: Throwable) {
+                    Log.w(TAG, "NPE fetchMetadata gagal (${e.message}) → fallback ke yt-dlp")
+                }
             }
 
             // ── FALLBACK: yt-dlp ──────────────────────────────────────────────
             if (!ytdlpReady) return@withContext null
+            
+            val ytDlpInput = when {
+                url != null -> url
+                input.contains("youtube.com") || input.contains("youtu.be") || input.startsWith("ytsearch", ignoreCase = true) -> input
+                else -> "ytsearch1:$input"
+            }
+
             try {
-                val info = YoutubeDL.getInstance().getInfo(YoutubeDLRequest(url))
+                val info = YoutubeDL.getInstance().getInfo(YoutubeDLRequest(ytDlpInput))
                 Log.d(TAG, "fetchMetadata via yt-dlp ✓: ${info.title}")
                 VideoMeta(
                     title     = info.title ?: info.fulltitle ?: "Unknown",
                     duration  = info.duration,
                     thumbnail = info.thumbnail,
                     channel   = info.uploader,
-                    videoUrl  = url
+                    videoUrl  = url ?: input
                 )
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "yt-dlp fetchMetadata gagal: ${e.message}")
                 null
             }
@@ -336,7 +354,7 @@ class YtDlpHelper(private val context: Context) {
 
             Log.d(TAG, "[NPE] Stream OK: ${best.take(80)}…")
             Result.success(best)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Result.failure(e)
         }
     }
@@ -480,7 +498,7 @@ class YtDlpHelper(private val context: Context) {
                 if (result != null) Log.d(TAG, "Search: ${result.title} → ${result.videoUrl}")
                 else Log.w(TAG, "No result for: \"$query\"")
                 result
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 Log.e(TAG, "searchFirstResult error: ${e.message}")
                 null
             }
@@ -511,7 +529,7 @@ class YtDlpHelper(private val context: Context) {
                 Log.d(TAG, "visitorData bootstrap ✓")
             else
                 Log.w(TAG, "Bootstrap visitorData gagal")
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "ensureVisitorData error: ${e.message}")
         }
     }
@@ -529,7 +547,7 @@ class YtDlpHelper(private val context: Context) {
                     Log.d(TAG, "visitorData refreshed: ${vd.take(20)}...")
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.w(TAG, "extractVisitorData error: ${e.message}")
         }
     }
@@ -549,17 +567,29 @@ class YtDlpHelper(private val context: Context) {
             val reader = com.google.gson.stream.JsonReader(java.io.StringReader(json))
             reader.isLenient = true
             val root = JsonParser.parseReader(reader).asJsonObject
-            val sections = root.getObj("contents")?.getObj("twoColumnSearchResultsRenderer")
+            
+            val contents = root.getObj("contents")
+            val sections = contents?.getObj("twoColumnSearchResultsRenderer")
                 ?.getObj("primaryContents")?.getObj("sectionListRenderer")?.getArr("contents")
+                ?: contents?.getObj("sectionListRenderer")?.getArr("contents")
+                ?: root.getArr("onResponseReceivedCommands")?.firstOrNull()?.asJsonObject
+                    ?.getObj("appendContinuationItemsAction")?.getArr("continuationItems")
                 ?: return fallbackVideoIdExtract(json)
 
             for (section in sections) {
-                val items = section.asJsonObject.getObj("itemSectionRenderer")?.getArr("contents") ?: continue
+                val sectionObj = section.asJsonObject
+                val items = sectionObj.getObj("itemSectionRenderer")?.getArr("contents")
+                    ?: sectionObj.getArr("contents")
+                    ?: continue
+                
                 for (item in items) {
                     val vr = item.asJsonObject.getObj("videoRenderer") ?: continue
                     val videoId = vr["videoId"]?.asString ?: continue
-                    val title = vr.getObj("title")?.getArr("runs")
-                        ?.firstOrNull()?.asJsonObject?.get("text")?.asString ?: continue
+                    val titleText = vr.getObj("title")
+                    val title = titleText?.getArr("runs")?.firstOrNull()?.asJsonObject?.get("text")?.asString
+                        ?: titleText?.get("simpleText")?.asString
+                        ?: continue
+                        
                     return VideoMeta(
                         title     = title,
                         duration  = parseDuration(vr.getObj("lengthText")?.get("simpleText")?.asString),
@@ -570,7 +600,7 @@ class YtDlpHelper(private val context: Context) {
                 }
             }
             fallbackVideoIdExtract(json)
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "parseInnertubeFirstVideo error: ${e.message}")
             fallbackVideoIdExtract(json)
         }
@@ -584,10 +614,27 @@ class YtDlpHelper(private val context: Context) {
 
     private suspend fun resolveToUrl(input: String): String? {
         val t = input.trim()
-        return when {
-            t.contains("youtube.com/watch") || t.contains("youtu.be/") || t.contains("youtube.com/shorts") -> t
-            t.startsWith("ytsearch:") -> searchFirstResult(t.substringAfter(":").trim())?.videoUrl
-            else -> searchFirstResult(t)?.videoUrl
+        if (t.contains("youtube.com/watch") || t.contains("youtu.be/") || t.contains("youtube.com/shorts")) {
+            return t
+        }
+
+        // Handle prefixes like ytsearch: or ytsearch1: or ytsearchN:
+        val query = if (t.startsWith("ytsearch", ignoreCase = true) && t.contains(":")) {
+            t.substringAfter(":").trim()
+        } else {
+            t
+        }
+
+        val result = searchFirstResult(query)
+        if (result == null) {
+            Log.w(TAG, "Innertube search tidak menemukan hasil untuk: \"$query\"")
+        }
+        return result?.videoUrl
+    }
+
+    private suspend fun showToast(message: String) {
+        withContext(Dispatchers.Main) {
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 

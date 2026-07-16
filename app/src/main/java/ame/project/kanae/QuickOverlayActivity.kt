@@ -20,8 +20,10 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.switchmaterial.SwitchMaterial
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputEditText
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ame.project.kanae.overlay.QuickOverlayManager
 import ame.project.kanae.overlay.SoundButtonConfig
 
@@ -53,7 +55,7 @@ class QuickOverlayActivity : AppCompatActivity() {
     private lateinit var previewMinimized: View
 
     private val mappings = mutableListOf<SoundMapping>()
-    private val gson = Gson()
+    private lateinit var settingsManager: SettingsManager
     private var mediaPlayer: MediaPlayer? = null
     
     private var activeBottomSheet: BottomSheetDialog? = null
@@ -86,15 +88,22 @@ class QuickOverlayActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quick_overlay)
-        loadMappings()
+        
+        settingsManager = SettingsManager.getInstance(this)
 
         rvMappings = findViewById(R.id.rv_mappings)
         rvMappings.layoutManager = LinearLayoutManager(this)
         adapter = QuickOverlayAdapter()
         rvMappings.adapter = adapter
         
-        setupPreview()
-        setupControls()
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                loadMappings()
+            }
+            setupPreview()
+            setupControls()
+            adapter.notifyDataSetChanged()
+        }
     }
 
     private fun setupPreview() {
@@ -119,20 +128,14 @@ class QuickOverlayActivity : AppCompatActivity() {
                 if (!Settings.canDrawOverlays(this)) {
                     requestOverlayPermission()
                     switch.isChecked = false
-                } else {
-                    startOverlay()
-                }
-            } else {
-                stopOverlay()
-            }
+                } else startOverlay()
+            } else stopOverlay()
         }
 
-        findViewById<View>(R.id.btn_add_mapping).setOnClickListener {
-            showTypeSelectionDialog()
-        }
+        findViewById<View>(R.id.btn_add_mapping).setOnClickListener { showTypeSelectionDialog() }
 
         val togglePosition = findViewById<MaterialButtonToggleGroup>(R.id.toggle_position)
-        val savedPos = getSharedPreferences("quick_overlay_prefs", MODE_PRIVATE).getString("position", "MID")
+        val savedPos = settingsManager.settings.quickOverlayPosition
         togglePosition.check(when(savedPos) {
             "TOP" -> R.id.btn_pos_top
             "BOTTOM" -> R.id.btn_pos_bottom
@@ -146,7 +149,8 @@ class QuickOverlayActivity : AppCompatActivity() {
                     R.id.btn_pos_bottom -> "BOTTOM"
                     else -> "MID"
                 }
-                getSharedPreferences("quick_overlay_prefs", MODE_PRIVATE).edit().putString("position", pos).apply()
+                settingsManager.settings.quickOverlayPosition = pos
+                settingsManager.saveSettings()
                 overlayManager?.setPosition(pos)
             }
         }
@@ -172,62 +176,53 @@ class QuickOverlayActivity : AppCompatActivity() {
         dialog.setContentView(view)
         activeBottomSheet = dialog
 
-        val etLabel = view.findViewById<TextInputEditText>(R.id.et_label)
-        val etReaction = view.findViewById<TextInputEditText>(R.id.et_reaction_text)
-        val spinnerLayout = view.findViewById<Spinner>(R.id.spinner_layout)
-        val spinnerAnim = view.findViewById<Spinner>(R.id.spinner_animation_effect)
-        val cbAutoHide = view.findViewById<CheckBox>(R.id.cb_item_autohide)
-        tvAudioPath = view.findViewById(R.id.tv_audio_path)
-        tvImagePath = view.findViewById(R.id.tv_image_path)
+        lifecycleScope.launch {
+            val etLabel = view.findViewById<TextInputEditText>(R.id.et_label)
+            val etReaction = view.findViewById<TextInputEditText>(R.id.et_reaction_text)
+            val spinnerLayout = view.findViewById<Spinner>(R.id.spinner_layout)
+            val spinnerAnim = view.findViewById<Spinner>(R.id.spinner_animation_effect)
+            val cbAutoHide = view.findViewById<CheckBox>(R.id.cb_item_autohide)
+            tvAudioPath = view.findViewById(R.id.tv_audio_path)
+            tvImagePath = view.findViewById(R.id.tv_image_path)
 
-        val sectionSound = view.findViewById<View>(R.id.section_sound)
-        val sectionOverlay = view.findViewById<View>(R.id.section_overlay)
-        val sectionAnimation = view.findViewById<View>(R.id.section_animation)
+            val sectionSound = view.findViewById<View>(R.id.section_sound)
+            val sectionOverlay = view.findViewById<View>(R.id.section_overlay)
+            val sectionAnimation = view.findViewById<View>(R.id.section_animation)
 
-        // Show/hide sections based on type
-        sectionSound.visibility = if (mapping.mappingType == 0) View.VISIBLE else View.GONE
-        sectionOverlay.visibility = if (mapping.mappingType == 1) View.VISIBLE else View.GONE
-        sectionAnimation.visibility = if (mapping.mappingType == 2) View.VISIBLE else View.GONE
+            sectionSound.visibility = if (mapping.mappingType == 0) View.VISIBLE else View.GONE
+            sectionOverlay.visibility = if (mapping.mappingType == 1) View.VISIBLE else View.GONE
+            sectionAnimation.visibility = if (mapping.mappingType == 2) View.VISIBLE else View.GONE
 
-        etLabel.setText(mapping.label)
-        etReaction.setText(mapping.reactionText)
-        cbAutoHide.isChecked = mapping.autoHide
-        
-        tvAudioPath?.text = mapping.audioUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No file selected"
-        tvImagePath?.text = mapping.reactionImageUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No image selected"
-
-        val layouts = arrayOf("Default", "Sketch", "Glass", "Transparent")
-        spinnerLayout.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, layouts)
-        spinnerLayout.setSelection(mapping.layoutType)
-
-        val animations = arrayOf(
-            "Burst", "Hearts", "Snow", "Rainbow", "Confetti", "Fireworks",
-            "Sparkle", "Bubbles", "Glitter", "Spiral", "Petals", "Leaves", "Stardust", "Meteor"
-        )
-        spinnerAnim.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, animations)
-        if (mapping.mappingType == 2) spinnerAnim.setSelection(mapping.layoutType)
-
-        view.findViewById<View>(R.id.btn_pick_audio).setOnClickListener { pickAudio.launch(arrayOf("audio/*")) }
-        view.findViewById<View>(R.id.btn_pick_image).setOnClickListener { pickImage.launch(arrayOf("image/*")) }
-        
-        view.findViewById<View>(R.id.btn_save).setOnClickListener {
-            mapping.label = etLabel.text.toString().trim().takeIf { it.isNotEmpty() } ?: "BTN"
-            mapping.reactionText = etReaction.text.toString().trim().takeIf { it.isNotEmpty() }
+            etLabel.setText(mapping.label)
+            etReaction.setText(mapping.reactionText)
+            cbAutoHide.isChecked = mapping.autoHide
             
-            mapping.layoutType = if (mapping.mappingType == 2) {
-                spinnerAnim.selectedItemPosition
-            } else {
-                spinnerLayout.selectedItemPosition
+            tvAudioPath?.text = mapping.audioUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No file selected"
+            tvImagePath?.text = mapping.reactionImageUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No image selected"
+
+            val layouts = arrayOf("Default", "Sketch", "Glass", "Transparent")
+            spinnerLayout.adapter = ArrayAdapter(this@QuickOverlayActivity, android.R.layout.simple_spinner_dropdown_item, layouts)
+            spinnerLayout.setSelection(mapping.layoutType)
+
+            val animations = arrayOf("Burst", "Hearts", "Snow", "Rainbow", "Confetti", "Fireworks", "Sparkle", "Bubbles", "Glitter", "Spiral", "Petals", "Leaves", "Stardust", "Meteor")
+            spinnerAnim.adapter = ArrayAdapter(this@QuickOverlayActivity, android.R.layout.simple_spinner_dropdown_item, animations)
+            if (mapping.mappingType == 2) spinnerAnim.setSelection(mapping.layoutType)
+
+            view.findViewById<View>(R.id.btn_pick_audio).setOnClickListener { pickAudio.launch(arrayOf("audio/*")) }
+            view.findViewById<View>(R.id.btn_pick_image).setOnClickListener { pickImage.launch(arrayOf("image/*")) }
+            
+            view.findViewById<View>(R.id.btn_save).setOnClickListener {
+                mapping.label = etLabel.text.toString().trim().takeIf { it.isNotEmpty() } ?: "BTN"
+                mapping.reactionText = etReaction.text.toString().trim().takeIf { it.isNotEmpty() }
+                mapping.layoutType = if (mapping.mappingType == 2) spinnerAnim.selectedItemPosition else spinnerLayout.selectedItemPosition
+                mapping.autoHide = cbAutoHide.isChecked
+                if (isNew) mappings.add(mapping)
+                saveMappings()
+                syncOverlay()
+                adapter.notifyDataSetChanged()
+                updatePreview()
+                dialog.dismiss()
             }
-
-            mapping.autoHide = cbAutoHide.isChecked
-            
-            if (isNew) mappings.add(mapping)
-            saveMappings()
-            syncOverlay()
-            adapter.notifyDataSetChanged()
-            updatePreview()
-            dialog.dismiss()
         }
         dialog.show()
     }
@@ -237,28 +232,15 @@ class QuickOverlayActivity : AppCompatActivity() {
             overlayManager = QuickOverlayManager(applicationContext).apply {
                 onSoundClicked = { config -> playAudio(config.audioUri) }
                 onPositionUpdated = { id, x, y ->
-                    mappings.find { it.id == id }?.let {
-                        it.posX = x
-                        it.posY = y
-                        saveMappings()
-                    }
+                    mappings.find { it.id == id }?.let { it.posX = x; it.posY = y; saveMappings() }
                 }
                 onScaleUpdated = { id, scale ->
-                    mappings.find { it.id == id }?.let {
-                        it.scale = scale
-                        saveMappings()
-                    }
+                    mappings.find { it.id == id }?.let { it.scale = scale; saveMappings() }
                 }
                 onTextUpdated = { id, text ->
-                    mappings.find { it.id == id }?.let {
-                        it.reactionText = text
-                        saveMappings()
-                        runOnUiThread { adapter.notifyDataSetChanged() }
-                    }
+                    mappings.find { it.id == id }?.let { it.reactionText = text; saveMappings(); runOnUiThread { adapter.notifyDataSetChanged() } }
                 }
-                val prefs = getSharedPreferences("quick_overlay_prefs", MODE_PRIVATE)
-                val pos = prefs.getString("position", "MID") ?: "MID"
-                setPosition(pos)
+                setPosition(settingsManager.settings.quickOverlayPosition)
             }
         }
         overlayManager?.show()
@@ -271,82 +253,52 @@ class QuickOverlayActivity : AppCompatActivity() {
     }
 
     private fun syncOverlay() {
-        // Ensure all mappings have IDs before syncing
-        mappings.forEach { 
-            if (it.id.isNullOrEmpty()) {
-                it.id = "id_" + System.currentTimeMillis() + "_" + it.label.hashCode()
-            }
-        }
-
-        overlayManager?.updateButtons(mappings.map { 
-            SoundButtonConfig(it.id, it.label, it.audioUri, it.reactionText, it.reactionImageUri, it.layoutType, it.autoHide, it.audioDurationMs, it.posX, it.posY, it.scale, it.mappingType)
-        })
+        mappings.forEach { if (it.id.isNullOrEmpty()) it.id = "id_" + System.currentTimeMillis() + "_" + it.label.hashCode() }
+        overlayManager?.updateButtons(mappings.map { SoundButtonConfig(it.id, it.label, it.audioUri, it.reactionText, it.reactionImageUri, it.layoutType, it.autoHide, it.audioDurationMs, it.posX, it.posY, it.scale, it.mappingType) })
     }
     
     private fun updatePreview() {
         rvPreviewButtons.adapter?.notifyDataSetChanged()
-        previewPanel.findViewById<View>(R.id.tv_empty_hint)?.visibility = 
-            if (mappings.isEmpty()) View.VISIBLE else View.GONE
+        previewPanel.findViewById<View>(R.id.tv_empty_hint)?.visibility = if (mappings.isEmpty()) View.VISIBLE else View.GONE
     }
 
     private fun playAudio(uriStr: String?) {
         if (uriStr == null) return
         try {
             mediaPlayer?.release()
-            mediaPlayer = MediaPlayer().apply {
-                setDataSource(this@QuickOverlayActivity, Uri.parse(uriStr))
-                prepare()
-                start()
-            }
-        } catch (e: Exception) {
-            snack("Error: ${e.message}")
-        }
+            mediaPlayer = MediaPlayer().apply { setDataSource(this@QuickOverlayActivity, Uri.parse(uriStr)); prepare(); start() }
+        } catch (e: Exception) { snack("Error: ${e.message}") }
     }
 
     private fun getAudioDuration(uri: Uri): Long {
         val retriever = MediaMetadataRetriever()
-        return try {
-            retriever.setDataSource(this, uri)
-            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
-        } catch (_: Exception) { 0L } finally { retriever.release() }
+        return try { retriever.setDataSource(this, uri); retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L }
+        catch (_: Exception) { 0L } finally { retriever.release() }
     }
 
     private fun saveMappings() {
-        getSharedPreferences("quick_overlay_prefs", MODE_PRIVATE).edit().putString("mappings", gson.toJson(mappings)).apply()
+        settingsManager.settings.quickOverlayMappingsJson = com.google.gson.Gson().toJson(mappings)
+        settingsManager.saveSettings()
     }
 
     private fun loadMappings() {
-        val json = getSharedPreferences("quick_overlay_prefs", MODE_PRIVATE).getString("mappings", null) ?: return
-        val type = object : TypeToken<List<SoundMapping>>() {}.type
-        val list: List<SoundMapping> = gson.fromJson(json, type) ?: return
-        
-        mappings.clear()
-        var needsSave = false
-        list.forEach { m ->
-            if (m.id.isNullOrEmpty()) {
-                m.id = "id_" + System.currentTimeMillis() + "_" + (m.label.hashCode())
-                needsSave = true
-            }
-            mappings.add(m)
-        }
-        if (needsSave) saveMappings()
+        val json = settingsManager.settings.quickOverlayMappingsJson
+        if (json.isEmpty()) return
+        try {
+            val type = object : com.google.gson.reflect.TypeToken<List<SoundMapping>>() {}.type
+            val list: List<SoundMapping> = com.google.gson.Gson().fromJson(json, type) ?: return
+            mappings.clear()
+            mappings.addAll(list)
+        } catch (_: Exception) {}
     }
 
-    private fun requestOverlayPermission() {
-        startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
-    }
-
+    private fun requestOverlayPermission() { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) }
     private fun snack(msg: String) = Snackbar.make(findViewById(android.R.id.content), msg, Snackbar.LENGTH_SHORT).show()
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mediaPlayer?.release()
-    }
+    override fun onDestroy() { super.onDestroy(); mediaPlayer?.release() }
 
     inner class QuickOverlayAdapter : RecyclerView.Adapter<QuickOverlayAdapter.VH>() {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-            return VH(LayoutInflater.from(parent.context).inflate(R.layout.item_quick_overlay_mapping, parent, false))
-        }
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH = VH(LayoutInflater.from(parent.context).inflate(R.layout.item_quick_overlay_mapping, parent, false))
         override fun onBindViewHolder(holder: VH, position: Int) {
             val m = mappings[position]
             holder.tvLabel.text = m.label
@@ -354,22 +306,13 @@ class QuickOverlayActivity : AppCompatActivity() {
                 0 -> m.audioUri?.let { Uri.parse(it).path?.split("/")?.lastOrNull() } ?: "No Sound"
                 1 -> "Overlay: ${m.reactionText ?: m.reactionImageUri?.let { "Image" } ?: "Empty"}"
                 2 -> {
-                    val anims = arrayOf(
-                        "Burst", "Hearts", "Snow", "Rainbow", "Confetti", "Fireworks",
-                        "Sparkle", "Bubbles", "Glitter", "Spiral", "Petals", "Leaves", "Stardust", "Meteor"
-                    )
+                    val anims = arrayOf("Burst", "Hearts", "Snow", "Rainbow", "Confetti", "Fireworks", "Sparkle", "Bubbles", "Glitter", "Spiral", "Petals", "Leaves", "Stardust", "Meteor")
                     "Animation: ${if (m.layoutType < anims.size) anims[m.layoutType] else "Unknown"}"
                 }
                 else -> "Unknown"
             }
             holder.itemView.setOnClickListener { showEditBottomSheet(m, isNew = false) }
-            holder.btnDelete.setOnClickListener {
-                mappings.removeAt(position)
-                saveMappings()
-                syncOverlay()
-                notifyDataSetChanged()
-                updatePreview()
-            }
+            holder.btnDelete.setOnClickListener { mappings.removeAt(position); saveMappings(); syncOverlay(); notifyDataSetChanged(); updatePreview() }
             holder.btnTest.setOnClickListener { playAudio(m.audioUri) }
         }
         override fun getItemCount() = mappings.size

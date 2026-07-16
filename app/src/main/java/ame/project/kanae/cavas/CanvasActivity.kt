@@ -19,6 +19,8 @@ import androidx.recyclerview.widget.RecyclerView
 
 import com.google.android.material.card.MaterialCardView
 import ame.project.kanae.R
+import ame.project.kanae.SettingsManager
+import ame.project.kanae.CustomThemeConfig
 import ame.project.kanae.service.PlayerForegroundService
 import top.defaults.colorpicker.ColorPickerView
 
@@ -99,6 +101,7 @@ class CanvasActivity : AppCompatActivity() {
 
     private var service: PlayerForegroundService? = null
     private var serviceBound = false
+    private lateinit var settingsManager: SettingsManager
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -139,6 +142,8 @@ class CanvasActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_canvas)
 
+        settingsManager = SettingsManager.getInstance(this)
+
         tvSelectorTitle = findViewById(R.id.tv_selector_title)
         rvStyles        = findViewById(R.id.rv_chat_styles)
         previewFrame    = findViewById(R.id.preview_content_frame)
@@ -157,7 +162,6 @@ class CanvasActivity : AppCompatActivity() {
 
         setupDraggableLogic()
         
-        // top.defaults.colorpicker usage:
         wheelColorPicker.subscribe { color, fromUser, _ ->
             if (fromUser) {
                 activeColorKey?.let { key ->
@@ -181,11 +185,10 @@ class CanvasActivity : AppCompatActivity() {
 
         rvStyles.layoutManager = LinearLayoutManager(this, RecyclerView.HORIZONTAL, false)
 
-        val prefs = getSharedPreferences("ytplayer_prefs", Context.MODE_PRIVATE)
         UIComponent.entries.forEach { comp ->
-            val layout = prefs.getInt("canvas_${comp.name.lowercase()}_layout", 0)
-            val bg = prefs.getInt("canvas_${comp.name.lowercase()}_bg", 0)
-            if (layout != 0) tempSelections[comp] = Pair(layout, bg)
+            val key = comp.name.lowercase()
+            val config = settingsManager.getOverlayConfig(key)
+            if (config.layoutId != 0) tempSelections[comp] = Pair(config.layoutId, config.bgId)
         }
 
         btnPickComponent.setOnClickListener { showCategoryPicker() }
@@ -236,7 +239,6 @@ class CanvasActivity : AppCompatActivity() {
         val filtered = allStyles.filter { it.category == currentCategory }
         
         val selection = tempSelections[currentCategory]
-        // Defensive check: ensure the selection actually belongs to the current category
         val validSelection = selection?.let { sel -> 
             filtered.find { it.layoutId == sel.first && it.backgroundId == sel.second } 
         }
@@ -244,7 +246,6 @@ class CanvasActivity : AppCompatActivity() {
         previewLayoutId = validSelection?.layoutId ?: filtered.firstOrNull()?.layoutId ?: 0
         previewBgId = validSelection?.backgroundId ?: filtered.firstOrNull()?.backgroundId ?: 0
 
-        // Reset picker state when changing category
         containerInlinePicker.visibility = View.GONE
         rvStyles.visibility = View.VISIBLE
         activeColorKey = null
@@ -256,18 +257,17 @@ class CanvasActivity : AppCompatActivity() {
     }
 
     private fun loadCustomColors() {
-        val prefs = getSharedPreferences("ytplayer_prefs", Context.MODE_PRIVATE)
         UIComponent.entries.forEach { comp ->
+            val key = comp.name.lowercase()
+            val theme = settingsManager.getThemeConfig(key)
             val map = mutableMapOf<String, Int?>()
-            val baseKey = "canvas_${comp.name.lowercase()}_custom"
-            
-            map["bg_primary"] = if (prefs.contains("${baseKey}_bg")) prefs.getInt("${baseKey}_bg", 0) else null
-            map["bg_secondary"] = if (prefs.contains("${baseKey}_bg_sec")) prefs.getInt("${baseKey}_bg_sec", 0) else null
-            map["text_primary"] = if (prefs.contains("${baseKey}_text")) prefs.getInt("${baseKey}_text", 0) else null
-            map["text_secondary"] = if (prefs.contains("${baseKey}_text_sec")) prefs.getInt("${baseKey}_text_sec", 0) else null
+            map["bg_primary"] = theme.bgPrimary
+            map["bg_secondary"] = theme.bgSecondary
+            map["text_primary"] = theme.textPrimary
+            map["text_secondary"] = theme.textSecondary
             
             customColors[comp] = map
-            customAlphas[comp] = prefs.getInt("${baseKey}_alpha", 255)
+            customAlphas[comp] = theme.alpha
         }
     }
 
@@ -321,11 +321,8 @@ class CanvasActivity : AppCompatActivity() {
         containerInlinePicker.visibility = View.VISIBLE
         
         val currentColor = customColors[currentCategory]?.get(key) ?: Color.WHITE
-        
-        // FIX: Delay setting initial color until the view is laid out to avoid
-        // "width and height must be > 0" crash in AlphaSliderView.onSizeChanged
         wheelColorPicker.post {
-            if (activeColorKey == key) { // Ensure we are still picking the same color
+            if (activeColorKey == key) {
                 wheelColorPicker.setInitialColor(currentColor)
             }
         }
@@ -386,22 +383,21 @@ class CanvasActivity : AppCompatActivity() {
     }
 
     private fun saveEverything() {
-        val editor = getSharedPreferences("ytplayer_prefs", Context.MODE_PRIVATE).edit()
-        
         UIComponent.entries.forEach { comp ->
+            val key = comp.name.lowercase()
             val stylesForComp = allStyles.filter { it.category == comp }
             val selection = tempSelections[comp]
             
-            // Verify selection belongs to this category, otherwise use first available style
             val finalStyle = selection?.let { sel ->
                 stylesForComp.find { it.layoutId == sel.first && it.backgroundId == sel.second }
             } ?: stylesForComp.firstOrNull()
 
             finalStyle?.let { s ->
-                editor.putInt("canvas_${comp.name.lowercase()}_layout", s.layoutId)
-                editor.putInt("canvas_${comp.name.lowercase()}_bg", s.backgroundId)
+                val config = settingsManager.getOverlayConfig(key)
+                config.layoutId = s.layoutId
+                config.bgId = s.backgroundId
+                if (comp == UIComponent.QUEUE) config.itemId = s.itemLayoutId
                 
-                // Update service immediately if bound
                 when (comp) {
                     UIComponent.CHAT   -> service?.updateChatStyle(s.layoutId, s.backgroundId)
                     UIComponent.PLAYER -> service?.updatePlayerStyle(s.layoutId)
@@ -413,21 +409,17 @@ class CanvasActivity : AppCompatActivity() {
                     UIComponent.NOTIF  -> service?.updateNotifStyle(s.layoutId)
                 }
             }
+
+            val theme = settingsManager.getThemeConfig(key)
+            val colorMap = customColors[comp] ?: mutableMapOf()
+            theme.bgPrimary = colorMap["bg_primary"]
+            theme.bgSecondary = colorMap["bg_secondary"]
+            theme.textPrimary = colorMap["text_primary"]
+            theme.textSecondary = colorMap["text_secondary"]
+            theme.alpha = customAlphas[comp] ?: 255
         }
 
-        customColors.forEach { (comp, map) ->
-            val baseKey = "canvas_${comp.name.lowercase()}_custom"
-            map["bg_primary"]?.let { editor.putInt("${baseKey}_bg", it) } ?: editor.remove("${baseKey}_bg")
-            map["bg_secondary"]?.let { editor.putInt("${baseKey}_bg_sec", it) } ?: editor.remove("${baseKey}_bg_sec")
-            map["text_primary"]?.let { editor.putInt("${baseKey}_text", it) } ?: editor.remove("${baseKey}_text")
-            map["text_secondary"]?.let { editor.putInt("${baseKey}_text_sec", it) } ?: editor.remove("${baseKey}_text_sec")
-        }
-        
-        customAlphas.forEach { (comp, alpha) ->
-            editor.putInt("canvas_${comp.name.lowercase()}_custom_alpha", alpha)
-        }
-        
-        editor.apply()
+        settingsManager.saveSettings()
         service?.updateCustomThemes()
         Toast.makeText(this, "All themes saved & applied!", Toast.LENGTH_SHORT).show()
         finish()

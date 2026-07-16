@@ -25,7 +25,15 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v10.1.7)
+## 🆕 Pembaruan Terkini (v11.2.0)
+
+- Always Show Chat
+- Chat History
+- JSON Cache Optimization
+- New Splash Screen
+- UI Improvements
+
+## 🆕 Pembaruan Sebelumnya (v10.1.7)
 
 - **Quick Custom Overlay Scale**: Kontrol skala penuh untuk quick custom overlay.
 - **Gift System Improvements**: Perbaikan bug suara gift dan penambahan item gift baru.

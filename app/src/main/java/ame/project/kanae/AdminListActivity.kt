@@ -17,12 +17,14 @@ class AdminListActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAdminListBinding
     private lateinit var adapter: AdminListAdapter
     private val adminList = mutableListOf<String>()
+    private lateinit var settingsManager: SettingsManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityAdminListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        settingsManager = SettingsManager.getInstance(this)
         loadAdmins()
         setupRecyclerView()
 
@@ -53,8 +55,7 @@ class AdminListActivity : AppCompatActivity() {
     }
 
     private fun loadAdmins() {
-        val prefs = getSharedPreferences("ytplayer_prefs", MODE_PRIVATE)
-        val saved = prefs.getString("authorized_users", "") ?: ""
+        val saved = settingsManager.settings.authorizedUsers
         if (saved.isNotEmpty()) {
             adminList.clear()
             adminList.addAll(saved.split(",").filter { it.isNotBlank() })
@@ -62,8 +63,8 @@ class AdminListActivity : AppCompatActivity() {
     }
 
     private fun saveAdmins() {
-        val prefs = getSharedPreferences("ytplayer_prefs", MODE_PRIVATE)
-        prefs.edit().putString("authorized_users", adminList.joinToString(",")).apply()
+        settingsManager.settings.authorizedUsers = adminList.joinToString(",")
+        settingsManager.saveSettings()
     }
 
     class AdminListAdapter(

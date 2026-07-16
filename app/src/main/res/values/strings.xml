@@ -50,4 +50,5 @@
     <string name="btn_audio">AUDIO</string>
     <string name="enable_commands_label">ENABLE CHAT COMMANDS</string>
     <string name="quick_sounds_title">Quick Sounds</string>
+    <string name="version_format">v%s</string>
 </resources>

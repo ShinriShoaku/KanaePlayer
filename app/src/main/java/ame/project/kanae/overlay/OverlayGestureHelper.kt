@@ -26,6 +26,18 @@ class OverlayGestureHelper(
     private val longPressRunnable = Runnable {
         if (!hasMoved && !isMultiTouch) {
             isLongPressTriggered = true
+            android.widget.Toast.makeText(rootView.context, "Mode Geser Aktif", android.widget.Toast.LENGTH_SHORT).show()
+            
+            // Send CANCEL event to the view to stop its own processing (like scrolling)
+            lastView?.let { v ->
+                val cancelEvent = MotionEvent.obtain(
+                    System.currentTimeMillis(), System.currentTimeMillis(),
+                    MotionEvent.ACTION_CANCEL, 0f, 0f, 0
+                )
+                v.onTouchEvent(cancelEvent)
+                cancelEvent.recycle()
+            }
+            
             onLongPress?.invoke()
         }
     }
@@ -41,6 +53,7 @@ class OverlayGestureHelper(
     private var lastPinchDist  = 0f
     private var lastPinchAngle = 0f
     private var downTime       = 0L
+    private var lastView: View? = null
 
     // ── transform state (persisted across gestures) ───────────────────
     var currentScale    = 1f
@@ -50,10 +63,12 @@ class OverlayGestureHelper(
     private var origH = 0
 
     var locked = false
+    var dragOnlyAfterLongPress = false
 
     override fun onTouch(v: View, event: MotionEvent): Boolean {
         if (locked) return false
         onInteraction?.invoke()
+        lastView = v
 
         val x = event.x
         val y = event.y
@@ -68,6 +83,13 @@ class OverlayGestureHelper(
                 captureOrigSize()
                 
                 handler.postDelayed(longPressRunnable, 600)
+                
+                // If we are in long-press mode, we must return true to receive MOVE events,
+                // but we also need to manually let the view handle it for initial state.
+                if (dragOnlyAfterLongPress) {
+                    v.onTouchEvent(event)
+                    return true
+                }
                 return true
             }
 
@@ -83,15 +105,20 @@ class OverlayGestureHelper(
                 val dx = event.rawX - rawDownX
                 val dy = event.rawY - rawDownY
                 
-                if (abs(dx) > 10f || abs(dy) > 10f) {
+                if (abs(dx) > 15f || abs(dy) > 15f) {
                     hasMoved = true
                     handler.removeCallbacks(longPressRunnable)
                 }
 
-                if (!isMultiTouch && !isLongPressTriggered) {
+                val canMove = !dragOnlyAfterLongPress || isLongPressTriggered
+
+                if (!isMultiTouch && canMove) {
                     params.x = initX + dx.toInt()
                     params.y = initY + dy.toInt()
                     tryUpdate()
+                } else if (dragOnlyAfterLongPress && !isLongPressTriggered) {
+                    // Pass events to the view (RecyclerView) so it can scroll
+                    v.onTouchEvent(event)
                 }
             }
 
@@ -100,15 +127,16 @@ class OverlayGestureHelper(
                 onInteraction?.invoke()
                 
                 val elapsed = System.currentTimeMillis() - downTime
+                
+                if (dragOnlyAfterLongPress && !isLongPressTriggered) {
+                    v.onTouchEvent(event)
+                }
+
                 if (!hasMoved && !isLongPressTriggered && event.actionMasked == MotionEvent.ACTION_UP) {
-                    // Try to click buttons first
                     val btn = findButtonAt(rootView as? ViewGroup, x, y)
                     if (btn != null) {
                         btn.performClick()
                     } else if (elapsed < 400) {
-                        // It was a short tap and no button was hit.
-                        // Pass the touch to the view BELOW (the WebView).
-                        // Since we consumed ACTION_DOWN, we must manually dispatch.
                         dispatchTapToUnderlying(v, event)
                         onSingleTap?.invoke()
                     }
@@ -118,17 +146,11 @@ class OverlayGestureHelper(
         return true
     }
 
-    /**
-     * Pass the click event to the sibling view behind this gesture layer.
-     * In our layout, the WebView is the first child, and this layer is the second.
-     */
     private fun dispatchTapToUnderlying(gestureLayer: View, originalUp: MotionEvent) {
         val parent = gestureLayer.parent as? ViewGroup ?: return
-        // The view behind us (usually at index 0)
         val target = parent.getChildAt(0) ?: return
         if (target == gestureLayer) return
 
-        // Create a sequence of DOWN and UP at the same coordinate
         val down = MotionEvent.obtain(
             originalUp.downTime, originalUp.eventTime,
             MotionEvent.ACTION_DOWN, originalUp.x, originalUp.y, 0

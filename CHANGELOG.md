@@ -1,5 +1,21 @@
 # Changelog - KanaePlayer
 
+## [11.2.0] - 2026-07-16
+
+### ✨ New Features
+- Added Chat Settings: Always Show & Chat History.
+- Added new Splash Screen for initialization and update detection.
+
+### ⚙️ Performance Improvements
+- Migrated part of cache processing to JSON.
+
+### 🎨 UI Improvements
+- General UI refinements.
+
+---
+
+# Changelog - KanaePlayer
+
 ## [10.1.7] - 2025-03-05
 
 ### ✨ New Features

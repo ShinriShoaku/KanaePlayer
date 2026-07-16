@@ -1,5 +1,16 @@
 # Update Notes - KanaePlayer
 
+## Update 11.2.0
+
+- Added **Always Show** and **Chat History** options.
+- Optimized cache using JSON.
+- Added new splash screen for initialization and update detection.
+- UI refinements.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 10.1.7: Quick Overlay Scale & Landscape Fixes
 
 Update ini membawa peningkatan pada fitur Quick Custom Overlay serta perbaikan stabilitas pada sistem Gift.

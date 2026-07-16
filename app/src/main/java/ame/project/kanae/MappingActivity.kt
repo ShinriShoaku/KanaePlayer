@@ -45,6 +45,7 @@ class MappingActivity : AppCompatActivity() {
     private lateinit var rvMappings: RecyclerView
     private lateinit var adapter: MappingAdapter
     private val mappings = mutableListOf<KeyMapping>()
+    private lateinit var settingsManager: SettingsManager
     private val gson = Gson()
 
     private var pendingMapping: KeyMapping? = null
@@ -68,6 +69,7 @@ class MappingActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_mapping)
 
+        settingsManager = SettingsManager.getInstance(this)
         loadMappings()
 
         rvMappings = findViewById(R.id.rv_mappings)
@@ -89,7 +91,6 @@ class MappingActivity : AppCompatActivity() {
 
         dialog.setOnKeyListener { d, keyCode, event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
-                // Ignore modifier keys as standalone keys
                 if (keyCode == KeyEvent.KEYCODE_CTRL_LEFT || keyCode == KeyEvent.KEYCODE_CTRL_RIGHT ||
                     keyCode == KeyEvent.KEYCODE_SHIFT_LEFT || keyCode == KeyEvent.KEYCODE_SHIFT_RIGHT ||
                     keyCode == KeyEvent.KEYCODE_ALT_LEFT || keyCode == KeyEvent.KEYCODE_ALT_RIGHT) {
@@ -115,15 +116,11 @@ class MappingActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
-        // Filter for external keyboard
         val device = event.device
         val isExternal = device != null && !device.isVirtual && 
                 (device.sources and InputDevice.SOURCE_KEYBOARD == InputDevice.SOURCE_KEYBOARD)
         
-        // Strict check: only allow external physical keyboards
-        if (!isExternal) {
-            return super.onKeyDown(keyCode, event)
-        }
+        if (!isExternal) return super.onKeyDown(keyCode, event)
 
         val mapping = mappings.find {
             it.keyCode == keyCode && 
@@ -155,18 +152,19 @@ class MappingActivity : AppCompatActivity() {
     }
 
     private fun saveMappings() {
-        val json = gson.toJson(mappings)
-        getSharedPreferences("mapping_prefs", MODE_PRIVATE)
-            .edit().putString("key_mappings", json).apply()
+        settingsManager.settings.keyboardMappingJson = gson.toJson(mappings)
+        settingsManager.saveSettings()
     }
 
     private fun loadMappings() {
-        val json = getSharedPreferences("mapping_prefs", MODE_PRIVATE)
-            .getString("key_mappings", null) ?: return
-        val type = object : TypeToken<List<KeyMapping>>() {}.type
-        val list: List<KeyMapping> = gson.fromJson(json, type)
-        mappings.clear()
-        mappings.addAll(list)
+        val json = settingsManager.settings.keyboardMappingJson
+        if (json.isEmpty()) return
+        try {
+            val type = object : TypeToken<List<KeyMapping>>() {}.type
+            val list: List<KeyMapping> = gson.fromJson(json, type)
+            mappings.clear()
+            mappings.addAll(list)
+        } catch (_: Exception) {}
     }
 
     private fun snack(msg: String) =
