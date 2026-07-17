@@ -1,5 +1,14 @@
 # Update Notes - KanaePlayer
 
+## Update 11.2.1
+
+- **NL Studio App Integration**: Kini terdapat shortcut langsung untuk membuka aplikasi NL Studio dari splash screen jika aplikasi tersebut terinstal.
+- Perbaikan minor dan peningkatan stabilitas.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 11.2.0
 
 - Added **Always Show** and **Chat History** options.

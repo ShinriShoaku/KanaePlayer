@@ -25,7 +25,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v11.2.0)
+## 🆕 Pembaruan Terkini (v11.2.1)
+
+- Integrasi link ke NL Studio App
+- Bug fixes and performance improvements
+
+## 🆕 Pembaruan Sebelumnya (v11.2.0)
 
 - Always Show Chat
 - Chat History

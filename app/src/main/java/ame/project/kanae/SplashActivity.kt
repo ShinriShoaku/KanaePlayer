@@ -3,6 +3,7 @@ package ame.project.kanae
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -52,13 +53,62 @@ class SplashActivity : AppCompatActivity() {
             withContext(Dispatchers.Main) {
                 progressBar.progress = 100
                 tvStatus.text = if (success) "Ready!" else "Initialization failed"
+                
+                val nlInstalled = isPackageInstalled("ame.project.nlstudio")
+                Log.d("SplashActivity", "ytdlp success: $success, nlStudio installed: $nlInstalled")
+                
+                if (success && nlInstalled) {
+                    val btnLinkNL = findViewById<android.view.View>(R.id.btnLinkNL)
+                    val btnSkip = findViewById<android.view.View>(R.id.btnSkip)
+                    
+                    if (btnLinkNL != null && btnSkip != null) {
+                        Log.d("SplashActivity", "NL Studio detected, showing selection")
+                        btnLinkNL.visibility = android.view.View.VISIBLE
+                        btnSkip.visibility = android.view.View.VISIBLE
+                        
+                        btnLinkNL.setOnClickListener {
+                            val intent = packageManager.getLaunchIntentForPackage("ame.project.nlstudio")
+                            if (intent != null) {
+                                startActivity(intent)
+                                // Tetap ke MainActivity atau tunggu? 
+                                // Biasanya user ingin buka keduanya, tapi untuk sekarang kita lanjut ke Main setelah klik
+                                navigateToMain()
+                            } else {
+                                Log.e("SplashActivity", "Launch intent for NL Studio is null")
+                                navigateToMain()
+                            }
+                        }
+                        
+                        btnSkip.setOnClickListener {
+                            Log.d("SplashActivity", "User skipped NL Studio")
+                            navigateToMain()
+                        }
+                        
+                        // Hentikan coroutine agar tidak otomatis pindah
+                        return@withContext
+                    }
+                }
+                
+                // Jika NL tidak ada, tunggu sebentar lalu pindah otomatis
+                kotlinx.coroutines.delay(500)
+                navigateToMain()
             }
-            
-            kotlinx.coroutines.delay(500)
+        }
+    }
 
-            // Lanjut ke MainActivity
-            startActivity(Intent(this@SplashActivity, MainActivity::class.java))
-            finish()
+    private fun navigateToMain() {
+        startActivity(Intent(this@SplashActivity, MainActivity::class.java))
+        finish()
+    }
+
+    private fun isPackageInstalled(packageName: String): Boolean {
+        return try {
+            packageManager.getPackageInfo(packageName, 0)
+            Log.d("SplashActivity", "Package $packageName found")
+            true
+        } catch (e: Exception) {
+            Log.w("SplashActivity", "Package $packageName NOT found: ${e.message}")
+            false
         }
     }
 }

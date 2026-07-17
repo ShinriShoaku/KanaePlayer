@@ -27,3 +27,4 @@ include ':app'
 include ":NewPipeExtractor"
 include ":NewPipeExtractor:extractor"
 include ":NewPipeExtractor:timeago-generator"
+include ':nlstudio-sdk'

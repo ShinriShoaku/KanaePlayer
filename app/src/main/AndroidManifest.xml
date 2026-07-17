@@ -15,6 +15,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
 
+    <queries>
+        <package android:name="ame.project.nlstudio" />
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -23,7 +26,8 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="false"
-        android:theme="@style/Theme.YTTikTokPlayer">
+        android:theme="@style/Theme.YTTikTokPlayer"
+        android:allowAudioPlaybackCapture="true">
 
         <!-- ─── Splash Activity ──────────────────────────────────── -->
         <activity
@@ -88,10 +92,24 @@
         <!-- ─── Foreground Service ────────────────────────────── -->
         <service
             android:name=".service.PlayerForegroundService"
-            android:exported="false"
+            android:exported="true"
             android:theme="@style/Theme.YTTikTokPlayer"
             android:foregroundServiceType="mediaPlayback"
-            android:stopWithTask="false" />
+            android:stopWithTask="false">
+            <intent-filter>
+                <action android:name="ame.project.kanae.AIDL_SERVICE" />
+            </intent-filter>
+        </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="ame.project.kanae.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 </manifest>

@@ -47,6 +47,7 @@ class LyricsOverlayManager(
     private var lastScale: Float = 1f
     
     var onPositionChanged: ((x: Int, y: Int, scale: Float) -> Unit)? = null
+    var onLyricsChanged: ((text: String) -> Unit)? = null
 
     private var currentLayoutId: Int = R.layout.overlay_lyrics_layout
     private var currentTheme: CustomTheme = CustomTheme()
@@ -261,6 +262,7 @@ class LyricsOverlayManager(
         val currText = if (activeIdx >= 0) cues[activeIdx].text else ""
         val nextText = cues.getOrNull(activeIdx + 1)?.text ?: ""
 
+        onLyricsChanged?.invoke(currText)
         animateCueChange(currText)
         tvPrev?.text = prevText
         tvNext?.text = nextText

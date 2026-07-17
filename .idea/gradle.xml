@@ -13,6 +13,7 @@
             <option value="$PROJECT_DIR$/NewPipeExtractor/extractor" />
             <option value="$PROJECT_DIR$/NewPipeExtractor/timeago-generator" />
             <option value="$PROJECT_DIR$/app" />
+            <option value="$PROJECT_DIR$/nlstudio-sdk" />
           </set>
         </option>
       </GradleProjectSettings>

@@ -34,7 +34,10 @@ android {
 
     kotlinOptions { jvmTarget = '17' }
 
-    buildFeatures { viewBinding true }
+    buildFeatures {
+        viewBinding true
+        aidl true
+    }
 
     packagingOptions {
         resources {
@@ -89,6 +92,9 @@ dependencies {
 
     // ── Preference ────────────────────────────────────────────────────────────
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // ── NL Studio SDK ────────────────────────────────────────────────────────
+    implementation project(':nlstudio-sdk')
 
     // ── Color Picker ──────────────────────────────────────────────────────────
     implementation 'com.github.duanhong169:colorpicker:1.1.6'

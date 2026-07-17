@@ -1,5 +1,10 @@
 # Changelog - KanaePlayer
 
+## [11.2.1] - 2026-07-20
+
+### ✨ New Features
+- Added link to NL Studio App on Splash Screen.
+
 ## [11.2.0] - 2026-07-16
 
 ### ✨ New Features

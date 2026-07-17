@@ -45,6 +45,29 @@
             android:textColor="#CCCCCC"
             android:textSize="12sp"/>
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnLinkNL"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/link_to_nl_studio"
+            android:textColor="@color/orange"
+            android:visibility="gone"
+            app:icon="@drawable/ic_link"
+            app:iconTint="@color/orange"/>
+
+        <TextView
+            android:id="@+id/btnSkip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:padding="8dp"
+            android:text="@string/btn_skip_nl"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:visibility="gone"/>
+
     </LinearLayout>
 
     <TextView

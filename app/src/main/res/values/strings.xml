@@ -51,4 +51,6 @@
     <string name="enable_commands_label">ENABLE CHAT COMMANDS</string>
     <string name="quick_sounds_title">Quick Sounds</string>
     <string name="version_format">v%s</string>
+    <string name="link_to_nl_studio">Link to NL Studio</string>
+    <string name="btn_skip_nl">Lewati ></string>
 </resources>

@@ -34,6 +34,8 @@ import android.speech.tts.UtteranceProgressListener
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.audiofx.LoudnessEnhancer
+import ame.project.nlsdk.IKanaeService
+import ame.project.nlsdk.IKanaeCallback
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.*
@@ -55,6 +57,7 @@ class PlayerForegroundService : Service() {
 
         const val BROADCAST_STATE = "ame.project.ytplayer.STATE_UPDATE"
         const val BROADCAST_CHAT  = "ame.project.ytplayer.CHAT_UPDATE"
+        const val BROADCAST_SERVICE_READY = "ame.project.kanae.SERVICE_READY"
     }
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -95,13 +98,70 @@ class PlayerForegroundService : Service() {
     private lateinit var styleConfigManager: StyleConfigManager
     private val gson  = Gson()
 
+    private val remoteCallbacks = RemoteCallbackList<IKanaeCallback>()
+
+    private val aidlBinder = object : IKanaeService.Stub() {
+        override fun registerCallback(callback: IKanaeCallback?) {
+            if (callback != null) remoteCallbacks.register(callback)
+        }
+        override fun unregisterCallback(callback: IKanaeCallback?) {
+            if (callback != null) remoteCallbacks.unregister(callback)
+        }
+        override fun playPause() { serviceScope.launch { togglePlayPause() } }
+        override fun skip() { serviceScope.launch { playNext() } }
+        override fun stop() { serviceScope.launch { stopPlayer() } }
+        override fun requestMusic(queryOrUrl: String?) {
+            serviceScope.launch {
+                if (!queryOrUrl.isNullOrBlank()) {
+                    val target = if (queryOrUrl.contains("youtube.com") || queryOrUrl.contains("youtu.be")) queryOrUrl
+                                 else "ytsearch1:$queryOrUrl"
+                    addToQueue(target, requestedBy = "NL Studio")
+                }
+            }
+        }
+
+        override fun setVolume(volume: Float) {
+            serviceScope.launch { updateMusicVolume(volume) }
+        }
+
+        override fun getVolume(): Float = settingsManager.settings.musicVolume
+
+        override fun connectTikTok(username: String?) {
+            serviceScope.launch {
+                if (!username.isNullOrBlank()) {
+                    saveSettings(settingsManager.settings.tiktokApiKey, username)
+                }
+            }
+        }
+
+        override fun disconnectTikTok() {
+            serviceScope.launch { saveSettings("", "") }
+        }
+
+        override fun isTikTokConnected(): Boolean = tiktokConnected
+
+        override fun getCurrentSongJson(): String? = cachedSongJson
+        override fun getQueueJson(): String = runBlocking { 
+            withContext(Dispatchers.Main) {
+                gson.toJson(queue.toList())
+            }
+        }
+        override fun isPlaying(): Boolean = this@PlayerForegroundService.isPlaying
+    }
+
     fun getCustomOverlayManager() = customOverlayManager
 
     inner class LocalBinder : Binder() {
         fun getService(): PlayerForegroundService = this@PlayerForegroundService
     }
     private val binder = LocalBinder()
-    override fun onBind(intent: Intent): IBinder = binder
+
+    override fun onBind(intent: Intent): IBinder {
+        if (intent.action == "ame.project.kanae.AIDL_SERVICE") {
+            return aidlBinder
+        }
+        return binder
+    }
 
     // ─────────────────────────────────────────────────────────────────
     override fun onCreate() {
@@ -220,6 +280,16 @@ class PlayerForegroundService : Service() {
                 val cfg = settingsManager.getOverlayConfig("lyrics")
                 cfg.x = nx; cfg.y = ny; cfg.scale = ns
                 settingsManager.saveSettings()
+            }
+
+            onLyricsChanged = { text ->
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try {
+                        remoteCallbacks.getBroadcastItem(i).onLyricsChanged(text)
+                    } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
         }
 
@@ -346,6 +416,7 @@ class PlayerForegroundService : Service() {
             enableCanvasMode(s.canvasPlayerX, s.canvasPlayerY, s.canvasQueueX, s.canvasQueueY)
         }
 
+        sendBroadcast(Intent(BROADCAST_SERVICE_READY))
         Log.d(TAG, "Service ready. ytdlp=${ytDlp.isInstalled}. Auto-connect disabled.")
     }
 
@@ -465,6 +536,7 @@ class PlayerForegroundService : Service() {
                 playNext()
             } else {
                 broadcastState()
+                notifyQueueChanged()
                 if (queueOverlayManager.isShowing) {
                     queueOverlayManager.updateQueue(getQueue())
                 }
@@ -478,6 +550,7 @@ class PlayerForegroundService : Service() {
         if (index in queue.indices) {
             queue.removeAt(index)
             broadcastState()
+            notifyQueueChanged()
             syncQueueOverlay()
         }
     }
@@ -504,6 +577,7 @@ class PlayerForegroundService : Service() {
     fun clearQueue() {
         queue.clear()
         broadcastState()
+        notifyQueueChanged()
         syncQueueOverlay()
     }
 
@@ -545,6 +619,7 @@ class PlayerForegroundService : Service() {
             overlayManager.updateSong(song, 0, song.duration * 1000L)
             overlayManager.setPlayingState(true)
             broadcastState()
+            notifyTrackChanged(song)
 
             if (lyricsOverlayManager.isShowing) {
                 lyricsOverlayManager.loadForSong(song)
@@ -1331,7 +1406,8 @@ class PlayerForegroundService : Service() {
     // ── Broadcasts ────────────────────────────────────────────────────
     private fun broadcastState() {
         val intent = Intent(BROADCAST_STATE)
-        getStateMap().forEach { (k, v) ->
+        val state = getStateMap()
+        state.forEach { (k, v) ->
             when (v) {
                 is String  -> intent.putExtra(k, v)
                 is Boolean -> intent.putExtra(k, v)
@@ -1340,6 +1416,43 @@ class PlayerForegroundService : Service() {
             }
         }
         sendBroadcast(intent)
+
+        // Notify AIDL Callbacks
+        val n = remoteCallbacks.beginBroadcast()
+        for (i in 0 until n) {
+            try {
+                val cb = remoteCallbacks.getBroadcastItem(i)
+                cb.onPlaybackStatusChanged(isPlaying, positionMs, durationMs)
+            } catch (e: RemoteException) {}
+        }
+        remoteCallbacks.finishBroadcast()
+    }
+
+    private fun notifyTrackChanged(song: Song?) {
+        val n = remoteCallbacks.beginBroadcast()
+        for (i in 0 until n) {
+            try {
+                val cb = remoteCallbacks.getBroadcastItem(i)
+                cb.onTrackChanged(
+                    song?.title ?: "",
+                    song?.channel ?: "",
+                    (song?.duration ?: 0).toString(),
+                    song?.thumbnail ?: ""
+                )
+            } catch (e: RemoteException) {}
+        }
+        remoteCallbacks.finishBroadcast()
+    }
+
+    private fun notifyQueueChanged() {
+        val n = remoteCallbacks.beginBroadcast()
+        val json = gson.toJson(queue.toList())
+        for (i in 0 until n) {
+            try {
+                remoteCallbacks.getBroadcastItem(i).onQueueChanged(json)
+            } catch (e: RemoteException) {}
+        }
+        remoteCallbacks.finishBroadcast()
     }
 
     private fun broadcastChat(chat: TikTokChat) {
@@ -1349,6 +1462,15 @@ class PlayerForegroundService : Service() {
             putExtra("comment",   chat.comment)
             putExtra("cmd_type",  chat.commandType.name)
         })
+
+        // Notify AIDL Callbacks
+        val n = remoteCallbacks.beginBroadcast()
+        for (i in 0 until n) {
+            try {
+                remoteCallbacks.getBroadcastItem(i).onChatMessage(chat.nickname, chat.comment)
+            } catch (e: RemoteException) {}
+        }
+        remoteCallbacks.finishBroadcast()
     }
 
     private fun broadcastSystemChat(message: String) {
@@ -1493,31 +1615,86 @@ class PlayerForegroundService : Service() {
             t.onChat = ::handleTikTokChat
             t.onLike = { nick, _, count, profile ->
                 if (s.likeEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) likeOverlayManager.showLike(nick, count, profile)
+                
+                // Notify AIDL
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try { remoteCallbacks.getBroadcastItem(i).onUserLiked(nick, count) } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onJoin = { nick, _, profile ->
                 if (s.joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) joinOverlayManager.showJoin(nick, profile)
+                
+                // Notify AIDL
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try { remoteCallbacks.getBroadcastItem(i).onUserJoined(nick, profile) } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onFollow = { nick, _, profile ->
                 if (s.followEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) followOverlayManager.showFollow(nick, profile)
+                
+                // Notify AIDL
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try { remoteCallbacks.getBroadcastItem(i).onUserFollowed(nick) } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onGift = { uid, nick, gift, count, giftId, iconUrl ->
                 broadcastSystemChat("$nick mengirim $gift x$count")
                 if (s.notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
                     notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl, giftName = gift, giftId = giftId)
                 }
+
+                // Notify AIDL Callbacks
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try {
+                        remoteCallbacks.getBroadcastItem(i).onGiftMessage(nick, gift, count)
+                    } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onShare = { _, nick ->
                 broadcastSystemChat("$nick membagikan live")
                 if (s.notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) notifOverlayManager.showNotification(nick, "membagikan live", "share")
+                
+                // Notify AIDL
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try { remoteCallbacks.getBroadcastItem(i).onUserShared(nick) } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onConnected = {
                 tiktokConnected = true; chatOverlayManager.setTikTokConnected(true); tiktokConnecting = false
                 tiktokConnectTime = System.currentTimeMillis(); overlayManager.setLiveStatus(true)
                 broadcastSystemChat("Connected to TikTok Live @${s.tiktokUsername}"); broadcastState()
+
+                // Notify AIDL Callbacks
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try {
+                        remoteCallbacks.getBroadcastItem(i).onTikTokStatus(true, s.tiktokUsername)
+                    } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onDisconnected = {
                 tiktokConnected = false; chatOverlayManager.setTikTokConnected(false); tiktokConnecting = false
                 overlayManager.setLiveStatus(false); broadcastSystemChat("Disconnected from TikTok Live"); broadcastState()
+
+                // Notify AIDL Callbacks
+                val n = remoteCallbacks.beginBroadcast()
+                for (i in 0 until n) {
+                    try {
+                        remoteCallbacks.getBroadcastItem(i).onTikTokStatus(false, s.tiktokUsername)
+                    } catch (e: RemoteException) {}
+                }
+                remoteCallbacks.finishBroadcast()
             }
             t.onConnecting = { tiktokConnecting = true; broadcastState() }
             t.onError = { 
