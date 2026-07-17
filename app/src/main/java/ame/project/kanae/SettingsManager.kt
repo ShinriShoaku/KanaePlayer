@@ -1,6 +1,7 @@
 package ame.project.kanae
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.GsonBuilder
 import java.io.File
 import ame.project.kanae.overlay.CustomOverlayConfig
@@ -12,10 +13,13 @@ data class OverlayConfig(
     var width: Int = 0,
     var height: Int = 0,
     var visualPunch: Boolean = false,
-    var layoutId: Int = 0,
-    var itemId: Int = 0,
-    var bgId: Int = 0,
-    var bgColor: Int = 0
+    var layoutKey: String? = null,
+    var itemKey: String? = null,
+    var bgKey: String? = null,
+    var bgColor: Int = 0,
+    @Deprecated("Use layoutKey") var layoutId: Int = 0,
+    @Deprecated("Use itemKey") var itemId: Int = 0,
+    @Deprecated("Use bgKey") var bgId: Int = 0
 )
 
 data class CustomThemeConfig(
@@ -124,21 +128,34 @@ class SettingsManager private constructor(context: Context) {
             try {
                 val json = settingsFile.readText()
                 settings = gson.fromJson(json, AppSettings::class.java) ?: AppSettings()
-            } catch (_: Exception) {
+                Log.d("SettingsManager", "Settings loaded from JSON")
+            } catch (e: Exception) {
+                Log.e("SettingsManager", "Error loading settings: ${e.message}")
                 settings = AppSettings()
             }
         } else {
+            Log.d("SettingsManager", "No settings file found, generating defaults...")
             settings = AppSettings()
+            prepopulateDefaults()
             migrateFromPrefs()
             saveSettings()
         }
+    }
+
+    fun prepopulateDefaults() {
+        val keys = listOf("player", "queue", "lyrics", "chat", "notif", "join", "like", "follow")
+        keys.forEach { getOverlayConfig(it) }
+        Log.d("SettingsManager", "Default overlay configs prepopulated")
     }
 
     fun saveSettings() {
         try {
             val json = gson.toJson(settings)
             settingsFile.writeText(json)
-        } catch (_: Exception) {}
+            Log.d("SettingsManager", "Settings saved to JSON")
+        } catch (e: Exception) {
+            Log.e("SettingsManager", "Error saving settings: ${e.message}")
+        }
     }
 
     private fun migrateFromPrefs() {
@@ -235,15 +252,63 @@ class SettingsManager private constructor(context: Context) {
     }
 
     fun getOverlayConfig(key: String): OverlayConfig {
-        return settings.overlays.getOrPut(key) {
-            when (key) {
-                "player" -> OverlayConfig(x = 16, y = 100)
-                "queue" -> OverlayConfig(x = 16, y = 420, width = 300)
-                "lyrics" -> OverlayConfig(x = 16, y = 750)
-                "chat" -> OverlayConfig(x = 16, y = 500, width = 150)
+        val config = settings.overlays.getOrPut(key) {
+            val default = when (key) {
+                "player" -> OverlayConfig(x = 16, y = 100, layoutKey = "player_standard")
+                "queue" -> OverlayConfig(x = 16, y = 420, width = 300, layoutKey = "queue_standard", itemKey = "item_queue")
+                "lyrics" -> OverlayConfig(x = 16, y = 750, layoutKey = "lyrics_standard")
+                "chat" -> OverlayConfig(x = 16, y = 500, width = 150, layoutKey = "chat_boxed")
+                "notif" -> OverlayConfig(x = 16, y = 100, layoutKey = "notif_standard", bgKey = "overlay_bg")
+                "join" -> OverlayConfig(x = 16, y = 200, layoutKey = "join_card")
+                "like" -> OverlayConfig(x = 16, y = 300, layoutKey = "like_card")
+                "follow" -> OverlayConfig(x = 16, y = 400, layoutKey = "follow_standard")
                 else -> OverlayConfig()
             }
+            Log.d("SettingsManager", "Generated fresh default for $key: ${default.layoutKey}")
+            default
         }
+        
+        // Migration: If keys are missing but old IDs exist, map them once
+        // WARNING: R.layout IDs are not stable across builds.
+        if (config.layoutKey == null && config.layoutId != 0) {
+            val potentialKey = LayoutMapper.getLayoutKey(config.layoutId)
+            // Validate that the mapped key actually belongs to this overlay type
+            if (potentialKey != null && potentialKey.startsWith(key)) {
+                config.layoutKey = potentialKey
+                
+                // Also migrate itemId if relevant
+                if (key == "queue" && config.itemId != 0) {
+                    val potItemKey = LayoutMapper.getLayoutKey(config.itemId)
+                    if (potItemKey != null && potItemKey.startsWith("item_")) {
+                        config.itemKey = potItemKey
+                    }
+                }
+                
+                // Also migrate bgId if relevant
+                if (config.bgId != 0) {
+                    val potBgKey = LayoutMapper.getDrawableKey(config.bgId)
+                    if (potBgKey != null && (potBgKey.startsWith("bg_") || potBgKey == "overlay_bg")) {
+                        config.bgKey = potBgKey
+                    }
+                }
+            }
+        }
+
+        // Anti-bug: Jika layoutKey masih null, paksa balik ke default
+        if (config.layoutKey == null) {
+            Log.w("SettingsManager", "Overlay $key had no layoutKey, resetting to default...")
+            when(key) {
+                "chat" -> config.layoutKey = "chat_boxed"
+                "player" -> config.layoutKey = "player_standard"
+                "queue" -> { config.layoutKey = "queue_standard"; config.itemKey = "item_queue" }
+                "lyrics" -> config.layoutKey = "lyrics_standard"
+                "notif" -> { config.layoutKey = "notif_standard"; config.bgKey = "overlay_bg" }
+                "join" -> config.layoutKey = "join_card"
+                "like" -> config.layoutKey = "like_card"
+                "follow" -> config.layoutKey = "follow_standard"
+            }
+        }
+        return config
     }
 
     fun getThemeConfig(key: String): CustomThemeConfig {

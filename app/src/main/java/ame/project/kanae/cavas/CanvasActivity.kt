@@ -21,6 +21,9 @@ import com.google.android.material.card.MaterialCardView
 import ame.project.kanae.R
 import ame.project.kanae.SettingsManager
 import ame.project.kanae.CustomThemeConfig
+import ame.project.kanae.StyleConfigManager
+import ame.project.kanae.StyleThemeConfig
+import ame.project.kanae.LayoutMapper
 import ame.project.kanae.service.PlayerForegroundService
 import top.defaults.colorpicker.ColorPickerView
 
@@ -38,11 +41,14 @@ class CanvasActivity : AppCompatActivity() {
     }
 
     data class ThemeStyle(
+        val key: String,
         val name: String,
         val layoutId: Int,
         val backgroundId: Int,
         val category: UIComponent,
-        val itemLayoutId: Int = 0
+        val itemLayoutId: Int = 0,
+        val bgKey: String? = null,
+        val itemKey: String? = null
     )
 
     private var currentCategory = UIComponent.CHAT
@@ -51,57 +57,58 @@ class CanvasActivity : AppCompatActivity() {
     private var previewBgId: Int = 0
 
     private val allStyles = listOf(
-        ThemeStyle("Vertical", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble, UIComponent.CHAT),
-        ThemeStyle("Horizontal", R.layout.item_chat_bubble_horizontal, R.drawable.bg_chat_bubble, UIComponent.CHAT),
-        ThemeStyle("Pill Vertical", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_pill, UIComponent.CHAT),
-        ThemeStyle("Pill Horizontal", R.layout.item_chat_bubble_horizontal, R.drawable.bg_chat_bubble_pill, UIComponent.CHAT),
-        ThemeStyle("Bordered", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_bordered, UIComponent.CHAT),
-        ThemeStyle("Minimal", R.layout.item_chat_bubble, android.R.color.transparent, UIComponent.CHAT),
-        ThemeStyle("Gradient", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_gradient, UIComponent.CHAT),
-        ThemeStyle("Glass", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_glass, UIComponent.CHAT),
-        ThemeStyle("Neon", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_neon, UIComponent.CHAT),
-        ThemeStyle("Boxed", R.layout.item_chat_bubble_boxed, 0, UIComponent.CHAT),
+        ThemeStyle("chat_vertical", "Vertical", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble, UIComponent.CHAT, bgKey = "bg_chat_bubble"),
+        ThemeStyle("chat_horizontal", "Horizontal", R.layout.item_chat_bubble_horizontal, R.drawable.bg_chat_bubble, UIComponent.CHAT, bgKey = "bg_chat_bubble"),
+        ThemeStyle("chat_pill_vertical", "Pill Vertical", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_pill, UIComponent.CHAT, bgKey = "bg_chat_bubble_pill"),
+        ThemeStyle("chat_pill_horizontal", "Pill Horizontal", R.layout.item_chat_bubble_horizontal, R.drawable.bg_chat_bubble_pill, UIComponent.CHAT, bgKey = "bg_chat_bubble_pill"),
+        ThemeStyle("chat_bordered", "Bordered", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_bordered, UIComponent.CHAT, bgKey = "bg_chat_bubble_bordered"),
+        ThemeStyle("chat_minimal", "Minimal", R.layout.item_chat_bubble, android.R.color.transparent, UIComponent.CHAT, bgKey = "0"),
+        ThemeStyle("chat_gradient", "Gradient", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_gradient, UIComponent.CHAT, bgKey = "bg_chat_bubble_gradient"),
+        ThemeStyle("chat_glass", "Glass", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_glass, UIComponent.CHAT, bgKey = "bg_chat_bubble_glass"),
+        ThemeStyle("chat_neon", "Neon", R.layout.item_chat_bubble, R.drawable.bg_chat_bubble_neon, UIComponent.CHAT, bgKey = "bg_chat_bubble_neon"),
+        ThemeStyle("chat_boxed", "Boxed", R.layout.item_chat_bubble_boxed, 0, UIComponent.CHAT),
         
-        ThemeStyle("Queue Standard", R.layout.overlay_queue_layout, 0, UIComponent.QUEUE, R.layout.item_queue),
-        ThemeStyle("Queue Modern", R.layout.overlay_queue_modern, 0, UIComponent.QUEUE, R.layout.item_queue_modern),
-        ThemeStyle("Queue Glass", R.layout.overlay_queue_glass, 0, UIComponent.QUEUE, R.layout.item_queue_glass),
-        ThemeStyle("Queue Neon", R.layout.overlay_queue_neon, 0, UIComponent.QUEUE, R.layout.item_queue_neon),
-        ThemeStyle("Queue Card", R.layout.overlay_queue_card, 0, UIComponent.QUEUE, R.layout.item_queue_card),
-        ThemeStyle("Queue Minimal", R.layout.overlay_queue_minimal, 0, UIComponent.QUEUE, R.layout.item_queue_minimal),
-        ThemeStyle("Queue Sketch", R.layout.overlay_queue_sketch, 0, UIComponent.QUEUE, R.layout.item_queue_sketch),
+        ThemeStyle("queue_standard", "Queue Standard", R.layout.overlay_queue_layout, 0, UIComponent.QUEUE, R.layout.item_queue, itemKey = "item_queue"),
+        ThemeStyle("queue_modern", "Queue Modern", R.layout.overlay_queue_modern, 0, UIComponent.QUEUE, R.layout.item_queue_modern, itemKey = "item_queue_modern"),
+        ThemeStyle("queue_glass", "Queue Glass", R.layout.overlay_queue_glass, 0, UIComponent.QUEUE, R.layout.item_queue_glass, itemKey = "item_queue_glass"),
+        ThemeStyle("queue_neon", "Queue Neon", R.layout.overlay_queue_neon, 0, UIComponent.QUEUE, R.layout.item_queue_neon, itemKey = "item_queue_neon"),
+        ThemeStyle("queue_card", "Queue Card", R.layout.overlay_queue_card, 0, UIComponent.QUEUE, R.layout.item_queue_card, itemKey = "item_queue_card"),
+        ThemeStyle("queue_minimal", "Queue Minimal", R.layout.overlay_queue_minimal, 0, UIComponent.QUEUE, R.layout.item_queue_minimal, itemKey = "item_queue_minimal"),
+        ThemeStyle("queue_sketch", "Queue Sketch", R.layout.overlay_queue_sketch, 0, UIComponent.QUEUE, R.layout.item_queue_sketch, itemKey = "item_queue_sketch"),
         
-        ThemeStyle("Player Standard", R.layout.overlay_layout, 0, UIComponent.PLAYER),
-        ThemeStyle("Player Modern", R.layout.overlay_layout_modern, 0, UIComponent.PLAYER),
-        ThemeStyle("Player Glass", R.layout.overlay_layout_glass, 0, UIComponent.PLAYER),
-        ThemeStyle("Player Retro", R.layout.overlay_layout_retro, 0, UIComponent.PLAYER),
-        ThemeStyle("Player Immersive", R.layout.overlay_layout_immersive, 0, UIComponent.PLAYER),
-        ThemeStyle("Player Compact", R.layout.overlay_layout_compact, 0, UIComponent.PLAYER),
+        ThemeStyle("player_standard", "Player Standard", R.layout.overlay_layout, 0, UIComponent.PLAYER),
+        ThemeStyle("player_modern", "Player Modern", R.layout.overlay_layout_modern, 0, UIComponent.PLAYER),
+        ThemeStyle("player_glass", "Player Glass", R.layout.overlay_layout_glass, 0, UIComponent.PLAYER),
+        ThemeStyle("player_retro", "Player Retro", R.layout.overlay_layout_retro, 0, UIComponent.PLAYER),
+        ThemeStyle("player_immersive", "Player Immersive", R.layout.overlay_layout_immersive, 0, UIComponent.PLAYER),
+        ThemeStyle("player_compact", "Player Compact", R.layout.overlay_layout_compact, 0, UIComponent.PLAYER),
         
-        ThemeStyle("Lyrics Standard", R.layout.overlay_lyrics_layout, 0, UIComponent.LYRICS),
-        ThemeStyle("Lyrics Glass", R.layout.overlay_lyrics_glass, 0, UIComponent.LYRICS),
-        ThemeStyle("Lyrics Neon", R.layout.overlay_lyrics_neon, 0, UIComponent.LYRICS),
-        ThemeStyle("Lyrics Sketch", R.layout.overlay_lyrics_sketch, 0, UIComponent.LYRICS),
-        ThemeStyle("Lyrics Minimal", R.layout.overlay_lyrics_minimal, 0, UIComponent.LYRICS),
+        ThemeStyle("lyrics_standard", "Lyrics Standard", R.layout.overlay_lyrics_layout, 0, UIComponent.LYRICS),
+        ThemeStyle("lyrics_glass", "Lyrics Glass", R.layout.overlay_lyrics_glass, 0, UIComponent.LYRICS),
+        ThemeStyle("lyrics_neon", "Lyrics Neon", R.layout.overlay_lyrics_neon, 0, UIComponent.LYRICS),
+        ThemeStyle("lyrics_sketch", "Lyrics Sketch", R.layout.overlay_lyrics_sketch, 0, UIComponent.LYRICS),
+        ThemeStyle("lyrics_minimal", "Lyrics Minimal", R.layout.overlay_lyrics_minimal, 0, UIComponent.LYRICS),
 
-        ThemeStyle("Notif Standard", R.layout.overlay_tiktok_notification, R.drawable.overlay_bg, UIComponent.NOTIF),
+        ThemeStyle("notif_standard", "Notif Standard", R.layout.overlay_tiktok_notification, R.drawable.overlay_bg, UIComponent.NOTIF, bgKey = "overlay_bg"),
         
-        ThemeStyle("Join Card", R.layout.overlay_tiktok_join, 0, UIComponent.JOIN),
-        ThemeStyle("Join List", R.layout.overlay_tiktok_join_list, 0, UIComponent.JOIN),
-        ThemeStyle("Join Pill", R.layout.overlay_tiktok_join_pill, 0, UIComponent.JOIN),
+        ThemeStyle("join_card", "Join Card", R.layout.overlay_tiktok_join, 0, UIComponent.JOIN),
+        ThemeStyle("join_list", "Join List", R.layout.overlay_tiktok_join_list, 0, UIComponent.JOIN),
+        ThemeStyle("join_pill", "Join Pill", R.layout.overlay_tiktok_join_pill, 0, UIComponent.JOIN),
         
-        ThemeStyle("Like Card", R.layout.overlay_tiktok_like, 0, UIComponent.LIKE),
-        ThemeStyle("Like Compact", R.layout.overlay_tiktok_like_compact, 0, UIComponent.LIKE),
-        ThemeStyle("Like Neon", R.layout.overlay_tiktok_like_neon, 0, UIComponent.LIKE),
+        ThemeStyle("like_card", "Like Card", R.layout.overlay_tiktok_like, 0, UIComponent.LIKE),
+        ThemeStyle("like_compact", "Like Compact", R.layout.overlay_tiktok_like_compact, 0, UIComponent.LIKE),
+        ThemeStyle("like_neon", "Like Neon", R.layout.overlay_tiktok_like_neon, 0, UIComponent.LIKE),
         
-        ThemeStyle("Follow Standard", R.layout.overlay_tiktok_follow, 0, UIComponent.FOLLOW),
-        ThemeStyle("Follow Glass", R.layout.overlay_tiktok_follow_glass, 0, UIComponent.FOLLOW),
-        ThemeStyle("Follow Neon", R.layout.overlay_tiktok_follow_neon, 0, UIComponent.FOLLOW),
-        ThemeStyle("Follow Compact", R.layout.overlay_tiktok_follow_compact, 0, UIComponent.FOLLOW)
+        ThemeStyle("follow_standard", "Follow Standard", R.layout.overlay_tiktok_follow, 0, UIComponent.FOLLOW),
+        ThemeStyle("follow_glass", "Follow Glass", R.layout.overlay_tiktok_follow_glass, 0, UIComponent.FOLLOW),
+        ThemeStyle("follow_neon", "Follow Neon", R.layout.overlay_tiktok_follow_neon, 0, UIComponent.FOLLOW),
+        ThemeStyle("follow_compact", "Follow Compact", R.layout.overlay_tiktok_follow_compact, 0, UIComponent.FOLLOW)
     )
 
     private var service: PlayerForegroundService? = null
     private var serviceBound = false
     private lateinit var settingsManager: SettingsManager
+    private lateinit var styleConfigManager: StyleConfigManager
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -143,6 +150,7 @@ class CanvasActivity : AppCompatActivity() {
         setContentView(R.layout.activity_canvas)
 
         settingsManager = SettingsManager.getInstance(this)
+        styleConfigManager = StyleConfigManager.getInstance(this)
 
         tvSelectorTitle = findViewById(R.id.tv_selector_title)
         rvStyles        = findViewById(R.id.rv_chat_styles)
@@ -188,7 +196,14 @@ class CanvasActivity : AppCompatActivity() {
         UIComponent.entries.forEach { comp ->
             val key = comp.name.lowercase()
             val config = settingsManager.getOverlayConfig(key)
-            if (config.layoutId != 0) tempSelections[comp] = Pair(config.layoutId, config.bgId)
+            
+            // Primary lookup via layoutKey to get current build's ID
+            val currentLayoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            val currentBgId = LayoutMapper.getDrawableId(config.bgKey)
+            
+            if (currentLayoutId != 0) {
+                tempSelections[comp] = Pair(currentLayoutId, currentBgId)
+            }
         }
 
         btnPickComponent.setOnClickListener { showCategoryPicker() }
@@ -259,19 +274,37 @@ class CanvasActivity : AppCompatActivity() {
     private fun loadCustomColors() {
         UIComponent.entries.forEach { comp ->
             val key = comp.name.lowercase()
-            val theme = settingsManager.getThemeConfig(key)
+            val config = settingsManager.getOverlayConfig(key)
+            
+            // Load theme based on currently active style for this component using layoutKey
+            val styleTheme = styleConfigManager.getStyleTheme(comp.name, config.layoutKey)
+            
             val map = mutableMapOf<String, Int?>()
-            map["bg_primary"] = theme.bgPrimary
-            map["bg_secondary"] = theme.bgSecondary
-            map["text_primary"] = theme.textPrimary
-            map["text_secondary"] = theme.textSecondary
+            map["bg_primary"] = styleTheme.bgPrimary
+            map["bg_secondary"] = styleTheme.bgSecondary
+            map["text_primary"] = styleTheme.textPrimary
+            map["text_secondary"] = styleTheme.textSecondary
             
             customColors[comp] = map
-            customAlphas[comp] = theme.alpha
+            customAlphas[comp] = styleTheme.alpha
         }
     }
 
     private fun updateColorBoxesUI() {
+        // Reload colors for current category based on the previewed style using its key
+        val currentStyle = allStyles.find { it.layoutId == previewLayoutId && it.backgroundId == previewBgId }
+        val styleTheme = styleConfigManager.getStyleTheme(currentCategory.name, currentStyle?.key)
+        val map = customColors.getOrPut(currentCategory) { mutableMapOf() }
+        
+        // If the map is empty for this component (switching styles), load from config manager
+        if (map.isEmpty()) {
+            map["bg_primary"] = styleTheme.bgPrimary
+            map["bg_secondary"] = styleTheme.bgSecondary
+            map["text_primary"] = styleTheme.textPrimary
+            map["text_secondary"] = styleTheme.textSecondary
+            customAlphas[currentCategory] = styleTheme.alpha
+        }
+
         colorPartsContainer.removeAllViews()
         val parts = mutableListOf<Pair<String, String>>()
         parts.add("Background" to "bg_primary")
@@ -394,10 +427,30 @@ class CanvasActivity : AppCompatActivity() {
 
             finalStyle?.let { s ->
                 val config = settingsManager.getOverlayConfig(key)
+                config.layoutKey = s.key
+                config.bgKey = s.bgKey
+                config.itemKey = s.itemKey
+                
+                // Keep layoutId for backward compat if needed, but the primary is now layoutKey
                 config.layoutId = s.layoutId
                 config.bgId = s.backgroundId
                 if (comp == UIComponent.QUEUE) config.itemId = s.itemLayoutId
                 
+                // Save to settings map explicitly
+                settingsManager.settings.overlays[key] = config
+
+                // Save Style Specific Theme using KEY
+                val colorMap = customColors[comp] ?: mutableMapOf()
+                val styleTheme = StyleThemeConfig(
+                    bgPrimary = colorMap["bg_primary"],
+                    bgSecondary = colorMap["bg_secondary"],
+                    textPrimary = colorMap["text_primary"],
+                    textSecondary = colorMap["text_secondary"],
+                    alpha = customAlphas[comp] ?: 255
+                )
+                styleConfigManager.setStyleTheme(comp.name, s.key, styleTheme)
+                
+                // Update live service if running
                 when (comp) {
                     UIComponent.CHAT   -> service?.updateChatStyle(s.layoutId, s.backgroundId)
                     UIComponent.PLAYER -> service?.updatePlayerStyle(s.layoutId)
@@ -409,19 +462,14 @@ class CanvasActivity : AppCompatActivity() {
                     UIComponent.NOTIF  -> service?.updateNotifStyle(s.layoutId)
                 }
             }
-
-            val theme = settingsManager.getThemeConfig(key)
-            val colorMap = customColors[comp] ?: mutableMapOf()
-            theme.bgPrimary = colorMap["bg_primary"]
-            theme.bgSecondary = colorMap["bg_secondary"]
-            theme.textPrimary = colorMap["text_primary"]
-            theme.textSecondary = colorMap["text_secondary"]
-            theme.alpha = customAlphas[comp] ?: 255
         }
 
         settingsManager.saveSettings()
-        service?.updateCustomThemes()
-        Toast.makeText(this, "All themes saved & applied!", Toast.LENGTH_SHORT).show()
+        styleConfigManager.saveConfigs()
+        service?.persistSettings() 
+        service?.updateCustomThemes() 
+        
+        Toast.makeText(this, "Semua tema per style berhasil disimpan!", Toast.LENGTH_SHORT).show()
         finish()
     }
 
@@ -656,6 +704,10 @@ class CanvasActivity : AppCompatActivity() {
             h.itemView.setOnClickListener {
                 previewLayoutId = s.layoutId
                 previewBgId = s.backgroundId
+                
+                // Reset custom colors map for this category so it reloads from StyleConfigManager
+                customColors[currentCategory]?.clear()
+
                 updateColorBoxesUI()
                 notifyDataSetChanged()
                 syncPreview()

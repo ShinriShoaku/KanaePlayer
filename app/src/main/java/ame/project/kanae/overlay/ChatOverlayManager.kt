@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.SpannableStringBuilder
 import android.text.style.ImageSpan
+import android.util.Log
 import android.view.*
 import android.view.animation.AccelerateDecelerateInterpolator
 import android.widget.FrameLayout
@@ -100,12 +101,19 @@ class ChatOverlayManager(
 
     fun show(x: Int = lastX, y: Int = lastY, scale: Float = lastScale, width: Int = overlayWidth) {
         if (isShowing) return
-
+        
         this.lastX = x
         this.lastY = y
         this.lastScale = scale
         this.overlayWidth = width
         this.currentTextScale = scale
+
+        val layoutName = try { context?.resources?.getResourceEntryName(currentLayoutId) ?: "unknown" } catch(_: Exception) { "ID_$currentLayoutId" }
+        Log.i("Kanae_Overlay", "[OVERLAY_DEBUG] Attempting to show Chat Overlay with Layout: $layoutName")
+
+        if (currentLayoutId == 0) {
+            Log.e("Kanae_Overlay", "[OVERLAY_DEBUG] FATAL: Layout ID is 0. Overlay will not appear!")
+        }
 
         val themed = android.view.ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
         val view = LayoutInflater.from(themed).inflate(R.layout.overlay_chat_layout, null)
@@ -605,7 +613,11 @@ class ChatOverlayManager(
             }
 
             val theme = currentTheme
-            val isBoxed = currentLayoutId == R.layout.item_chat_bubble_boxed
+            val isBoxed = try {
+                context?.resources?.getResourceEntryName(currentLayoutId) == "item_chat_bubble_boxed"
+            } catch (_: Exception) {
+                currentLayoutId == R.layout.item_chat_bubble_boxed
+            }
 
             // 1. Handle Primary Background (Bubble/Message)
             theme.bgPrimary?.let { color ->
@@ -618,17 +630,21 @@ class ChatOverlayManager(
                     bubble?.setBackgroundColor(colorWithAlpha)
                 }
             } ?: run {
-                // If Boxed style, only apply alpha to the existing white background
-                // Otherwise, use random colors/dummy colors for other styles
+                // If Boxed style, only apply alpha to the existing white background. 
+                // DO NOT apply the dark dummy color logic here.
                 if (isBoxed) {
                     bubble?.background?.mutate()?.alpha = theme.alpha
-                } else if (currentBgId != 0 && currentBgId != android.R.color.transparent) {
+                } else {
+                    // Fallback for non-boxed styles: Use random colors or dummy grey
                     val bgColor = if (item.isDummy) Color.argb(0x80, 0, 0, 0) else getBubbleColor(item.nickname)
-                    bubble?.background?.let { bg ->
-                        val wrapped = DrawableCompat.wrap(bg.mutate())
-                        DrawableCompat.setTint(wrapped, bgColor)
-                        bubble.background = wrapped
-                        bubble.background?.alpha = theme.alpha
+                    
+                    if (currentBgId != 0 && currentBgId != android.R.color.transparent) {
+                        bubble?.background?.let { bg ->
+                            val wrapped = DrawableCompat.wrap(bg.mutate())
+                            DrawableCompat.setTint(wrapped, bgColor)
+                            bubble.background = wrapped
+                            bubble.background?.alpha = theme.alpha
+                        }
                     }
                 }
             }
@@ -664,6 +680,10 @@ class ChatOverlayManager(
     inner class ChatAdapter : RecyclerView.Adapter<ChatViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ChatViewHolder {
             val themed = android.view.ContextThemeWrapper(parent.context, R.style.Theme_YTTikTokPlayer)
+            
+            val layoutName = try { parent.context.resources.getResourceEntryName(currentLayoutId) } catch(_: Exception) { "ERROR" }
+            Log.d("Kanae_Overlay", "[OVERLAY_DEBUG] Inflating Chat Bubble: $layoutName")
+
             val view = LayoutInflater.from(themed).inflate(currentLayoutId, parent, false)
             return ChatViewHolder(view)
         }

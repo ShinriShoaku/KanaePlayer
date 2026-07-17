@@ -25,6 +25,9 @@ import ame.project.kanae.player.AudioPlayer
 import ame.project.kanae.player.YtDlpHelper
 import ame.project.kanae.tiktok.TikTokLiveManager
 import ame.project.kanae.player.FastPlaybackState
+import ame.project.kanae.StyleConfigManager
+import ame.project.kanae.StyleThemeConfig
+import ame.project.kanae.LayoutMapper
 import android.view.WindowManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -89,6 +92,7 @@ class PlayerForegroundService : Service() {
     private val ttsFile by lazy { File(cacheDir, "tts_cache.wav") }
 
     private lateinit var settingsManager: SettingsManager
+    private lateinit var styleConfigManager: StyleConfigManager
     private val gson  = Gson()
 
     fun getCustomOverlayManager() = customOverlayManager
@@ -105,6 +109,12 @@ class PlayerForegroundService : Service() {
         Log.d(TAG, "onCreate")
 
         settingsManager = SettingsManager.getInstance(this)
+        styleConfigManager = StyleConfigManager.getInstance(this)
+
+        // Ensure all defaults are loaded and logged
+        settingsManager.prepopulateDefaults()
+        val chatConfig = settingsManager.getOverlayConfig("chat")
+        Log.i(TAG, "Chat Layout Key: ${chatConfig.layoutKey} -> ID: ${LayoutMapper.getLayoutId(chatConfig.layoutKey)}")
 
         createNotificationChannel()
 
@@ -160,7 +170,8 @@ class PlayerForegroundService : Service() {
             onClose     = { broadcastState() }
         ).apply {
             val config = settingsManager.getOverlayConfig("player")
-            if (config.layoutId != 0) updateStyle(config.layoutId)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            if (layoutId != 0) updateStyle(layoutId)
             applyConfig(config.x, config.y, config.scale, config.width, config.height)
 
             onPositionChanged = { nx, ny, ns ->
@@ -177,9 +188,13 @@ class PlayerForegroundService : Service() {
             onClose  = { broadcastState() }
         ).apply {
             val config = settingsManager.getOverlayConfig("queue")
-            val container = if (config.layoutId != 0) config.layoutId else ame.project.kanae.R.layout.overlay_queue_layout
-            val item = if (config.itemId != 0) config.itemId else ame.project.kanae.R.layout.item_queue
-            updateStyle(container, item)
+            val containerId = LayoutMapper.getLayoutId(config.layoutKey)
+            val itemId = LayoutMapper.getLayoutId(config.itemKey)
+            
+            val finalContainer = if (containerId != 0) containerId else ame.project.kanae.R.layout.overlay_queue_layout
+            val finalItem = if (itemId != 0) itemId else ame.project.kanae.R.layout.item_queue
+            
+            updateStyle(finalContainer, finalItem)
             applyConfig(config.x, config.y, config.scale, config.width)
             setAutoHide(settingsManager.settings.queueAutoHide, settingsManager.settings.queueDuration)
 
@@ -197,7 +212,8 @@ class PlayerForegroundService : Service() {
             onClose       = { broadcastState() }
         ).apply {
             val config = settingsManager.getOverlayConfig("lyrics")
-            if (config.layoutId != 0) updateStyle(config.layoutId)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            if (layoutId != 0) updateStyle(layoutId)
             applyConfig(config.x, config.y, config.scale, config.width, config.height)
 
             onPositionChanged = { nx, ny, ns ->
@@ -222,9 +238,11 @@ class PlayerForegroundService : Service() {
             setAlwaysShow(s.chatAlwaysShow)
             setHistoryEnabled(s.chatHistoryEnabled)
             
-            val layout = if (config.layoutId != 0) config.layoutId else ame.project.kanae.R.layout.item_chat_bubble
-            val bg = if (config.bgId != 0) config.bgId else ame.project.kanae.R.drawable.bg_chat_bubble
-            updateStyle(layout, bg)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            val bgId = LayoutMapper.getDrawableId(config.bgKey)
+            
+            val finalLayout = if (layoutId != 0) layoutId else ame.project.kanae.R.layout.item_chat_bubble_boxed
+            updateStyle(finalLayout, bgId)
 
             setTikTokConnected(tiktokConnected)
             applyConfig(config.x, config.y, config.scale, config.width)
@@ -239,7 +257,8 @@ class PlayerForegroundService : Service() {
         notifOverlayManager = TikTokNotificationOverlayManager(this).apply {
             val s = settingsManager.settings
             val config = settingsManager.getOverlayConfig("notif")
-            if (config.layoutId != 0) updateStyle(config.layoutId)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            if (layoutId != 0) updateStyle(layoutId)
             setConfig(
                 s.notifShareImg,
                 s.notifGiftImg,
@@ -263,7 +282,8 @@ class PlayerForegroundService : Service() {
 
         joinOverlayManager = TikTokJoinOverlayManager(this).apply {
             val config = settingsManager.getOverlayConfig("join")
-            if (config.layoutId != 0) updateStyle(config.layoutId)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            if (layoutId != 0) updateStyle(layoutId)
             setDuration(settingsManager.settings.joinDuration)
             applyConfig(config.x, config.y, config.scale)
 
@@ -275,7 +295,8 @@ class PlayerForegroundService : Service() {
         }
         likeOverlayManager = TikTokLikeOverlayManager(this).apply {
             val config = settingsManager.getOverlayConfig("like")
-            if (config.layoutId != 0) updateStyle(config.layoutId)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            if (layoutId != 0) updateStyle(layoutId)
             setAnimationEnabled(settingsManager.settings.likeAnimationEnabled)
             setDuration(settingsManager.settings.likeDuration)
             applyConfig(config.x, config.y, config.scale)
@@ -288,7 +309,8 @@ class PlayerForegroundService : Service() {
         }
         followOverlayManager = TikTokFollowOverlayManager(this).apply {
             val config = settingsManager.getOverlayConfig("follow")
-            if (config.layoutId != 0) updateStyle(config.layoutId)
+            val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
+            if (layoutId != 0) updateStyle(layoutId)
             setDuration(settingsManager.settings.followDuration)
             setVisualPunchEnabled(config.visualPunch)
             applyConfig(config.x, config.y, config.scale)
@@ -802,8 +824,8 @@ class PlayerForegroundService : Service() {
 
     fun updateChatStyle(layoutId: Int, bgId: Int) {
         val config = settingsManager.getOverlayConfig("chat")
-        config.layoutId = layoutId
-        config.bgId = bgId
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
+        config.bgKey = LayoutMapper.getDrawableKey(bgId)
         settingsManager.saveSettings()
         chatOverlayManager.updateStyle(layoutId, bgId)
     }
@@ -821,57 +843,65 @@ class PlayerForegroundService : Service() {
     }
 
     fun updateJoinStyle(layoutId: Int) {
-        settingsManager.getOverlayConfig("join").layoutId = layoutId
+        val config = settingsManager.getOverlayConfig("join")
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
         settingsManager.saveSettings()
         joinOverlayManager.updateStyle(layoutId)
     }
 
     fun updateLikeStyle(layoutId: Int) {
-        settingsManager.getOverlayConfig("like").layoutId = layoutId
+        val config = settingsManager.getOverlayConfig("like")
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
         settingsManager.saveSettings()
         likeOverlayManager.updateStyle(layoutId)
     }
 
     fun updateFollowStyle(layoutId: Int) {
-        settingsManager.getOverlayConfig("follow").layoutId = layoutId
+        val config = settingsManager.getOverlayConfig("follow")
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
         settingsManager.saveSettings()
         followOverlayManager.updateStyle(layoutId)
     }
 
     fun updatePlayerStyle(layoutId: Int) {
-        settingsManager.getOverlayConfig("player").layoutId = layoutId
+        val config = settingsManager.getOverlayConfig("player")
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
         settingsManager.saveSettings()
         overlayManager.updateStyle(layoutId)
     }
 
     fun updateNotifStyle(layoutId: Int) {
-        settingsManager.getOverlayConfig("notif").layoutId = layoutId
+        val config = settingsManager.getOverlayConfig("notif")
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
         settingsManager.saveSettings()
         notifOverlayManager.updateStyle(layoutId)
     }
 
     fun updateLyricsStyle(layoutId: Int) {
-        settingsManager.getOverlayConfig("lyrics").layoutId = layoutId
+        val config = settingsManager.getOverlayConfig("lyrics")
+        config.layoutKey = LayoutMapper.getLayoutKey(layoutId)
         settingsManager.saveSettings()
         lyricsOverlayManager.updateStyle(layoutId)
     }
 
     fun updateQueueStyle(containerId: Int, itemId: Int) {
         val config = settingsManager.getOverlayConfig("queue")
-        config.layoutId = containerId
-        config.itemId = itemId
+        config.layoutKey = LayoutMapper.getLayoutKey(containerId)
+        config.itemKey = LayoutMapper.getLayoutKey(itemId)
         settingsManager.saveSettings()
         queueOverlayManager.updateStyle(containerId, itemId)
     }
 
     private fun loadTheme(category: String): CustomTheme {
-        val config = settingsManager.getThemeConfig(category)
+        val config = settingsManager.getOverlayConfig(category)
+        val styleTheme = styleConfigManager.getStyleTheme(category.uppercase(), config.layoutKey)
+        
         return CustomTheme(
-            bgPrimary = config.bgPrimary,
-            bgSecondary = config.bgSecondary,
-            textPrimary = config.textPrimary,
-            textSecondary = config.textSecondary,
-            alpha = config.alpha
+            bgPrimary = styleTheme.bgPrimary,
+            bgSecondary = styleTheme.bgSecondary,
+            textPrimary = styleTheme.textPrimary,
+            textSecondary = styleTheme.textSecondary,
+            alpha = styleTheme.alpha
         )
     }
 
