@@ -117,7 +117,7 @@ class PlayerForegroundService : Service() {
             serviceScope.launch {
                 if (!queryOrUrl.isNullOrBlank()) {
                     val target = if (queryOrUrl.contains("youtube.com") || queryOrUrl.contains("youtu.be")) queryOrUrl
-                                 else "ytsearch1:$queryOrUrl"
+                    else "ytsearch1:$queryOrUrl"
                     addToQueue(target, requestedBy = "NL Studio")
                 }
             }
@@ -144,7 +144,7 @@ class PlayerForegroundService : Service() {
         override fun isTikTokConnected(): Boolean = tiktokConnected
 
         override fun getCurrentSongJson(): String? = cachedSongJson
-        override fun getQueueJson(): String = runBlocking { 
+        override fun getQueueJson(): String = runBlocking {
             withContext(Dispatchers.Main) {
                 gson.toJson(queue.toList())
             }
@@ -184,7 +184,13 @@ class PlayerForegroundService : Service() {
 
         createNotificationChannel()
 
-        startServiceInForeground()
+        val foregroundStarted = startServiceInForeground()
+        if (!foregroundStarted) {
+            // stopSelf() sudah dipanggil di dalam startServiceInForeground().
+            // Jangan lanjut setup AudioPlayer/MediaSession/dll — service ini
+            // bakal di-destroy sebentar lagi, buang-buang kerjaan aja.
+            return
+        }
 
         audioPlayer = AudioPlayer(this, serviceScope).also { p ->
             p.onComplete = ::onSongComplete
@@ -192,11 +198,11 @@ class PlayerForegroundService : Service() {
             p.onProgress = { pos, dur ->
                 positionMs = pos
                 if (dur > 0) durationMs = dur
-                
+
                 // Update fast state for Activity access
                 FastPlaybackState.positionMs = pos
                 if (dur > 0) FastPlaybackState.durationMs = dur
-                
+
                 overlayManager.updateSong(currentSong, positionMs, durationMs)
                 // Sync lyrics cue to current playback position
                 if (lyricsOverlayManager.isShowing) {
@@ -254,10 +260,10 @@ class PlayerForegroundService : Service() {
             val config = settingsManager.getOverlayConfig("queue")
             val containerId = LayoutMapper.getLayoutId(config.layoutKey)
             val itemId = LayoutMapper.getLayoutId(config.itemKey)
-            
+
             val finalContainer = if (containerId != 0) containerId else ame.project.kanae.R.layout.overlay_queue_layout
             val finalItem = if (itemId != 0) itemId else ame.project.kanae.R.layout.item_queue
-            
+
             updateStyle(finalContainer, finalItem)
             applyConfig(config.x, config.y, config.scale, config.width)
             setAutoHide(settingsManager.settings.queueAutoHide, settingsManager.settings.queueDuration)
@@ -311,10 +317,10 @@ class PlayerForegroundService : Service() {
             setDisplayDuration(s.chatDuration)
             setAlwaysShow(s.chatAlwaysShow)
             setHistoryEnabled(s.chatHistoryEnabled)
-            
+
             val layoutId = LayoutMapper.getLayoutId(config.layoutKey)
             val bgId = LayoutMapper.getDrawableId(config.bgKey)
-            
+
             val finalLayout = if (layoutId != 0) layoutId else ame.project.kanae.R.layout.item_chat_bubble_boxed
             updateStyle(finalLayout, bgId)
 
@@ -442,7 +448,25 @@ class PlayerForegroundService : Service() {
                 else        disableCanvasMode()
             }
         }
-        return START_STICKY
+        // START_NOT_STICKY: JANGAN biarkan sistem auto-restart service ini di
+        // background setelah proses di-kill (mis. dibunuh OEM battery optimizer).
+        // Restart otomatis semacam itu tidak punya "user-initiated" exemption,
+        // jadi startForeground() di onCreate() akan selalu gagal dengan
+        // ForegroundServiceStartNotAllowedException di Android 12+. User harus
+        // buka app lagi secara manual untuk menyalakan service.
+        return START_NOT_STICKY
+    }
+
+    // User swipe app dari recents ≠ user mau stop musiknya. Default Android untuk
+    // service biasa adalah ikut mati, tapi untuk media player kayak gini biasanya
+    // user justru mau lagu TETAP lanjut di background (kayak Spotify/YouTube Music).
+    // Override ini eksplisit menyatakan: jangan ikut mati, biarkan FGS tetap hidup.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.d(TAG, "onTaskRemoved: app di-swipe dari recents, service tetap lanjut jalan")
+        // Tidak ada stopSelf() di sini secara sengaja — kalau kamu MAU service
+        // ikut berhenti saat user swipe app, uncomment baris di bawah:
+        // stopSelf()
     }
 
     override fun onDestroy() {
@@ -452,15 +476,15 @@ class PlayerForegroundService : Service() {
         tts?.stop()
         tts?.shutdown()
         cleanupPlayer()
-        
+
         tiktokManager.release()
         audioPlayer.release()
-        
+
         overlayManager.hide()
         queueOverlayManager.hide()
         lyricsOverlayManager.hide()
         chatOverlayManager.hide()
-        
+
         notifOverlayManager.hide()
         joinOverlayManager.hide()
         likeOverlayManager.hide()
@@ -610,7 +634,7 @@ class PlayerForegroundService : Service() {
         serviceScope.launch {
             currentSong = song
             cachedSongJson = gson.toJson(song)
-            
+
             FastPlaybackState.currentSongJson = cachedSongJson
             FastPlaybackState.isPlaying = true
             FastPlaybackState.isPaused = false
@@ -671,7 +695,7 @@ class PlayerForegroundService : Service() {
             return
         }
         val next = if (settingsManager.settings.shuffleMode) queue.removeAt(queue.indices.random())
-                   else queue.removeFirst()
+        else queue.removeFirst()
         playSong(next)
         syncQueueOverlay()
     }
@@ -719,7 +743,7 @@ class PlayerForegroundService : Service() {
                     if (count >= settingsManager.settings.requestLimit) return
                 }
                 val url = if (arg.contains("youtube.com") || arg.contains("youtu.be")) arg
-                          else "ytsearch1:$arg"
+                else "ytsearch1:$arg"
                 addToQueue(url, requestedBy = "@${chat.uniqueId}")
             }
             TikTokChat.CommandType.SKIP        -> if (isAdmin) playNext()
@@ -752,13 +776,13 @@ class PlayerForegroundService : Service() {
                     "off", "disable", "0" -> false
                     else -> !settingsManager.settings.commandsEnabled
                 }
-                
+
                 settingsManager.settings.commandsEnabled = newState
                 settingsManager.saveSettings()
-                
+
                 val currentCfg = buildCommandConfig()
                 tiktokManager.setCommandConfig(currentCfg)
-                
+
                 broadcastSystemChat("Commands ${if (newState) "ENABLED" else "DISABLED"} via @${chat.uniqueId}")
                 broadcastState()
             }
@@ -794,7 +818,7 @@ class PlayerForegroundService : Service() {
             lyricsOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 750) // Adjust as needed
         if (chatOverlayManager.isShowing)
             chatOverlayManager.setCanvasMode(locked = true, x = qx, y = qy + 500)
-        
+
         // ... rest of the lock logic ...
         broadcastState()
     }
@@ -976,7 +1000,7 @@ class PlayerForegroundService : Service() {
     private fun loadTheme(category: String): CustomTheme {
         val config = settingsManager.getOverlayConfig(category)
         val styleTheme = styleConfigManager.getStyleTheme(category.uppercase(), config.layoutKey)
-        
+
         return CustomTheme(
             bgPrimary = styleTheme.bgPrimary,
             bgSecondary = styleTheme.bgSecondary,
@@ -1311,7 +1335,7 @@ class PlayerForegroundService : Service() {
                 lpField.isAccessible = true
                 val lp = lpField.get(manager) as? WindowManager.LayoutParams
                 if (lp != null) Pair(lp.x, lp.y) else Pair(0, 0)
-            } catch (e: Exception) { 
+            } catch (e: Exception) {
                 val config = settingsManager.getOverlayConfig(key)
                 Pair(config.x, config.y)
             }
@@ -1374,8 +1398,8 @@ class PlayerForegroundService : Service() {
     }
 
     // ── Notification ──────────────────────────────────────────────────
-    private fun startServiceInForeground() {
-        try {
+    private fun startServiceInForeground(): Boolean {
+        return try {
             val notification = buildNotification("Starting…")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
@@ -1386,12 +1410,19 @@ class PlayerForegroundService : Service() {
             } else {
                 startForeground(NOTIF_ID, notification)
             }
+            true
         } catch (e: Exception) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && e is ForegroundServiceStartNotAllowedException) {
-                Log.e(TAG, "Foreground service start not allowed: ${e.message}")
+                Log.e(TAG, "Foreground service start not allowed (background restart tanpa user trigger): ${e.message}")
             } else {
                 Log.e(TAG, "Failed to start foreground service", e)
             }
+            // Tanpa status foreground yang valid, service ini akan di-kill sistem
+            // dalam hitungan detik dan gak bisa jalanin audio/TikTok listener dengan
+            // benar. Mending hentikan sekarang secara bersih daripada lanjut jalan
+            // setengah-jadi.
+            stopSelf()
+            false
         }
     }
 
@@ -1518,19 +1549,19 @@ class PlayerForegroundService : Service() {
 
     private fun speak(text: String) {
         if (!settingsManager.settings.chatTtsEnabled || tts == null) return
-        
+
         try {
             if (text.length > settingsManager.settings.chatTtsMaxLength) return
             val trimmed = text.trim()
             if (trimmed.startsWith("@")) return
-            
+
             val cfg = buildCommandConfig()
             val isCommand = cfg.requestPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
-                            cfg.skipPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
-                            cfg.stopPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
-                            cfg.queuePrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
-                            cfg.clearMusicPrefixes.any { trimmed.startsWith(it, ignoreCase = true) }
-            
+                    cfg.skipPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                    cfg.stopPrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                    cfg.queuePrefixes.any { trimmed.startsWith(it, ignoreCase = true) } ||
+                    cfg.clearMusicPrefixes.any { trimmed.startsWith(it, ignoreCase = true) }
+
             if (isCommand) return
 
             val cleanedText = trimmed.replace("@", "")
@@ -1538,7 +1569,7 @@ class PlayerForegroundService : Service() {
 
             val params = Bundle()
             val utteranceId = "chat_${System.currentTimeMillis()}"
-            
+
             tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                 override fun onStart(id: String?) {
                     if (id == utteranceId && (!ttsFile.exists() || ttsFile.length() == 0L)) {
@@ -1554,7 +1585,7 @@ class PlayerForegroundService : Service() {
                     }
                 }
                 @Deprecated("Deprecated in Java")
-                override fun onError(id: String?) { 
+                override fun onError(id: String?) {
                     serviceScope.launch(Dispatchers.Main) { applyDucking(false) }
                 }
             })
@@ -1643,7 +1674,7 @@ class PlayerForegroundService : Service() {
             t.onChat = ::handleTikTokChat
             t.onLike = { nick, _, count, profile ->
                 if (s.likeEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) likeOverlayManager.showLike(nick, count, profile)
-                
+
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
@@ -1653,7 +1684,7 @@ class PlayerForegroundService : Service() {
             }
             t.onJoin = { nick, _, profile ->
                 if (s.joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) joinOverlayManager.showJoin(nick, profile)
-                
+
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
@@ -1663,7 +1694,7 @@ class PlayerForegroundService : Service() {
             }
             t.onFollow = { nick, _, profile ->
                 if (s.followEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) followOverlayManager.showFollow(nick, profile)
-                
+
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
@@ -1689,7 +1720,7 @@ class PlayerForegroundService : Service() {
             t.onShare = { _, nick, profile ->
                 broadcastSystemChat("$nick membagikan live")
                 if (s.notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) notifOverlayManager.showNotification(nick, "membagikan live", "share")
-                
+
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
@@ -1725,7 +1756,7 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onConnecting = { tiktokConnecting = true; broadcastState() }
-            t.onError = { 
+            t.onError = {
                 if (!it.contains("Retrying", ignoreCase = true)) tiktokConnecting = false
                 broadcastSystemChat("Error: $it"); broadcastState()
             }
