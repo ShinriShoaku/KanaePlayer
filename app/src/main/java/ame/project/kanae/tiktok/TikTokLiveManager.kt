@@ -38,7 +38,7 @@ class TikTokLiveManager(
     var onChat: ((TikTokChat) -> Unit)? = null
     var onLike: ((String, String, Int, String?) -> Unit)? = null // nick, uid, count, profile
     var onGift: ((String, String, String, Int, Int, String?) -> Unit)? = null // uid, nick, name, count, giftId, icon
-    var onShare: ((String, String) -> Unit)? = null
+    var onShare: ((String, String, String?) -> Unit)? = null
     var onFollow: ((String, String, String?) -> Unit)? = null // nick, uid, profile
     var onJoin: ((String, String, String?) -> Unit)? = null // nick, uid, profile
     var onConnected: (() -> Unit)? = null
@@ -272,7 +272,7 @@ class TikTokLiveManager(
                             if (displayType.contains("follow", ignoreCase = true) || action == "1") {
                                 scope.launch(Dispatchers.Main) { onFollow?.invoke(nickname, uniqueId, profile) }
                             } else {
-                                scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
+                                scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname, profile) }
                             }
                         }
                         "WebcastMemberMessage", "member", "join" -> {
@@ -335,7 +335,7 @@ class TikTokLiveManager(
                         if (displayType.contains("follow", ignoreCase = true) || action == "1") {
                             scope.launch(Dispatchers.Main) { onFollow?.invoke(nickname, uniqueId, profile) }
                         } else {
-                            scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname) }
+                            scope.launch(Dispatchers.Main) { onShare?.invoke(uniqueId, nickname, profile) }
                         }
                     }
                     "member", "WebcastMemberMessage" -> {

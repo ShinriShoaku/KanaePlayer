@@ -1,5 +1,16 @@
 # Update Notes - KanaePlayer
 
+## Update 12.2.4
+
+- **NL Studio App (AIDL) Link**: Integrasi link baru ke aplikasi NL Studio menggunakan protokol AIDL untuk sinkronisasi yang lebih baik.
+- **Android 15 Foreground Services Fix**: Perbaikan kritis untuk kepatuhan sistem Android 15 guna mencegah penghentian paksa layanan di background.
+- **Queue UI Improvements**: Pembaruan desain pada antrian lagu untuk visibilitas dan kemudahan penggunaan yang lebih baik.
+- **Minor Fixes**: Perbaikan bug kecil dan optimalisasi performa umum.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 11.2.1
 
 - **NL Studio App Integration**: Kini terdapat shortcut langsung untuk membuka aplikasi NL Studio dari splash screen jika aplikasi tersebut terinstal.

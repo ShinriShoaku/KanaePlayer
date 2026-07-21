@@ -34,6 +34,7 @@ import android.speech.tts.UtteranceProgressListener
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.audiofx.LoudnessEnhancer
+import androidx.media3.session.MediaSession
 import ame.project.nlsdk.IKanaeService
 import ame.project.nlsdk.IKanaeCallback
 import java.io.File
@@ -47,6 +48,8 @@ class PlayerForegroundService : Service() {
         private const val NOTIF_CHANNEL_ID = "yt_player_channel"
         private const val NOTIF_ID         = 1001
         private const val MAX_QUEUE        = 50
+
+        private var mediaSession: MediaSession? = null
 
         const val ACTION_PLAY_PAUSE    = "ame.project.ytplayer.PLAY_PAUSE"
         const val ACTION_SKIP          = "ame.project.ytplayer.SKIP"
@@ -146,6 +149,9 @@ class PlayerForegroundService : Service() {
                 gson.toJson(queue.toList())
             }
         }
+        override fun requestQueue() {
+            serviceScope.launch { notifyQueueChanged() }
+        }
         override fun isPlaying(): Boolean = this@PlayerForegroundService.isPlaying
     }
 
@@ -178,15 +184,7 @@ class PlayerForegroundService : Service() {
 
         createNotificationChannel()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(
-                NOTIF_ID,
-                buildNotification("Starting…"),
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
-            )
-        } else {
-            startForeground(NOTIF_ID, buildNotification("Starting…"))
-        }
+        startServiceInForeground()
 
         audioPlayer = AudioPlayer(this, serviceScope).also { p ->
             p.onComplete = ::onSongComplete
@@ -208,6 +206,12 @@ class PlayerForegroundService : Service() {
             }
             p.init()
             p.setVolume(settingsManager.settings.musicVolume)
+
+            // MediaSession integration
+            p.playerInstance?.let { exo ->
+                mediaSession = MediaSession.Builder(this@PlayerForegroundService, exo)
+                    .build()
+            }
         }
 
         YtDlpHelper.initNpe()
@@ -443,6 +447,8 @@ class PlayerForegroundService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        mediaSession?.release()
+        mediaSession = null
         tts?.stop()
         tts?.shutdown()
         cleanupPlayer()
@@ -1368,6 +1374,27 @@ class PlayerForegroundService : Service() {
     }
 
     // ── Notification ──────────────────────────────────────────────────
+    private fun startServiceInForeground() {
+        try {
+            val notification = buildNotification("Starting…")
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(
+                    NOTIF_ID,
+                    notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                )
+            } else {
+                startForeground(NOTIF_ID, notification)
+            }
+        } catch (e: Exception) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && e is ForegroundServiceStartNotAllowedException) {
+                Log.e(TAG, "Foreground service start not allowed: ${e.message}")
+            } else {
+                Log.e(TAG, "Failed to start foreground service", e)
+            }
+        }
+    }
+
     private fun createNotificationChannel() {
         val ch = NotificationChannel(NOTIF_CHANNEL_ID, "YT Player",
             NotificationManager.IMPORTANCE_LOW)
@@ -1445,6 +1472,7 @@ class PlayerForegroundService : Service() {
     }
 
     private fun notifyQueueChanged() {
+        Log.d(TAG, "notifyQueueChanged: queue size = ${queue.size}")
         val n = remoteCallbacks.beginBroadcast()
         val json = gson.toJson(queue.toList())
         for (i in 0 until n) {
@@ -1619,7 +1647,7 @@ class PlayerForegroundService : Service() {
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
-                    try { remoteCallbacks.getBroadcastItem(i).onUserLiked(nick, count) } catch (e: RemoteException) {}
+                    try { remoteCallbacks.getBroadcastItem(i).onUserLiked(nick, profile, count) } catch (e: RemoteException) {}
                 }
                 remoteCallbacks.finishBroadcast()
             }
@@ -1639,7 +1667,7 @@ class PlayerForegroundService : Service() {
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
-                    try { remoteCallbacks.getBroadcastItem(i).onUserFollowed(nick) } catch (e: RemoteException) {}
+                    try { remoteCallbacks.getBroadcastItem(i).onUserFollowed(nick, profile) } catch (e: RemoteException) {}
                 }
                 remoteCallbacks.finishBroadcast()
             }
@@ -1653,19 +1681,19 @@ class PlayerForegroundService : Service() {
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
                     try {
-                        remoteCallbacks.getBroadcastItem(i).onGiftMessage(nick, gift, count)
+                        remoteCallbacks.getBroadcastItem(i).onGiftMessage(nick, gift, iconUrl, count)
                     } catch (e: RemoteException) {}
                 }
                 remoteCallbacks.finishBroadcast()
             }
-            t.onShare = { _, nick ->
+            t.onShare = { _, nick, profile ->
                 broadcastSystemChat("$nick membagikan live")
                 if (s.notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) notifOverlayManager.showNotification(nick, "membagikan live", "share")
                 
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
                 for (i in 0 until n) {
-                    try { remoteCallbacks.getBroadcastItem(i).onUserShared(nick) } catch (e: RemoteException) {}
+                    try { remoteCallbacks.getBroadcastItem(i).onUserShared(nick, profile) } catch (e: RemoteException) {}
                 }
                 remoteCallbacks.finishBroadcast()
             }

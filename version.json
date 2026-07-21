@@ -1,5 +1,5 @@
 {
-  "versionCode": 16,
-  "versionName": "11.2.1",
-  "updateMessage": "Integrasi link ke NL Studio App pada splash screen."
+  "versionCode": 18,
+  "versionName": "12.2.4",
+  "updateMessage": "Link NL Studio (AIDL), Android 15 Fix, & Queue UI improvements."
 }

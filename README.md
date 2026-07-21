@@ -25,12 +25,17 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v11.2.1)
+## 🆕 Pembaruan Terkini (v12.2.4)
+
+- Integrasi link ke NL Studio App (AIDL)
+- Perbaikan masalah foreground services di Android 15
+- Perbaikan UI untuk Queue atau antrian
+- Minor fixes
+
+## 🆕 Pembaruan Sebelumnya (v11.2.1)
 
 - Integrasi link ke NL Studio App
 - Bug fixes and performance improvements
-
-## 🆕 Pembaruan Sebelumnya (v11.2.0)
 
 - Always Show Chat
 - Chat History

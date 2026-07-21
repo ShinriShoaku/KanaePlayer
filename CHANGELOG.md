@@ -1,5 +1,19 @@
 # Changelog - KanaePlayer
 
+## [12.2.4] - 2026-07-21
+
+### ✨ New Features
+- Added link to NL Studio App (AIDL).
+
+### 🐞 Bug Fixes
+- Fixed Foreground Services issue on Android 15.
+
+### 🎨 UI Improvements
+- Improved Queue/Antrian UI.
+
+### ⚙️ Minor Fixes
+- Various minor improvements and bug fixes.
+
 ## [11.2.1] - 2026-07-20
 
 ### ✨ New Features

@@ -34,6 +34,7 @@ class AudioPlayer(
 
     // ── Internal ExoPlayer ────────────────────────────────────────────────────
 
+    val playerInstance: ExoPlayer? get() = player
     private var player: ExoPlayer? = null
     private var progressJob: Job? = null
 

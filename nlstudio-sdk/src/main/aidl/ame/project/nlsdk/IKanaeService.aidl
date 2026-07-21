@@ -22,5 +22,6 @@ interface IKanaeService {
     // Data methods
     String getCurrentSongJson();
     String getQueueJson();
+    void requestQueue();
     boolean isPlaying();
 }

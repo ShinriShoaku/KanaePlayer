@@ -8,12 +8,12 @@ interface IKanaeCallback {
 
     // TikTok Events
     void onChatMessage(String user, String message);
-    void onGiftMessage(String user, String gift, int count);
+    void onGiftMessage(String user, String gift, String giftUrl, int count);
     void onTikTokStatus(boolean connected, String username);
 
     // Additional Overlay Data
     void onUserJoined(String user, String profileUrl);
-    void onUserLiked(String user, int count);
-    void onUserFollowed(String user);
-    void onUserShared(String user);
+    void onUserLiked(String user, String profileUrl, int count);
+    void onUserFollowed(String user, String profileUrl);
+    void onUserShared(String user, String profileUrl);
 }

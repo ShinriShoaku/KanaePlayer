@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var service: PlayerForegroundService? = null
     private var serviceBound = false
     private lateinit var settingsManager: SettingsManager
-    
+
     private var lastSongJson: String? = null
     private var lastSyncTime: Long = 0L
 
@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
             service = (binder as PlayerForegroundService.LocalBinder).getService()
             serviceBound = true
             Log.d(TAG, "Service connected")
-            syncUi()
+            syncUi(force = true)
         }
         override fun onServiceDisconnected(name: ComponentName) {
             service = null
@@ -72,6 +72,7 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(ctx: Context, intent: Intent) {
             when (intent.action) {
                 PlayerForegroundService.BROADCAST_STATE -> syncUi()
+                PlayerForegroundService.BROADCAST_SERVICE_READY -> syncUi(force = true)
                 PlayerForegroundService.BROADCAST_CHAT  -> {
                     val uid  = intent.getStringExtra("unique_id") ?: ""
                     val nick = intent.getStringExtra("nickname") ?: return
@@ -185,6 +186,7 @@ class MainActivity : AppCompatActivity() {
         val filter = IntentFilter().apply {
             addAction(PlayerForegroundService.BROADCAST_STATE)
             addAction(PlayerForegroundService.BROADCAST_CHAT)
+            addAction(PlayerForegroundService.BROADCAST_SERVICE_READY)
         }
         ContextCompat.registerReceiver(this, stateReceiver, filter, ContextCompat.RECEIVER_EXPORTED)
 
@@ -261,6 +263,7 @@ class MainActivity : AppCompatActivity() {
             service?.addToQueue(url)
             binding.etYoutubeUrl.text?.clear()
             snack("Adding to queue…")
+            syncUi(force = true)
         }
 
         binding.btnShowOverlays.setOnClickListener {
@@ -331,31 +334,31 @@ class MainActivity : AppCompatActivity() {
 
             val limit = binding.etRequestLimit.text.toString().toIntOrNull() ?: 3
             val cmdConfig = buildCommandConfig()
-            
+
             svc.saveSettings(apiKey, username, limit, cmdConfig)
             saveSettingsToPrefs(apiKey, username, limit, cmdConfig)
-            
+
             syncUi(true)
             snack("Connecting TikTok Live…")
         }
 
         binding.btnSaveSettings.setOnClickListener {
             val svc = service ?: return@setOnClickListener
-            
+
             val limitStr = binding.etRequestLimit.text.toString().trim()
             val limit    = limitStr.toIntOrNull() ?: 3
             val cmdConfig = buildCommandConfig()
             val lyricsLang = binding.etLyricsLang.text.toString().trim().ifBlank { "id" }
-            
+
             settingsManager.settings.lyricsLang = lyricsLang
             settingsManager.saveSettings()
-            
+
             val apiKey   = binding.etApiKey.text.toString().trim()
             val username = binding.etTiktokUser.text.toString().trim()
 
             svc.saveSettings(apiKey, username, limit, cmdConfig)
             saveSettingsToPrefs(apiKey, username, limit, cmdConfig)
-            
+
             snack("Configuration updated!")
         }
     }
@@ -365,7 +368,7 @@ class MainActivity : AppCompatActivity() {
         binding.etApiKey.setText(s.tiktokApiKey)
         binding.etTiktokUser.setText(s.tiktokUsername)
         binding.etRequestLimit.setText(s.requestLimit.toString())
-        
+
         binding.sbEnableCommands.progress = if (s.commandsEnabled) 1 else 0
         binding.tvEnableCommandsLabel.alpha = if (s.commandsEnabled) 1.0f else 0.5f
 
@@ -509,7 +512,7 @@ class MainActivity : AppCompatActivity() {
             overlaySheetDialog = null
             currentConfigKey = ""
         }
-        
+
         syncUi(true)
         dialog.show()
     }
@@ -526,8 +529,8 @@ class MainActivity : AppCompatActivity() {
             val w = if (rawW == 0) 0 else if (rawW < 200) 200 else rawW
             val h = b.sbHeight.progress
 
-            val isMaxWidthType = currentConfigKey == "player" || currentConfigKey == "queue" || 
-                                 currentConfigKey == "lyrics" || currentConfigKey == "chat"
+            val isMaxWidthType = currentConfigKey == "player" || currentConfigKey == "queue" ||
+                    currentConfigKey == "lyrics" || currentConfigKey == "chat"
 
             if (isMaxWidthType) {
                 b.tvWidthLabel.text = if (w > 0) "Max Width: ${w}dp" else "Max Width: Auto"
@@ -535,7 +538,7 @@ class MainActivity : AppCompatActivity() {
                 b.tvWidthLabel.text = if (w > 0) "Width: ${w}dp" else "Width: Auto"
             }
             b.tvHeightLabel.text = if (h > 0) "Height: ${h}dp" else "Height: Auto"
-            
+
             service?.applyOverlayConfig(currentConfigKey, x, y, scale.toFloat() / 100f, w, h)
             if (activeSeekBar == b.sbWidth) service?.showWidthPreview(currentConfigKey, w)
         }
@@ -659,14 +662,14 @@ class MainActivity : AppCompatActivity() {
             b.panelSettings.visibility = View.VISIBLE
             b.tvSettingsTitle.text = "$title Settings"
             dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
-            
+
             val config = settingsManager.getOverlayConfig(key)
             val s = settingsManager.settings
 
             b.sbPosX.progress = config.x
             b.sbPosY.progress = config.y
             b.sbScale.progress = (config.scale * 100).toInt()
-            
+
             var w = config.width
             if (w > 0 && w < 200) w = 200
             val h = config.height
@@ -696,7 +699,7 @@ class MainActivity : AppCompatActivity() {
 
             b.cbVisualPunch.isChecked = config.visualPunch
             b.cbVisualPunch.visibility = if (key == "notif") View.GONE else View.VISIBLE
-            b.posSettingsContainer.visibility = View.GONE 
+            b.posSettingsContainer.visibility = View.GONE
 
             b.extraChatSettings.visibility = View.GONE
             b.extraQueueSettings.visibility = View.GONE
@@ -900,7 +903,7 @@ class MainActivity : AppCompatActivity() {
             val rawW = b.sbWidth.progress
             val w = if (rawW == 0) 0 else if (rawW < 200) 200 else rawW
             val h = b.sbHeight.progress
-            
+
             if (currentConfigKey == "queue") service?.updateQueueAutoHide(b.cbQueueAutoHide.isChecked)
             if (currentConfigKey == "notif") service?.resetNotifTimer()
             if (currentConfigKey == "chat") service?.hideChatDummy()
@@ -919,14 +922,14 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private fun syncUi(force: Boolean = false) {
         val svc   = service ?: return
-        
+
         // Gunakan FastPlaybackState untuk data yang sering update (Timer & Progress)
         val songJson = FastPlaybackState.currentSongJson
         val posMs    = FastPlaybackState.positionMs
         val durMs    = FastPlaybackState.durationMs
         val isPlaying = FastPlaybackState.isPlaying
         val isPaused  = FastPlaybackState.isPaused
-        
+
         // 1. Update Timer & Progress (Selalu update agar halus)
         val posSec = (posMs / 1000).toInt()
         val durSec = (durMs / 1000).toInt()
@@ -937,26 +940,33 @@ class MainActivity : AppCompatActivity() {
         // 2. Cek Throttling untuk UI statis/berat
         val now = System.currentTimeMillis()
         val shouldSyncHeavy = force || (now - lastSyncTime >= 1000) || (songJson != lastSongJson)
-        
+
         if (!shouldSyncHeavy) {
             // Jika dalam masa throttle, hanya update bagian esensial BottomSheet
             val state = svc.getStateMap()
             syncBottomSheetOnly(svc, state)
             return
         }
-        
+
         lastSyncTime = now
         val state = svc.getStateMap()
 
-        // 3. Update Nama Lagu & Queue (Hanya jika berubah)
+        // 3. Update Nama Lagu (Hanya jika berubah)
         if (songJson != lastSongJson) {
             lastSongJson = songJson
             binding.tvNowPlaying.text = if (songJson != null) {
                 val song = Gson().fromJson(songJson, Song::class.java)
                 "▶ ${song.title}"
             } else "– Nothing playing –"
-            
-            queueAdapter.submitList(svc.getQueue())
+        }
+
+        // Queue harus selalu di-sync tiap heavy-sync tick, TIDAK boleh digantung
+        // di kondisi songJson berubah — kalau tidak, nambah lagu ke antrian saat
+        // lagu lain sedang diputar tidak akan pernah memperbarui rvQueue.
+        val q = svc.getQueue()
+        Log.d(TAG, "Syncing queue to adapter: ${q.size} items")
+        runOnUiThread {
+            queueAdapter.submitList(q)
         }
 
         val qCount    = state["queue_count"]  as? Int     ?: 0
@@ -989,11 +999,11 @@ class MainActivity : AppCompatActivity() {
         binding.btnConnectTiktok.isEnabled = !tiktokConnecting
 
         binding.btnConnectTiktok.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                when {
-                    tiktokOk -> ContextCompat.getColor(this, R.color.red)
-                    tiktokConnecting -> ContextCompat.getColor(this, R.color.yellow)
-                    else -> ContextCompat.getColor(this, R.color.orange)
-                })
+            when {
+                tiktokOk -> ContextCompat.getColor(this, R.color.red)
+                tiktokConnecting -> ContextCompat.getColor(this, R.color.yellow)
+                else -> ContextCompat.getColor(this, R.color.orange)
+            })
 
         binding.tvYtdlpStatus.text = if (ytdlpOk) "🟢 yt-dlp ready" else "🔴 yt-dlp missing"
 
@@ -1062,15 +1072,15 @@ class MainActivity : AppCompatActivity() {
             // Update labels & Alphas Overlay (Ini harus responsif saat diklik)
             b.tvLabelPlayer.text = if (svc.overlayVisible) "Player ON" else "Player"
             b.btnOverlay.alpha = if (svc.overlayVisible) 1.0f else 0.6f
-            
+
             val queueOn = state["queue_visible"] as? Boolean ?: false
             b.tvLabelQueue.text = if (queueOn) "Queue ON" else "Queue"
             b.btnQueueOverlay.alpha = if (queueOn) 1.0f else 0.6f
-            
+
             val lyricsOn = state["lyrics_visible"] as? Boolean ?: false
             b.tvLabelLyrics.text = if (lyricsOn) "Lyrics ON" else "Lyrics"
             b.btnLyricsOverlay.alpha = if (lyricsOn) 1.0f else 0.6f
-            
+
             val chatOn = state["chat_visible"] as? Boolean ?: false
             b.tvLabelChat.text = if (chatOn) "Chat ON" else "Chat"
             b.btnChatOverlay.alpha = if (chatOn) 1.0f else 0.6f
@@ -1078,15 +1088,15 @@ class MainActivity : AppCompatActivity() {
             val notifEnabled = state["notif_enabled"] as? Boolean ?: false
             b.tvLabelNotif.text = if (notifEnabled) "Notif ON" else "Notif"
             b.btnNotifOverlay.alpha = if (notifEnabled) 1.0f else 0.6f
-            
+
             val joinEnabled = state["join_enabled"] as? Boolean ?: false
             b.tvLabelJoin.text = if (joinEnabled) "Join ON" else "Join"
             b.btnJoinOverlay.alpha = if (joinEnabled) 1.0f else 0.6f
-            
+
             val likeEnabled = state["like_enabled"] as? Boolean ?: false
             b.tvLabelLike.text = if (likeEnabled) "Like ON" else "Like"
             b.btnLikeOverlay.alpha = if (likeEnabled) 1.0f else 0.6f
-            
+
             val followEnabled = state["follow_enabled"] as? Boolean ?: false
             b.tvLabelFollow.text = if (followEnabled) "Follow ON" else "Follow"
             b.btnFollowOverlay.alpha = if (followEnabled) 1.0f else 0.6f
@@ -1109,7 +1119,13 @@ class MainActivity : AppCompatActivity() {
 
 class QueueAdapter(private val onRemove: (Int) -> Unit, private val onPlay: (Song) -> Unit) : RecyclerView.Adapter<QueueAdapter.VH>() {
     private val items = mutableListOf<Song>()
-    fun submitList(list: List<Song>) { items.clear(); items.addAll(list); notifyDataSetChanged() }
+    @SuppressLint("NotifyDataSetChanged")
+    fun submitList(list: List<Song>) {
+        items.clear()
+        items.addAll(list)
+        notifyDataSetChanged()
+        Log.d("QueueAdapter", "Adapter items updated: ${items.size}")
+    }
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
         val v = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_queue, parent, false)
         return VH(v)
