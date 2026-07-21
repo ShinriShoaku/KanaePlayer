@@ -3,7 +3,8 @@
 [![Android Version](https://img.shields.io/badge/Android-8.0%2B-green.svg)](https://developer.android.com)
 [![Target SDK](https://img.shields.io/badge/Target%20SDK-35-blue.svg)](https://developer.android.com)
 [![Platform](https://img.shields.io/badge/Platform-Android-orange.svg)](https://android.com)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-brightgreen.svg?logo=gnu)](https://www.gnu.org/licenses/gpl-3.0)
+
 
 **KanaePlayer** adalah aplikasi pemutar audio YouTube revolusioner yang dirancang khusus untuk streamer android TikTok. Aplikasi ini memungkinkan penonton Anda melakukan request lagu secara real-time melalui chat TikTok Live, lengkap dengan sistem overlay yang canggih dan stabil.
 
