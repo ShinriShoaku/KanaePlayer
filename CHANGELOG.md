@@ -1,5 +1,17 @@
 # Changelog - KanaePlayer
 
+## [12.2.5] - 2026-07-22
+
+### ✨ New Features
+- Added support for Chrome OS and PC Emulators.
+
+### 🌐 Web Overlay
+- **Web Overlay Unified**: Web Overlay is now the single system for all web-based alerts (Sociabuzz, Saweria, etc.).
+- Improved stability and fixed various issues in Web Overlay system.
+
+### 🗑️ Cleanup
+- Removed dedicated Saweria Overlay (use Web Overlay instead).
+
 ## [12.2.4] - 2026-07-21
 
 ### ✨ New Features

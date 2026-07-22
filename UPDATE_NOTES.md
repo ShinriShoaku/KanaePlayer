@@ -1,5 +1,16 @@
 # Update Notes - KanaePlayer
 
+## Update 12.2.5
+
+- **Chrome OS & Emulator Support**: Menambahkan dukungan untuk menjalankan aplikasi di Chrome OS dan emulator PC.
+- **Web Overlay Unified**: Web Overlay kini menjadi sistem tunggal untuk mengatur semua dukungan overlay berbasis web seperti Sociabuzz, Saweria, dll.
+- **Web Overlay Fixes**: Memperbaiki berbagai masalah stabilitas dan bug pada sistem Web Overlay.
+- **Removal of Saweria Overlay**: Menghapus fitur Saweria Overlay khusus karena fungsionalitasnya sudah terintegrasi sepenuhnya ke dalam Web Overlay yang lebih fleksibel.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 12.2.4
 
 - **NL Studio App (AIDL) Link**: Integrasi link baru ke aplikasi NL Studio menggunakan protokol AIDL untuk sinkronisasi yang lebih baik.

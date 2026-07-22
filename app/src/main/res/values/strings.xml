@@ -15,7 +15,6 @@
     <string name="btn_queue">Queue</string>
     <string name="btn_lyrics">Lyrics</string>
     <string name="btn_canvas">Canvas</string>
-    <string name="btn_saweria">Saweria Overlay</string>
     <string name="add_to_queue_label">ADD TO QUEUE</string>
     <string name="yt_url_hint">YouTube URL or search keywords</string>
     <string name="btn_add">Add to Queue</string>

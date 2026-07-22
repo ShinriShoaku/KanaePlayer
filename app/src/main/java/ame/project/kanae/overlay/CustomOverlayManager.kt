@@ -277,9 +277,9 @@ class CustomOverlayManager(
     @SuppressLint("SetJavaScriptEnabled", "ClickableViewAccessibility")
     private fun buildEntry(config: CustomOverlayConfig, widthPx: Int, heightPx: Int): OverlayEntry {
         val themed = ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
-        val root = LayoutInflater.from(themed).inflate(R.layout.overlay_saweria_widget, null)
+        val root = LayoutInflater.from(themed).inflate(R.layout.overlay_custom_widget, null)
         val punchLayout = root.findViewById<PunchThroughLayout>(R.id.punch_layout)
-        val gestureLayer = root.findViewById<View>(R.id.saweria_gesture_layer)
+        val gestureLayer = root.findViewById<View>(R.id.custom_gesture_layer)
         val entryCfg = config.copy()
         punchLayout.targetWidth = widthPx
         punchLayout.targetHeight = heightPx
@@ -287,7 +287,7 @@ class CustomOverlayManager(
         val uniqueBridgeName = "AndroidBridge_${entryCfg.id}"
         val bridgeGuardKey = "__bridge_${entryCfg.id}_installed"
 
-        val wv = root.findViewById<WebView>(R.id.saweria_webview).apply {
+        val wv = root.findViewById<WebView>(R.id.custom_webview).apply {
             settings.apply {
                 javaScriptEnabled = true; domStorageEnabled = true; mediaPlaybackRequiresUserGesture = false
                 mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW; cacheMode = WebSettings.LOAD_DEFAULT
@@ -422,7 +422,7 @@ class CustomOverlayManager(
         }
 
         val themed = ContextThemeWrapper(context, R.style.Theme_YTTikTokPlayer)
-        val view = LayoutInflater.from(themed).inflate(R.layout.layout_saweria_adjuster, null)
+        val view = LayoutInflater.from(themed).inflate(R.layout.layout_custom_adjuster, null)
         adjusterRoot = view
         val skW = view.findViewById<SeekBar>(R.id.seek_width); val skH = view.findViewById<SeekBar>(R.id.seek_height)
         val skS = view.findViewById<SeekBar>(R.id.seek_scale); val skA = view.findViewById<SeekBar>(R.id.seek_alpha)

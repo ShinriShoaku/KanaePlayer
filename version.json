@@ -1,5 +1,5 @@
 {
-  "versionCode": 18,
-  "versionName": "12.2.4",
-  "updateMessage": "Link NL Studio (AIDL), Android 15 Fix, & Queue UI improvements."
+  "versionCode": 19,
+  "versionName": "12.2.5",
+  "updateMessage": "Chrome OS & Emulator support, Web Overlay fixes, and removal of Saweria Overlay."
 }

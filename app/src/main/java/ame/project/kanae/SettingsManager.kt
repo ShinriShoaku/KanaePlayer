@@ -98,10 +98,7 @@ data class AppSettings(
     var giftSounds: MutableList<GiftSoundConfig> = mutableListOf(),
     var quickOverlayPosition: String = "BOTTOM_RIGHT",
     var quickOverlayMappingsJson: String = "",
-    var keyboardMappingJson: String = "",
-
-    var saweriaStreamKey: String = "",
-    var saweriaWidgets: MutableMap<String, OverlayConfig> = mutableMapOf()
+    var keyboardMappingJson: String = ""
 )
 
 class SettingsManager private constructor(context: Context) {
@@ -220,22 +217,6 @@ class SettingsManager private constructor(context: Context) {
                     )
                     overlays[key] = cfg
                 }
-            }
-        }
-
-        val saweriaPrefs = appContext.getSharedPreferences("saweria_prefs", Context.MODE_PRIVATE)
-        if (saweriaPrefs.all.isNotEmpty()) {
-            settings.saweriaStreamKey = saweriaPrefs.getString("stream_key", "") ?: ""
-            listOf("ALERT", "TOPUP", "MEDIASHARE", "QR", "MILESTONE", "LEADERBOARD", "RECENT", "WHEEL", "SUBATHON", "VOTE").forEach { name ->
-                val cfg = OverlayConfig(
-                    x = saweriaPrefs.getInt("pos_x_$name", 20),
-                    y = saweriaPrefs.getInt("pos_y_$name", 140),
-                    width = saweriaPrefs.getInt("w_$name", 400),
-                    height = saweriaPrefs.getInt("h_$name", 250),
-                    scale = saweriaPrefs.getFloat("s_$name", 1.0f),
-                    bgColor = saweriaPrefs.getInt("bg_color_$name", 0)
-                )
-                settings.saweriaWidgets[name] = cfg
             }
         }
 

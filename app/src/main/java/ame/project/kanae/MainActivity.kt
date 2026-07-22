@@ -33,7 +33,6 @@ import ame.project.kanae.databinding.BottomSheetOverlaysBinding
 import ame.project.kanae.model.Song
 import ame.project.kanae.service.PlayerForegroundService
 import ame.project.kanae.tiktok.TikTokLiveManager
-import ame.project.kanae.saweria.SaweriaSettingsActivity
 import ame.project.kanae.tiktok.GiftSoundActivity
 import ame.project.kanae.overlay.CustomWebOverlaySettingsActivity
 import ame.project.kanae.player.FastPlaybackState
@@ -881,7 +880,6 @@ class MainActivity : AppCompatActivity() {
             }
             syncUi(true)
         }
-        b.btnSaweriaOverlay.setOnClickListener { startActivity(Intent(this, SaweriaSettingsActivity::class.java)); dialog.dismiss() }
         b.btnCustomOverlay.setOnClickListener { startActivity(Intent(this, CustomWebOverlaySettingsActivity::class.java)); dialog.dismiss() }
         b.btnMapping.setOnClickListener { startActivity(Intent(this, MappingActivity::class.java)); dialog.dismiss() }
         b.btnGesture.setOnClickListener { startActivity(Intent(this, QuickOverlayActivity::class.java)); dialog.dismiss() }

@@ -8,6 +8,16 @@
 
 **KanaePlayer** adalah aplikasi pemutar audio YouTube revolusioner yang dirancang khusus untuk streamer android TikTok. Aplikasi ini memungkinkan penonton Anda melakukan request lagu secara real-time melalui chat TikTok Live, lengkap dengan sistem overlay yang canggih dan stabil.
 
+---
+
+## 📸 Screenshots
+
+<p align="center">
+  <img src="image/1.png" width="200" alt="Screenshot 1" />
+  <img src="image/2.png" width="200" alt="Screenshot 2" />
+  <img src="image/3.png" width="200" alt="Screenshot 3" />
+  <img src="image/4.png" width="200" alt="Screenshot 4" />
+</p>
 
 ---
 
@@ -26,14 +36,14 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.2.4)
+## 🆕 Pembaruan Terkini (v12.2.5)
 
-- Integrasi link ke NL Studio App (AIDL)
-- Perbaikan masalah foreground services di Android 15
-- Perbaikan UI untuk Queue atau antrian
-- Minor fixes
+- Menambahkan support Chrome OS dan emulator PC untuk menjalankan aplikasi.
+- Memperbaiki masalah Web Overlay.
+- Menghapus Saweria Overlay (Fungsi Saweria kini menggunakan sistem Web Overlay tunggal).
+- Web Overlay kini menjadi sistem tunggal untuk mengatur semua dukungan overlay web (Sociabuzz, Saweria, dll).
 
-## 🆕 Pembaruan Sebelumnya (v11.2.1)
+## 🆕 Pembaruan Sebelumnya (v12.2.4)
 
 - Integrasi link ke NL Studio App
 - Bug fixes and performance improvements
