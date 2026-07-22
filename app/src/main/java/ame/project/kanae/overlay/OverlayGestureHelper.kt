@@ -151,11 +151,20 @@ class OverlayGestureHelper(
         val target = parent.getChildAt(0) ?: return
         if (target == gestureLayer) return
 
+        // Koordinat originalUp.x sudah ditransformasi oleh sistem ke koordinat lokal view (unscaled).
+        // Karena dispatchTouchEvent mengharapkan koordinat dalam sistem koordinat parent (scaled),
+        // kita harus mengalikan kembali dengan skala agar posisinya tepat saat diteruskan ke sibling.
+        val px = originalUp.x * currentScale
+        val py = originalUp.y * currentScale
+
         val down = MotionEvent.obtain(
             originalUp.downTime, originalUp.eventTime,
-            MotionEvent.ACTION_DOWN, originalUp.x, originalUp.y, 0
+            MotionEvent.ACTION_DOWN, px, py, 0
         )
-        val up = MotionEvent.obtain(originalUp)
+        val up = MotionEvent.obtain(
+            originalUp.downTime, originalUp.eventTime,
+            MotionEvent.ACTION_UP, px, py, 0
+        )
 
         target.dispatchTouchEvent(down)
         target.dispatchTouchEvent(up)

@@ -20,6 +20,10 @@ class PunchThroughLayout @JvmOverloads constructor(
     private var touchY = -1f
     private var eraseRadius = 0f
     private val maxRadius = 100f // Ukuran lingkaran lubang transparan (dalam pixel)
+
+    var targetWidth = 0
+    var targetHeight = 0
+    var currentScale = 1.0f
     
     var punchEnabled = false
         set(value) {
@@ -41,23 +45,29 @@ class PunchThroughLayout @JvmOverloads constructor(
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        // Biarkan child mengukur dirinya sendiri tanpa batasan ukuran jendela (window size).
-        // Ini penting saat scale < 1.0, di mana layout child lebih besar dari ukuran jendela.
-        val childWidthSpec = MeasureSpec.makeMeasureSpec(10000, MeasureSpec.AT_MOST)
-        val childHeightSpec = MeasureSpec.makeMeasureSpec(10000, MeasureSpec.AT_MOST)
+        val measuredWidth = MeasureSpec.getSize(widthMeasureSpec)
+        val measuredHeight = MeasureSpec.getSize(heightMeasureSpec)
+
+        // Gunakan targetWidth/Height sebagai "parent constraint" jika ada.
+        // Jika tidak, gunakan ukuran yang diberikan oleh WindowManager.
+        val parentWidth = if (targetWidth > 0) targetWidth else measuredWidth
+        val parentHeight = if (targetHeight > 0) targetHeight else measuredHeight
+
+        val childWidthSpec = MeasureSpec.makeMeasureSpec(parentWidth, MeasureSpec.EXACTLY)
+        val childHeightSpec = MeasureSpec.makeMeasureSpec(parentHeight, MeasureSpec.EXACTLY)
         
         for (i in 0 until childCount) {
             val child = getChildAt(i)
             if (child.visibility != GONE) {
+                // Gunakan helper FrameLayout untuk menghormati LayoutParams (misal 28dp)
+                // sambil tetap menggunakan parentWidth/Height sebagai batas atas.
                 measureChildWithMargins(child, childWidthSpec, 0, childHeightSpec, 0)
             }
         }
 
-        // Ukuran layout ini sendiri mengikuti apa yang diminta oleh WindowManager
-        setMeasuredDimension(
-            MeasureSpec.getSize(widthMeasureSpec),
-            MeasureSpec.getSize(heightMeasureSpec)
-        )
+        // Ukuran layout ini sendiri HARUS mengikuti resolusi target (unscaled)
+        // agar background color dan area gambar mencakup seluruh isi WebView.
+        setMeasuredDimension(parentWidth, parentHeight)
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
@@ -81,9 +91,12 @@ class PunchThroughLayout @JvmOverloads constructor(
     private fun updateTouch(event: MotionEvent) {
         when (event.action) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                touchX = event.x
-                touchY = event.y
-                eraseRadius = maxRadius
+                // Sesuaikan koordinat sentuh dengan skala layout.
+                // Jika layout discale 0.5x, maka koordinat internal 200px
+                // sebenarnya adalah 400px dalam sistem koordinat WebView.
+                touchX = event.x / currentScale
+                touchY = event.y / currentScale
+                eraseRadius = maxRadius // Tetap gunakan radius asli agar tidak ikut mengecil
                 invalidate() // Paksa gambar ulang
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {

@@ -10,7 +10,6 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
-import android.widget.ImageButton
 import android.widget.SeekBar
 import android.widget.TextView
 import ame.project.kanae.R
@@ -44,6 +43,7 @@ class SaweriaOverlayManager(
     private data class OverlayEntry(
         val widget: SaweriaWidget,
         val root: View,
+        val punchLayout: PunchThroughLayout,
         val webView: WebView,
         val params: WindowManager.LayoutParams,
         val gesture: OverlayGestureHelper
@@ -69,7 +69,8 @@ class SaweriaOverlayManager(
         val config = loadConfig(widget)
         val dp = context.resources.displayMetrics.density
         
-        active[widget] = buildEntry(widget, url, config, dp)
+        val entry = buildEntry(widget, url, config, dp)
+        active[widget] = entry
         onWidgetVisibilityChanged?.invoke(widget, true)
     }
 
@@ -100,6 +101,12 @@ class SaweriaOverlayManager(
         dp: Float
     ): OverlayEntry {
         val root = LayoutInflater.from(context).inflate(R.layout.overlay_saweria_widget, null)
+        val punchLayout = root as PunchThroughLayout
+        punchLayout.targetWidth = (config.width * dp).toInt()
+        punchLayout.targetHeight = (config.height * dp).toInt()
+        punchLayout.currentScale = config.scale
+        punchLayout.punchEnabled = config.visualPunch
+
         val wv = root.findViewById<WebView>(R.id.saweria_webview).apply {
             settings.apply {
                 javaScriptEnabled = true; domStorageEnabled = true; mediaPlaybackRequiresUserGesture = false
@@ -114,8 +121,6 @@ class SaweriaOverlayManager(
             }
             loadUrl(url)
         }
-
-        root.findViewById<ImageButton>(R.id.saweria_btn_close).setOnClickListener { hideWidget(widget) }
 
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
@@ -137,19 +142,22 @@ class SaweriaOverlayManager(
             showAdjuster(widget)
         }).apply {
             onInteraction = {
-                config.x = params.x
-                config.y = params.y
-                config.scale = currentScale
-                settingsManager.saveSettings()
+                if (params.x != -10000) {
+                    config.x = params.x
+                    config.y = params.y
+                    config.scale = currentScale
+                    settingsManager.saveSettings()
+                }
             }
         }
         
         root.pivotX = 0f; root.pivotY = 0f; root.scaleX = config.scale; root.scaleY = config.scale
         gesture.currentScale = config.scale
-        root.findViewById<View>(R.id.saweria_gesture_layer).setOnTouchListener(gesture)
+        gesture.updateBaseSize((config.width * dp).toInt(), (config.height * dp).toInt())
+        root.findViewById<View>(R.id.saweria_gesture_layer).setOnTouchListener(if (config.visualPunch) null else gesture)
 
         wm.addView(root, params)
-        return OverlayEntry(widget, root, wv, params, gesture)
+        return OverlayEntry(widget, root, punchLayout, wv, params, gesture)
     }
 
     fun showAdjuster(widget: SaweriaWidget) {
@@ -180,12 +188,19 @@ class SaweriaOverlayManager(
         val update = {
             entry.params.width = (currW * dp * currS).toInt(); entry.params.height = (currH * dp * currS).toInt()
             entry.root.pivotX = 0f; entry.root.pivotY = 0f; entry.root.scaleX = currS; entry.root.scaleY = currS
+            entry.punchLayout.targetWidth = (currW * dp).toInt()
+            entry.punchLayout.targetHeight = (currH * dp).toInt()
+            entry.punchLayout.currentScale = currS
             entry.gesture.currentScale = currS
+            entry.gesture.updateBaseSize((currW * dp).toInt(), (currH * dp).toInt())
             val finalColor = (currAlpha shl 24) or currRGB
             entry.root.setBackgroundColor(finalColor)
             
             config.width = currW; config.height = currH; config.scale = currS; config.bgColor = finalColor
             config.x = entry.params.x; config.y = entry.params.y
+            
+            entry.root.findViewById<View>(R.id.saweria_gesture_layer).setOnTouchListener(if (config.visualPunch) null else entry.gesture)
+
             settingsManager.saveSettings()
             try { wm.updateViewLayout(entry.root, entry.params) } catch(_:Exception){}
         }

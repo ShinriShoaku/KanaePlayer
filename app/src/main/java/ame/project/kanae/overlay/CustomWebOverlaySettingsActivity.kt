@@ -88,6 +88,9 @@ class CustomWebOverlaySettingsActivity : AppCompatActivity() {
     private fun syncSlotView(config: CustomOverlayConfig) {
         val holder = activeHolders[config.id] ?: return
         
+        holder.etName.setText(config.name)
+        holder.etUrl.setText(config.url)
+
         // Update checkbox Visual Punch tanpa memicu listener (loop)
         holder.cbVisualPunch.setOnCheckedChangeListener(null)
         holder.cbVisualPunch.isChecked = config.visualPunch
@@ -190,7 +193,11 @@ class CustomWebOverlaySettingsActivity : AppCompatActivity() {
     private fun updateConfigById(id: String, block: (CustomOverlayConfig) -> Unit) {
         val m = customMgr ?: return
         val configs = m.getConfigs()
-        val config = configs.find { it.id == id } ?: return
+        val index = configs.indexOfFirst { it.id == id }
+        if (index == -1) return
+        
+        // Create a copy to modify so the manager can detect changes
+        val config = configs[index].copy()
         block(config)
         m.updateConfig(config)
     }

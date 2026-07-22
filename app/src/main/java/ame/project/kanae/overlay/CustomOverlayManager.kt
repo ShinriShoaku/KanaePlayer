@@ -33,7 +33,7 @@ data class CustomOverlayConfig(
     var scale: Float = 1.0f,
     var width: Int = 400,
     var height: Int = 250,
-    var bgColor: Int = Color.TRANSPARENT,
+    var bgColor: Int = 0xFF1A1A2E.toInt(), // Default Opaque Dark Blue
     var autoHide: Boolean = false,
     var durationSec: Int = 5,
     var visualPunch: Boolean = false
@@ -108,10 +108,15 @@ class CustomOverlayManager(
             onConfigUpdated?.invoke(updated)
 
             active[updated.id]?.let { entry ->
-                if (updated.url != oldConfig.url) entry.webView.loadUrl(updated.url)
+                val needsReload = updated.url != oldConfig.url
                 entry.config = updated.copy()
                 entry.root.setBackgroundColor(updated.bgColor)
                 val dp = context.resources.displayMetrics.density
+                
+                // Update target resolution in PunchThroughLayout
+                entry.punchLayout.targetWidth = (updated.width * dp).toInt()
+                entry.punchLayout.targetHeight = (updated.height * dp).toInt()
+                
                 entry.params.width = (updated.width * dp * updated.scale).toInt()
                 entry.params.height = (updated.height * dp * updated.scale).toInt()
                 val baseFlags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or 
@@ -130,11 +135,14 @@ class CustomOverlayManager(
                 
                 entry.root.scaleX = updated.scale
                 entry.root.scaleY = updated.scale
+                entry.punchLayout.currentScale = updated.scale
                 entry.gesture.currentScale = updated.scale
+                entry.gesture.updateBaseSize((updated.width * dp).toInt(), (updated.height * dp).toInt())
                 entry.punchLayout.punchEnabled = updated.visualPunch
                 entry.gestureLayer.setOnTouchListener(if (updated.visualPunch) null else entry.gesture)
 
                 try { wm.updateViewLayout(entry.root, entry.params) } catch (_: Exception) {}
+                if (needsReload) entry.webView.loadUrl(updated.url)
 
                 if (updated.autoHide != oldConfig.autoHide || updated.durationSec != oldConfig.durationSec) {
                     if (updated.autoHide) {
@@ -188,30 +196,45 @@ class CustomOverlayManager(
     private fun setInternalVisibility(id: String, visible: Boolean) {
         scope.launch(Dispatchers.Main) {
             val e = active[id] ?: return@launch
+            Log.d(TAG, "setInternalVisibility id=$id visible=$visible current=${e.isUiVisible}")
+            
             if (visible) {
                 e.isUiVisible = true
                 e.hideJob?.cancel()
+                
+                // Pastikan posisi kembali ke awal (un-hide dari -10000)
                 e.params.x = e.config.posX
                 e.params.y = e.config.posY
                 e.params.flags = e.params.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+                
                 try { wm.updateViewLayout(e.root, e.params) } catch (_: Exception) {}
+                
                 if (e.root.visibility == View.VISIBLE && e.root.alpha >= 1.0f) {
                     if (e.config.autoHide) scheduleHideTimer(id)
                     return@launch
                 }
+                
                 e.root.visibility = View.VISIBLE
-                e.root.animate().alpha(1.0f).setDuration(500).setListener(null).start()
+                e.root.animate().cancel()
+                e.root.animate().alpha(1.0f).setDuration(400).setListener(null).start()
                 e.webView.onResume()
+                
                 if (e.config.autoHide) scheduleHideTimer(id)
             } else {
                 if (!e.isUiVisible) return@launch
                 e.isUiVisible = false
                 e.hideJob?.cancel()
                 e.hideJob = null
-                e.root.animate().alpha(0.0f).setDuration(800).withEndAction {
-                    e.params.flags = e.params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                    e.params.x = -10000 
-                    try { wm.updateViewLayout(e.root, e.params) } catch (_: Exception) {}
+                
+                e.root.animate().cancel()
+                e.root.animate().alpha(0.0f).setDuration(600).withEndAction {
+                    // Cek lagi apakah masih dalam state hide (mencegah race condition jika keburu di-show lagi)
+                    if (!e.isUiVisible) {
+                        e.params.flags = e.params.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                        e.params.x = -10000 
+                        try { wm.updateViewLayout(e.root, e.params) } catch (_: Exception) {}
+                        Log.d(TAG, "Overlay $id moved off-screen (-10000)")
+                    }
                 }.start()
             }
         }
@@ -258,6 +281,8 @@ class CustomOverlayManager(
         val punchLayout = root.findViewById<PunchThroughLayout>(R.id.punch_layout)
         val gestureLayer = root.findViewById<View>(R.id.saweria_gesture_layer)
         val entryCfg = config.copy()
+        punchLayout.targetWidth = widthPx
+        punchLayout.targetHeight = heightPx
         punchLayout.punchEnabled = entryCfg.visualPunch
         val uniqueBridgeName = "AndroidBridge_${entryCfg.id}"
         val bridgeGuardKey = "__bridge_${entryCfg.id}_installed"
@@ -355,16 +380,25 @@ class CustomOverlayManager(
             loadUrl(entryCfg.url)
         }
 
-        root.findViewById<ImageButton>(R.id.saweria_btn_close).setOnClickListener { stopWidget(entryCfg.id) }
         val type = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_PHONE
         val params = WindowManager.LayoutParams((widthPx * entryCfg.scale).toInt(), (heightPx * entryCfg.scale).toInt(), type, WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL, PixelFormat.TRANSLUCENT).also {
             it.gravity = Gravity.TOP or Gravity.START; it.x = entryCfg.posX; it.y = entryCfg.posY
         }
         root.setBackgroundColor(entryCfg.bgColor)
         val gesture = OverlayGestureHelper(rootView = root, params = params, wm = wm, onLongPress = { showAdjuster(entryCfg.id) }).apply {
-            onInteraction = { active[entryCfg.id]?.let { e -> e.config.posX = params.x; e.config.posY = params.y; updateConfig(e.config) } }
+            onInteraction = { 
+                active[entryCfg.id]?.let { e -> 
+                    if (e.isUiVisible && params.x != -10000) {
+                        e.config.posX = params.x
+                        e.config.posY = params.y
+                        updateConfig(e.config) 
+                    }
+                } 
+            }
         }
         root.pivotX = 0f; root.pivotY = 0f; root.scaleX = entryCfg.scale; root.scaleY = entryCfg.scale; gesture.currentScale = entryCfg.scale
+        gesture.updateBaseSize(widthPx, heightPx)
+        entryCfg.scale.let { punchLayout.currentScale = it }
         gestureLayer.setOnTouchListener(if (entryCfg.visualPunch) null else gesture)
         wm.addView(root, params)
         return OverlayEntry(entryCfg, root, punchLayout, gestureLayer, wv, params, gesture, uniqueBridgeName)
@@ -409,6 +443,7 @@ class CustomOverlayManager(
             e.config.name = etName.text.toString(); e.config.url = etUrl.text.toString(); e.config.width = currW; e.config.height = currH; e.config.scale = currS; e.config.posX = e.params.x; e.config.posY = e.params.y; e.config.visualPunch = currPunch
             e.params.width = (currW * dp * currS).toInt(); e.params.height = (currH * dp * currS).toInt()
             e.root.pivotX = 0f; e.root.pivotY = 0f; e.root.scaleX = currS; e.root.scaleY = currS; e.gesture.currentScale = currS
+            e.punchLayout.currentScale = currS
             e.punchLayout.punchEnabled = currPunch; e.gestureLayer.setOnTouchListener(if (currPunch) null else e.gesture)
             val finalColor = (currAlpha shl 24) or currRGB; e.config.bgColor = finalColor; e.root.setBackgroundColor(finalColor)
             updateConfig(e.config); try { wm.updateViewLayout(e.root, e.params) } catch (_: Exception) {}
