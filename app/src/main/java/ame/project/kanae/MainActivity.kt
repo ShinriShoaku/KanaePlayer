@@ -238,8 +238,11 @@ class MainActivity : AppCompatActivity() {
      * supaya sistem Android setidaknya tidak menambah pembatasan Doze/standby.
      */
     private fun checkBatteryOptimization() {
+        val crashlytics = com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance()
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-        if (pm.isIgnoringBatteryOptimizations(packageName)) return
+        val alreadyIgnoring = pm.isIgnoringBatteryOptimizations(packageName)
+        crashlytics.setCustomKey("battery_opt_ignored", alreadyIgnoring)
+        if (alreadyIgnoring) return
 
         val prefs = getSharedPreferences("kanae_prefs", MODE_PRIVATE)
         if (prefs.getBoolean("battery_opt_dialog_dismissed", false)) return
@@ -248,13 +251,14 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Izinkan Berjalan Tanpa Batasan")
             .setMessage(
                 "Supaya overlay (follow, quick custom, dll) tidak telat " +
-                        "hilang/update saat kamu lagi main game di HP ini, aplikasi " +
-                        "perlu dikecualikan dari battery optimization.\n\n" +
-                        "Kalau HP kamu Xiaomi/Oppo/Vivo/Samsung, cek juga menu " +
-                        "Game Turbo / Game Space / Game Assistant lalu keluarkan " +
-                        "KanaePlayer dari daftar app yang dibatasi saat mode game."
+                "hilang/update saat kamu lagi main game di HP ini, aplikasi " +
+                "perlu dikecualikan dari battery optimization.\n\n" +
+                "Kalau HP kamu Xiaomi/Oppo/Vivo/Samsung, cek juga menu " +
+                "Game Turbo / Game Space / Game Assistant lalu keluarkan " +
+                "KanaePlayer dari daftar app yang dibatasi saat mode game."
             )
             .setPositiveButton("Izinkan") { _, _ ->
+                crashlytics.setCustomKey("battery_opt_user_response", "accepted")
                 try {
                     batteryOptLauncher.launch(
                         Intent(
@@ -265,10 +269,12 @@ class MainActivity : AppCompatActivity() {
                 } catch (e: Exception) {
                     // Sebagian ROM (mis. MIUI) menolak intent ini; arahkan ke halaman
                     // detail app sebagai fallback supaya user tetap bisa atur manual.
+                    crashlytics.recordException(e)
                     startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
                 }
             }
             .setNegativeButton("Nanti") { _, _ ->
+                crashlytics.setCustomKey("battery_opt_user_response", "dismissed")
                 prefs.edit().putBoolean("battery_opt_dialog_dismissed", true).apply()
             }
             .setCancelable(false)
@@ -276,7 +282,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private val batteryOptLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance()
+                .setCustomKey("battery_opt_ignored", pm.isIgnoringBatteryOptimizations(packageName))
+        }
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
