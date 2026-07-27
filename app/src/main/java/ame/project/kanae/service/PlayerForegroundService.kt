@@ -50,7 +50,6 @@ import android.media.audiofx.LoudnessEnhancer
 import androidx.media3.session.MediaSession
 import ame.project.nlsdk.IKanaeService
 import ame.project.nlsdk.IKanaeCallback
-import android.content.Context
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.*
@@ -194,17 +193,24 @@ class PlayerForegroundService : Service() {
      * proses/Handler tidur lebih dalam dari yang seharusnya.
      */
     private fun boostServicePriority() {
+        val crashlytics = com.google.firebase.crashlytics.FirebaseCrashlytics.getInstance()
+
         try {
             // THREAD_PRIORITY_FOREGROUND (-2) lebih tinggi dari nilai default (0),
             // jadi kernel scheduler kasih jatah CPU relatif lebih besar ke thread ini
             // dibanding proses background lain.
             Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
+            crashlytics.setCustomKey("thread_priority_boosted", true)
         } catch (e: Exception) {
             Log.w(TAG, "Gagal set thread priority: ${e.message}")
+            crashlytics.setCustomKey("thread_priority_boosted", false)
+            crashlytics.recordException(e)
         }
 
         try {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            crashlytics.setCustomKey("battery_opt_ignored", pm.isIgnoringBatteryOptimizations(packageName))
+
             cpuWakeLock = pm.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK,
                 "KanaePlayer:PlaybackWakeLock"
@@ -212,6 +218,8 @@ class PlayerForegroundService : Service() {
                 setReferenceCounted(false)
                 acquire(10 * 60 * 1000L /*10 menit*/)
             }
+            crashlytics.setCustomKey("wake_lock_acquired", true)
+
             // Perpanjang tiap 8 menit selama service masih hidup (timeout 10 menit
             // sengaja dipasang sebagai jaring pengaman kalau service ke-kill paksa,
             // supaya wake lock tidak nyangkut nyala selamanya).
@@ -223,6 +231,8 @@ class PlayerForegroundService : Service() {
             }
         } catch (e: Exception) {
             Log.w(TAG, "Gagal acquire wake lock: ${e.message}")
+            crashlytics.setCustomKey("wake_lock_acquired", false)
+            crashlytics.recordException(e)
         }
     }
 
