@@ -1,5 +1,5 @@
 {
-  "versionCode": 19,
-  "versionName": "12.2.5",
-  "updateMessage": "Chrome OS & Emulator support, Web Overlay fixes, and removal of Saweria Overlay."
+  "versionCode": 20,
+  "versionName": "12.3.0",
+  "updateMessage": "Peningkatan stabilitas background service dan optimasi baterai untuk streaming yang lebih lancar."
 }

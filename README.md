@@ -36,14 +36,13 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.2.5)
+## 🆕 Pembaruan Terkini (v12.3.0)
 
-- Menambahkan support Chrome OS dan emulator PC untuk menjalankan aplikasi.
-- Memperbaiki masalah Web Overlay.
-- Menghapus Saweria Overlay (Fungsi Saweria kini menggunakan sistem Web Overlay tunggal).
-- Web Overlay kini menjadi sistem tunggal untuk mengatur semua dukungan overlay web (Sociabuzz, Saweria, dll).
+- **Background Stability**: Implementasi *Auto-Renewing Wake Lock* dan optimasi prioritas thread untuk mencegah aplikasi terhenti di background.
+- **Battery Optimization**: Fitur dialog otomatis untuk memudahkan pengguna memberikan pengecualian baterai (Battery Optimization Exemption).
+- **Service Enhancement**: Peningkatan prioritas Notification Channel untuk stabilitas streaming yang lebih konsisten pada berbagai ROM Android.
 
-## 🆕 Pembaruan Sebelumnya (v12.2.4)
+## 🆕 Pembaruan Sebelumnya (v12.2.5)
 
 - Integrasi link ke NL Studio App
 - Bug fixes and performance improvements

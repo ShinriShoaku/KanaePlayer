@@ -1,5 +1,19 @@
 # Changelog - KanaePlayer
 
+## [12.3.0] - 2026-07-27
+
+### ⚙️ Stabilitas & Background Service
+- **Battery Optimization Exemption**: Menambahkan permintaan izin `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` untuk memastikan aplikasi tetap berjalan meskipun dalam mode hemat daya.
+- **Enhanced Foreground Service**:
+    - Meningkatkan level prioritas Notification Channel menjadi `IMPORTANCE_DEFAULT` untuk stabilitas layanan yang lebih baik.
+    - Implementasi `boostServicePriority()`: Mengatur prioritas thread ke `THREAD_PRIORITY_FOREGROUND`.
+    - Menambahkan mekanisme **Auto-Renewing Partial Wake Lock**: Mencegah CPU memasuki mode tidur (sleep) dengan pembaruan otomatis setiap 8 menit guna menjaga kelancaran streaming.
+    - Manajemen resource yang lebih bersih dengan pelepasan Wake Lock secara otomatis saat service dihentikan.
+
+### 🎨 UI/UX Improvements
+- **Smart Battery Check**: Dialog pengecualian baterai otomatis muncul saat aplikasi dibuka jika sistem masih membatasi penggunaan baterai.
+- **User-Friendly Dialog**: Penjelasan transparan kepada pengguna mengenai pentingnya mematikan pembatasan baterai dengan opsi "Nanti" agar tidak mengganggu pengalaman pengguna.
+
 ## [12.2.5] - 2026-07-22
 
 ### ✨ New Features

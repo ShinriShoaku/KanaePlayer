@@ -227,7 +227,56 @@ class MainActivity : AppCompatActivity() {
             binding.tvOverlayWarning.visibility = View.VISIBLE
             binding.btnGrantOverlay.visibility  = View.VISIBLE
         }
+        checkBatteryOptimization()
     }
+
+    /**
+     * Kalau OS masih membatasi baterai/CPU app ini, overlay auto-hide (dan chat
+     * TikTok) bisa telat update saat user lagi main game lain di HP yang sama —
+     * karena OEM (MIUI/ColorOS/FuntouchOS/dll) membekukan jatah CPU background
+     * app selagi ada input sentuh aktif di app lain. Minta exemption di sini
+     * supaya sistem Android setidaknya tidak menambah pembatasan Doze/standby.
+     */
+    private fun checkBatteryOptimization() {
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        if (pm.isIgnoringBatteryOptimizations(packageName)) return
+
+        val prefs = getSharedPreferences("kanae_prefs", MODE_PRIVATE)
+        if (prefs.getBoolean("battery_opt_dialog_dismissed", false)) return
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Izinkan Berjalan Tanpa Batasan")
+            .setMessage(
+                "Supaya overlay (follow, quick custom, dll) tidak telat " +
+                        "hilang/update saat kamu lagi main game di HP ini, aplikasi " +
+                        "perlu dikecualikan dari battery optimization.\n\n" +
+                        "Kalau HP kamu Xiaomi/Oppo/Vivo/Samsung, cek juga menu " +
+                        "Game Turbo / Game Space / Game Assistant lalu keluarkan " +
+                        "KanaePlayer dari daftar app yang dibatasi saat mode game."
+            )
+            .setPositiveButton("Izinkan") { _, _ ->
+                try {
+                    batteryOptLauncher.launch(
+                        Intent(
+                            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+                            Uri.parse("package:$packageName")
+                        )
+                    )
+                } catch (e: Exception) {
+                    // Sebagian ROM (mis. MIUI) menolak intent ini; arahkan ke halaman
+                    // detail app sebagai fallback supaya user tetap bisa atur manual.
+                    startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                }
+            }
+            .setNegativeButton("Nanti") { _, _ ->
+                prefs.edit().putBoolean("battery_opt_dialog_dismissed", true).apply()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private val batteryOptLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->

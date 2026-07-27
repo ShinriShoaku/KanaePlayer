@@ -1,5 +1,28 @@
 # Update Notes - KanaePlayer
 
+## Update 12.3.0: Background Stability & Battery Optimization
+
+Update ini difokuskan pada penguatan pondasi aplikasi agar tetap stabil berjalan di background, terutama pada perangkat dengan manajemen baterai yang agresif.
+
+### 1. Pengecualian Optimasi Baterai
+- **Manual Exemption Dialog**: Aplikasi kini secara cerdas mendeteksi jika sistem Android membatasi aktivitas background-nya. Jika terdeteksi, dialog informatif akan muncul untuk memandu pengguna memberikan izin "Don't Optimize", yang sangat krusial agar musik tidak tiba-tiba mati.
+- **Persistent Permission**: Izin ini membantu aplikasi melewati pembatasan standar sistem Android demi kelancaran fitur Foreground Service.
+
+### 2. Peningkatan Prioritas Layanan (Service Priority)
+- **Thread Boosting**: Melalui fitur `boostServicePriority()`, thread utama yang menangani audio dan chat kini berjalan dengan prioritas foreground (`THREAD_PRIORITY_FOREGROUND`), mengurangi risiko "freeze" saat CPU sedang sibuk.
+- **Notification Importance**: Level Notification Channel ditingkatkan menjadi `IMPORTANCE_DEFAULT`. Hal ini memberikan sinyal kepada sistem operasi bahwa layanan ini memiliki kepentingan yang lebih tinggi dibandingkan proses background biasa.
+
+### 3. Mekanisme Anti-Sleep (Auto-Renewing Wake Lock)
+- **CPU Keep-Alive**: Menambahkan sistem *Partial Wake Lock* yang diperbarui secara otomatis setiap 8 menit. Ini memastikan CPU tetap aktif untuk memproses data streaming meskipun layar perangkat dalam keadaan mati.
+- **Battery-Friendly Cleanup**: Sistem dirancang agar Wake Lock segera dilepas saat aplikasi ditutup secara normal, mencegah pengurasan baterai yang tidak perlu (battery leak).
+
+> [!NOTE]
+> Perubahan ini adalah pendekatan paling realistis untuk menjaga stabilitas aplikasi. Namun, perlu diingat bahwa beberapa fitur vendor seperti **Game Turbo** atau **Game Space** yang sangat agresif mungkin masih bisa membatasi aplikasi karena kebijakan scheduler CPU internal vendor yang tidak dapat di-override secara paksa oleh aplikasi pihak ketiga.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 12.2.5
 
 - **Chrome OS & Emulator Support**: Menambahkan dukungan untuk menjalankan aplikasi di Chrome OS dan emulator PC.

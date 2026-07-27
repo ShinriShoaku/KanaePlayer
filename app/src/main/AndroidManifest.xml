@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Wake lock so service keeps running -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Prompt user to whitelist app from OEM battery/background CPU restriction -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- Notification (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Read/write for yt-dlp binary cache -->
