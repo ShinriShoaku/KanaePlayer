@@ -50,6 +50,7 @@ import android.media.audiofx.LoudnessEnhancer
 import androidx.media3.session.MediaSession
 import ame.project.nlsdk.IKanaeService
 import ame.project.nlsdk.IKanaeCallback
+import android.content.Context
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.*
@@ -183,9 +184,53 @@ class PlayerForegroundService : Service() {
     }
 
     // ─────────────────────────────────────────────────────────────────
+    private var cpuWakeLock: PowerManager.WakeLock? = null
+
+    /**
+     * Naikkan prioritas scheduling thread service ini + pegang PARTIAL_WAKE_LOCK
+     * selama service hidup. Ini TIDAK menjamin bebas dari pembatasan CPU khusus
+     * vendor (mis. MIUI Game Turbo / ColorOS Game Space), tapi memberi sinyal
+     * lebih kuat ke scheduler Android bahwa proses ini butuh CPU, dan mencegah
+     * proses/Handler tidur lebih dalam dari yang seharusnya.
+     */
+    private fun boostServicePriority() {
+        try {
+            // THREAD_PRIORITY_FOREGROUND (-2) lebih tinggi dari nilai default (0),
+            // jadi kernel scheduler kasih jatah CPU relatif lebih besar ke thread ini
+            // dibanding proses background lain.
+            Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
+        } catch (e: Exception) {
+            Log.w(TAG, "Gagal set thread priority: ${e.message}")
+        }
+
+        try {
+            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+            cpuWakeLock = pm.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "KanaePlayer:PlaybackWakeLock"
+            ).apply {
+                setReferenceCounted(false)
+                acquire(10 * 60 * 1000L /*10 menit*/)
+            }
+            // Perpanjang tiap 8 menit selama service masih hidup (timeout 10 menit
+            // sengaja dipasang sebagai jaring pengaman kalau service ke-kill paksa,
+            // supaya wake lock tidak nyangkut nyala selamanya).
+            serviceScope.launch {
+                while (isActive) {
+                    delay(8 * 60 * 1000L)
+                    try { cpuWakeLock?.acquire(10 * 60 * 1000L) } catch (_: Exception) {}
+                }
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Gagal acquire wake lock: ${e.message}")
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         Log.d(TAG, "onCreate")
+
+        boostServicePriority()
 
         settingsManager = SettingsManager.getInstance(this)
         styleConfigManager = StyleConfigManager.getInstance(this)
@@ -484,6 +529,8 @@ class PlayerForegroundService : Service() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy")
+        try { cpuWakeLock?.takeIf { it.isHeld }?.release() } catch (_: Exception) {}
+        cpuWakeLock = null
         mediaSession?.release()
         mediaSession = null
         tts?.stop()
@@ -1441,7 +1488,7 @@ class PlayerForegroundService : Service() {
 
     private fun createNotificationChannel() {
         val ch = NotificationChannel(NOTIF_CHANNEL_ID, "YT Player",
-            NotificationManager.IMPORTANCE_LOW)
+            NotificationManager.IMPORTANCE_DEFAULT)
             .apply { description = "YouTube TikTok Player" }
         getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
     }
