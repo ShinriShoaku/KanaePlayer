@@ -119,7 +119,14 @@ class PlayerForegroundService : Service() {
 
     private val aidlBinder = object : IKanaeService.Stub() {
         override fun registerCallback(callback: IKanaeCallback?) {
-            if (callback != null) remoteCallbacks.register(callback)
+            if (callback != null) {
+                remoteCallbacks.register(callback)
+                // Kirim langsung daftar custom overlay saat ini begitu client (NL Studio) connect,
+                // supaya tidak perlu menunggu ada perubahan dulu.
+                try {
+                    callback.onCustomOverlaysChanged(gson.toJson(customOverlayManager.getConfigs()))
+                } catch (_: Exception) {}
+            }
         }
         override fun unregisterCallback(callback: IKanaeCallback?) {
             if (callback != null) remoteCallbacks.unregister(callback)
@@ -167,6 +174,15 @@ class PlayerForegroundService : Service() {
             serviceScope.launch { notifyQueueChanged() }
         }
         override fun isPlaying(): Boolean = this@PlayerForegroundService.isPlaying
+
+        // Custom Web Overlay
+        override fun getCustomOverlaysJson(): String {
+            return gson.toJson(customOverlayManager.getConfigs())
+        }
+
+        override fun requestCustomOverlays() {
+            serviceScope.launch { notifyCustomOverlaysChanged() }
+        }
     }
 
     fun getCustomOverlayManager() = customOverlayManager
@@ -472,6 +488,7 @@ class PlayerForegroundService : Service() {
         }
 
         customOverlayManager = CustomOverlayManager(this, serviceScope)
+        customOverlayManager.onConfigsChanged = { notifyCustomOverlaysChanged() }
 
         updateCustomThemes()
 
@@ -1580,6 +1597,23 @@ class PlayerForegroundService : Service() {
         for (i in 0 until n) {
             try {
                 remoteCallbacks.getBroadcastItem(i).onQueueChanged(json)
+            } catch (e: RemoteException) {}
+        }
+        remoteCallbacks.finishBroadcast()
+    }
+
+    /**
+     * Broadcast daftar Custom Web Overlay (id, name, url, dst) ke semua client AIDL
+     * yang terdaftar (mis. NL Studio), setiap kali daftar overlay berubah atau
+     * saat client secara eksplisit memintanya lewat requestCustomOverlays().
+     */
+    private fun notifyCustomOverlaysChanged() {
+        val json = gson.toJson(customOverlayManager.getConfigs())
+        Log.d(TAG, "notifyCustomOverlaysChanged: count=${customOverlayManager.getConfigs().size}")
+        val n = remoteCallbacks.beginBroadcast()
+        for (i in 0 until n) {
+            try {
+                remoteCallbacks.getBroadcastItem(i).onCustomOverlaysChanged(json)
             } catch (e: RemoteException) {}
         }
         remoteCallbacks.finishBroadcast()

@@ -85,11 +85,16 @@ class CustomOverlayManager(
     var onWidgetVisibilityChanged: ((String, Boolean) -> Unit)? = null
     var onConfigUpdated: ((CustomOverlayConfig) -> Unit)? = null
 
+    // Dipanggil setiap kali daftar custom overlay berubah (add/remove/update),
+    // dipakai PlayerForegroundService untuk broadcast ke client AIDL (NL Studio).
+    var onConfigsChanged: (() -> Unit)? = null
+
     fun getConfigs(): MutableList<CustomOverlayConfig> = settingsManager.settings.customWebConfigs
 
     fun saveConfigs(configs: List<CustomOverlayConfig>) {
         settingsManager.settings.customWebConfigs = configs.toMutableList()
         settingsManager.saveSettings()
+        onConfigsChanged?.invoke()
     }
 
     fun addConfig(name: String, url: String): CustomOverlayConfig {
