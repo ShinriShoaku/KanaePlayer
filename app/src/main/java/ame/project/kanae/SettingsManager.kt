@@ -100,6 +100,9 @@ data class AppSettings(
     var themes: MutableMap<String, CustomThemeConfig> = mutableMapOf(),
     
     var authorizedUsers: String = "",
+    /** "AUTHORIZED_USERS" (default, hanya user di list yang bisa skip/command)
+     *  atau "FOLLOWERS" (semua follower TikTok bisa skip/command, list tetap berlaku sbg tambahan) */
+    var adminAccessMode: String = "AUTHORIZED_USERS",
 
     var canvasModeEnabled: Boolean = false,
     var canvasPlayerX: Int = 16,

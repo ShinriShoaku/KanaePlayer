@@ -35,6 +35,76 @@
             android:textSize="22sp" />
     </RelativeLayout>
 
+    <!-- Access Mode Selector -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        app:cardBackgroundColor="@color/card_bg"
+        app:cardCornerRadius="24dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#1FFFFFFF"
+        app:strokeWidth="1dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:letterSpacing="0.15"
+                android:text="MODE SKIP / COMMAND"
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <RadioGroup
+                android:id="@+id/rgAdminMode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/rbModeAuthorized"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/orange"
+                    android:text="Authorized Users"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:layout_marginBottom="12dp"
+                    android:text="Hanya user yang ada di daftar list di bawah ini yang bisa skip/command."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <RadioButton
+                    android:id="@+id/rbModeFollowers"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:buttonTint="@color/orange"
+                    android:text="Followers"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="32dp"
+                    android:text="Semua orang yang sudah follow akun TikTok kamu bisa skip/command. Daftar list di bawah tetap berlaku sebagai user tambahan."
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+            </RadioGroup>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Add Admin Input -->
     <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"

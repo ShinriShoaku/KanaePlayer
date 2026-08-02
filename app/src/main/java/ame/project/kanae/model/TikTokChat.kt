@@ -21,7 +21,10 @@ data class TikTokChat(
     // parsed command fields
     val commandType: CommandType = CommandType.NONE,
     val commandArg: String? = null,
-    val emotes: List<TikTokEmote> = emptyList()
+    val emotes: List<TikTokEmote> = emptyList(),
+    /** true kalau pengirim chat ini sudah follow akun TikTok streamer.
+     * Dipakai untuk mode "Followers" di Authorized/Admin list. */
+    val isFollower: Boolean = false
 ) {
     enum class CommandType {
         NONE,

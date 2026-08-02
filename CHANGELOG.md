@@ -1,5 +1,16 @@
 # Changelog - KanaePlayer
 
+## [12.3.4] - 2026-08-05
+
+### ✨ New Features
+- **Authorized User Mode**: Pemilik live sekarang dapat memilih siapa saja yang diizinkan menggunakan perintah musik (seperti `#skip`).
+    - **Followers Mode**: Semua follower dapat menggunakan perintah.
+    - **Authorized Users Only**: Hanya user tertentu yang didaftarkan yang dapat menggunakan perintah.
+    - **User Management**: Menu baru untuk menambah dan menghapus daftar user yang diberi otoritas.
+
+### 🐞 Bug Fixes
+- **AIDL Service Fix**: Memperbaiki masalah komunikasi AIDL dengan aplikasi NL Studio untuk sinkronisasi yang lebih stabil.
+
 ## [12.3.0] - 2026-07-27
 
 ### ⚙️ Stabilitas & Background Service

@@ -679,6 +679,7 @@ class PlayerForegroundService : Service() {
         queue.removeAt(idx)
         broadcastState()
         syncQueueOverlay()
+        notifyQueueChanged() // FIX: sama seperti playNext(), broadcast ke NL Studio juga
         return true
     }
 
@@ -689,6 +690,7 @@ class PlayerForegroundService : Service() {
         val removed = queue.removeAt(idx)
         broadcastState()
         syncQueueOverlay()
+        notifyQueueChanged() // FIX: sama seperti playNext(), broadcast ke NL Studio juga
         return removed.title
     }
 
@@ -705,6 +707,7 @@ class PlayerForegroundService : Service() {
             queue.add(to, song)
             broadcastState()
             syncQueueOverlay()
+            notifyQueueChanged() // FIX: sama seperti playNext(), broadcast ke NL Studio juga
         }
     }
 
@@ -780,12 +783,24 @@ class PlayerForegroundService : Service() {
         if (queue.isEmpty()) {
             updateNotification("Queue empty")
             broadcastState(); syncQueueOverlay()
+            // FIX: notifyQueueChanged() juga harus dipanggil di sini supaya NL Studio
+            // (dan client AIDL lain) tahu antrian sudah kosong, bukan cuma overlay lokal.
+            notifyQueueChanged()
             return
         }
         val next = if (settingsManager.settings.shuffleMode) queue.removeAt(queue.indices.random())
         else queue.removeFirst()
         playSong(next)
         syncQueueOverlay()
+        // FIX: sebelumnya playNext() hanya memanggil syncQueueOverlay() yang cuma
+        // memperbarui overlay LOKAL di Kanae Player. Client AIDL eksternal seperti NL
+        // Studio hanya mendengarkan callback onQueueChanged(), yang sebelumnya tidak
+        // pernah dikirim di sini. Akibatnya, antrian musik di overlay NL Studio tidak
+        // ikut berubah setiap kali lagu di-skip (baik skip manual di app, skip via
+        // command TikTok, maupun auto-skip saat lagu selesai - karena semuanya lewat
+        // fungsi playNext() ini). Sekarang broadcast-nya ditambahkan supaya NL Studio
+        // langsung sinkron setiap kali antrian berubah akibat skip.
+        notifyQueueChanged()
     }
 
     fun stopPlayer() {
@@ -820,7 +835,7 @@ class PlayerForegroundService : Service() {
 
         speak(chat.comment)
 
-        val isAdmin = isAdmin(chat.uniqueId)
+        val isAdmin = isAdmin(chat)
 
         when (chat.commandType) {
             TikTokChat.CommandType.REQUEST -> {
@@ -878,13 +893,30 @@ class PlayerForegroundService : Service() {
         }
     }
 
-    private fun isAdmin(uniqueId: String): Boolean {
+    /**
+     * Cek apakah pengirim chat boleh pakai command admin (skip, stop, clear music, dll).
+     *
+     * - Owner streamer & literal "admin" selalu boleh.
+     * - Daftar Authorized Users manual (AdminListActivity) SELALU berlaku sebagai
+     *   override, di mode manapun.
+     * - Kalau adminAccessMode == "FOLLOWERS": siapa saja yang sudah follow akun TikTok
+     *   streamer (chat.isFollower) juga boleh pakai command, tanpa perlu dimasukkan manual.
+     * - Kalau adminAccessMode == "AUTHORIZED_USERS" (default): hanya yang ada di daftar
+     *   manual di atas yang boleh.
+     */
+    private fun isAdmin(chat: TikTokChat): Boolean {
+        val uniqueId = chat.uniqueId
         val cleanOwner = settingsManager.settings.tiktokUsername.trim().removePrefix("@")
         if (uniqueId.equals(cleanOwner, ignoreCase = true)) return true
         if (uniqueId.equals("admin", ignoreCase = true)) return true
 
         val authorized = settingsManager.settings.authorizedUsers
-        return authorized.split(",").any { it.trim().equals(uniqueId, ignoreCase = true) }
+        if (authorized.split(",").any { it.trim().equals(uniqueId, ignoreCase = true) }) return true
+
+        return when (settingsManager.settings.adminAccessMode) {
+            "FOLLOWERS" -> chat.isFollower
+            else -> false
+        }
     }
 
     // ── Canvas mode ───────────────────────────────────────────────────

@@ -1,5 +1,23 @@
 # Update Notes - KanaePlayer
 
+## Update 12.3.4: Authorized User & NL Studio Sync Fix
+
+Update ini memperkenalkan fitur keamanan baru untuk kontrol perintah chat dan perbaikan integrasi dengan ekosistem NL Studio.
+
+### 1. Authorized User (Mode Skip/Command)
+- **Role-Based Access**: Kamu sekarang bisa mengatur siapa yang berhak melewati lagu (#skip) atau menggunakan perintah kontrol lainnya.
+- **Followers Mode**: Memberikan akses kepada semua penonton yang sudah mengikuti (follow) akun kamu.
+- **Specific User List**: Daftar putih (whitelist) untuk user tertentu yang kamu percayai. Cukup masukkan username TikTok mereka tanpa tanda @.
+- **Enhanced Privacy**: Mencegah penonton yang tidak dikenal atau bot untuk mengganggu antrian lagu kamu.
+
+### 2. Perbaikan AIDL NL Studio
+- **Communication Bridge**: Mengoptimalkan interface AIDL untuk memastikan data lagu dan status player terkirim dengan lancar ke aplikasi NL Studio.
+- **Stability Fix**: Mengatasi masalah "Service Disconnected" yang kadang muncul pada beberapa perangkat saat sinkronisasi aktif.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 12.3.0: Background Stability & Battery Optimization
 
 Update ini difokuskan pada penguatan pondasi aplikasi agar tetap stabil berjalan di background, terutama pada perangkat dengan manajemen baterai yang agresif.

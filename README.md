@@ -36,7 +36,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.3.0)
+## 🆕 Pembaruan Terkini (v12.3.4)
+
+- **Authorized User**: Kontrol penuh siapa yang bisa melakukan skip lagu (Followers atau User Spesifik).
+- **AIDL Fix**: Perbaikan sinkronisasi dengan aplikasi NL Studio.
+
+## 🆕 Pembaruan Sebelumnya (v12.3.0)
 
 - **Background Stability**: Implementasi *Auto-Renewing Wake Lock* dan optimasi prioritas thread untuk mencegah aplikasi terhenti di background.
 - **Battery Optimization**: Fitur dialog otomatis untuk memudahkan pengguna memberikan pengecualian baterai (Battery Optimization Exemption).

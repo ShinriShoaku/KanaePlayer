@@ -18,6 +18,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
+import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -40,6 +41,7 @@ class AdminListActivity : AppCompatActivity() {
         settingsManager = SettingsManager.getInstance(this)
         loadAdmins()
         setupRecyclerView()
+        setupAccessModeSelector()
 
         binding.btnBack.setOnClickListener { finish() }
         binding.btnAddAdmin.setOnClickListener {
@@ -54,6 +56,24 @@ class AdminListActivity : AppCompatActivity() {
                     Toast.makeText(this, "User already in list", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    private fun setupAccessModeSelector() {
+        val rgAdminMode = binding.root.findViewById<RadioGroup>(R.id.rgAdminMode)
+
+        // Set posisi awal sesuai settings yang tersimpan
+        when (settingsManager.settings.adminAccessMode) {
+            "FOLLOWERS" -> rgAdminMode.check(R.id.rbModeFollowers)
+            else -> rgAdminMode.check(R.id.rbModeAuthorized)
+        }
+
+        rgAdminMode.setOnCheckedChangeListener { _, checkedId ->
+            val mode = if (checkedId == R.id.rbModeFollowers) "FOLLOWERS" else "AUTHORIZED_USERS"
+            settingsManager.settings.adminAccessMode = mode
+            settingsManager.saveSettings()
+            val label = if (mode == "FOLLOWERS") "Followers" else "Authorized Users"
+            Toast.makeText(this, "Mode diubah ke: $label", Toast.LENGTH_SHORT).show()
         }
     }
 

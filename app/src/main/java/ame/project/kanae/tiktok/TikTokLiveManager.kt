@@ -493,6 +493,67 @@ class TikTokLiveManager(
         return Triple(uniqueId, nickname, profileUrl)
     }
 
+    /**
+     * Cek status follow pengirim chat terhadap streamer.
+     *
+     * CATATAN PENTING: field ini BELUM aku verifikasi 100% terhadap payload asli dari
+     * EulerStream, karena aku tidak punya akses ke log live TikTok kamu. Aku sudah
+     * cover beberapa kemungkinan path field yang paling umum dipakai di berbagai
+     * implementasi TikTok Live protocol (followInfo.followStatus, follow_info.follow_status,
+     * dst - followStatus TikTok: 0 = belum follow, 1 = follow, 2 = mutual/friends).
+     *
+     * Cara verifikasi: jalankan live, buka Logcat, filter tag "RAW CHAT" (atau "RAW CHAT
+     * (Legacy)" / "RAW CHAT (Flat)"), lalu kirim chat dari akun yang KAMU TAHU PASTI sudah
+     * follow. Cari field follow di JSON tsb (biasanya di dalam objek "user"). Kalau nama
+     * field-nya beda dari yang di-cover di sini, kirim ke aku contoh JSON-nya (boleh
+     * disensor username-nya) dan aku sesuaikan lagi.
+     */
+    private fun extractIsFollower(data: JsonObject): Boolean {
+        val uObj = data["user"].optObj()
+
+        // 1. followInfo.followStatus (path paling umum di protokol Webcast TikTok)
+        val followInfo = uObj?.get("followInfo").optObj() ?: data["followInfo"].optObj()
+        followInfo?.get("followStatus")?.asInt?.let { status ->
+            Log.d(TAG, "extractIsFollower: found followInfo.followStatus=$status")
+            return status >= 1
+        }
+        followInfo?.get("follow_status")?.asInt?.let { status ->
+            Log.d(TAG, "extractIsFollower: found followInfo.follow_status=$status")
+            return status >= 1
+        }
+
+        // 2. follow_info (snake_case root variant)
+        val followInfoSnake = uObj?.get("follow_info").optObj() ?: data["follow_info"].optObj()
+        followInfoSnake?.get("follow_status")?.asInt?.let { status ->
+            Log.d(TAG, "extractIsFollower: found follow_info.follow_status=$status")
+            return status >= 1
+        }
+
+        // 3. followRole langsung di user object (dipakai di beberapa scraper: 0/1/2)
+        uObj?.get("followRole")?.asInt?.let { role ->
+            Log.d(TAG, "extractIsFollower: found user.followRole=$role")
+            return role >= 1
+        }
+
+        // 4. followStatus / isFollower boolean langsung di root data
+        data["followStatus"]?.asInt?.let { status ->
+            Log.d(TAG, "extractIsFollower: found root followStatus=$status")
+            return status >= 1
+        }
+        data["isFollower"]?.asBoolean?.let { flag ->
+            Log.d(TAG, "extractIsFollower: found root isFollower=$flag")
+            return flag
+        }
+        uObj?.get("isFollower")?.asBoolean?.let { flag ->
+            Log.d(TAG, "extractIsFollower: found user.isFollower=$flag")
+            return flag
+        }
+
+        // Tidak ketemu field follow sama sekali -> anggap belum follow (aman/fail-closed
+        // untuk mode Followers, daripada salah kasih akses skip ke yang belum follow)
+        return false
+    }
+
     private fun buildChat(data: JsonObject): TikTokChat? {
         return try {
             val uniqueId = data["uniqueId"]?.asString
@@ -534,6 +595,7 @@ class TikTokLiveManager(
             if (comment.isBlank() && emotes.isEmpty()) return null
 
             val (cmdType, cmdArg) = parseCommand(comment)
+            val isFollower = extractIsFollower(data)
 
             TikTokChat(
                 uniqueId    = uniqueId,
@@ -541,7 +603,8 @@ class TikTokLiveManager(
                 comment     = comment,
                 commandType = cmdType,
                 commandArg  = cmdArg,
-                emotes      = emotes
+                emotes      = emotes,
+                isFollower  = isFollower
             )
         } catch (e: Exception) {
             null
