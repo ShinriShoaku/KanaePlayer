@@ -1,5 +1,23 @@
 # Update Notes - KanaePlayer
 
+## Update 12.3.6: Bug Fixes, Library Updates & New Design
+
+Update ini membawa perbaikan stabilitas dan penyegaran visual pada bagian media player.
+
+### 1. Perbaikan Bug (Device Compatibility)
+- Mengatasi beberapa kendala teknis dan crash yang dilaporkan pada model smartphone tertentu.
+- Optimasi performa untuk memastikan aplikasi berjalan lebih lancar di berbagai versi Android.
+
+### 2. Update Library
+- Memperbarui beberapa library internal dan dependensi pihak ketiga ke versi terbaru untuk meningkatkan keamanan dan efisiensi sistem.
+
+### 3. Media Player Style Design
+- Penambahan pilihan gaya desain baru untuk Media Player yang lebih modern, memberikan pengalaman visual yang lebih segar saat mendengarkan musik.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 12.3.4: Authorized User & NL Studio Sync Fix
 
 Update ini memperkenalkan fitur keamanan baru untuk kontrol perintah chat dan perbaikan integrasi dengan ekosistem NL Studio.

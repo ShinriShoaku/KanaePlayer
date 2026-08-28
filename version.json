@@ -1,5 +1,5 @@
 {
-  "versionCode": 21,
-  "versionName": "12.3.5",
-  "updateMessage": "Fitur Authorized User (Skip Music Command) dan perbaikan masalah AIDL untuk NL Studio."
+  "versionCode": 24,
+  "versionName": "12.3.6",
+  "updateMessage": "Perbaikan bug di sebagian HP, update library, dan penambahan media player style design."
 }

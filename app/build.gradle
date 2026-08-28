@@ -82,7 +82,7 @@ dependencies {
     // ── NewPipe Extractor ─────────────────────────────────────────────────────
     // Pengganti yt-dlp — pure Java, extract YouTube stream URL langsung
     // Tidak butuh binary, tidak ada SELinux issue
-    //implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.26.3'
+    //implementation 'com.github.TeamNewPipe:NewPipeExtractor:0.26.5'
     implementation(project(":NewPipeExtractor:extractor"))
 
     implementation 'com.google.firebase:firebase-crashlytics:20.0.6'

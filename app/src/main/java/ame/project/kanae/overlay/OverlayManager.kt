@@ -47,6 +47,7 @@ class OverlayManager(
 
     // ── View references ───────────────────────────────────────────────
     private var tvTitle: TextView?       = null
+    private var tvSender: TextView?      = null
     private var tvQueue: TextView?       = null
     private var tvTime: TextView?        = null
     private var progressBar: ProgressBar? = null
@@ -71,6 +72,8 @@ class OverlayManager(
     private var lastPosition: Long = 0
     private var lastDuration: Long = 0
     private var lastPlayingState: Boolean = false
+    private var lastQueueCount: Int = 0
+    private var lastLiveConnected: Boolean = false
 
     var isShowing: Boolean = false
         private set
@@ -149,6 +152,7 @@ class OverlayManager(
         
         theme.textPrimary?.let { color ->
             tvTitle?.setTextColor(color)
+            tvSender?.setTextColor(color)
             tvQueue?.setTextColor(color)
             tvTime?.setTextColor(color)
         }
@@ -179,6 +183,7 @@ class OverlayManager(
 
         // Bind view references
         tvTitle       = view.findViewById(R.id.overlay_title)
+        tvSender      = view.findViewById(R.id.overlay_sender)
         tvQueue       = view.findViewById(R.id.overlay_queue_count)
         tvTime        = view.findViewById(R.id.overlay_time)
         progressBar   = view.findViewById(R.id.overlay_progress)
@@ -188,8 +193,6 @@ class OverlayManager(
         expandedSection = view.findViewById<View>(R.id.overlay_expanded_section)
 
         applyThemeToView(view)
-
-        tvTitle?.text = lastSong?.title ?: "- Nothing playing -"
 
         // Wire control buttons (clicks dispatched by OverlayGestureHelper)
         view.findViewById<ImageButton>(R.id.overlay_btn_play_pause)
@@ -241,6 +244,12 @@ class OverlayManager(
         wm.addView(punch, params)
         isShowing = true
         
+        // Synchronize UI state with current player status
+        updateSong(lastSong, lastPosition, lastDuration)
+        setPlayingState(lastPlayingState)
+        updateQueueCount(lastQueueCount)
+        setLiveStatus(lastLiveConnected)
+
         // Apply scaling immediately after adding view
         rootView?.post {
             applyConfig(lastX, lastY, lastScale, lastWidth)
@@ -269,6 +278,7 @@ class OverlayManager(
         gestureHelper = null
         
         tvTitle       = null
+        tvSender      = null
         tvQueue       = null
         tvTime        = null
         progressBar   = null
@@ -458,8 +468,11 @@ class OverlayManager(
         if (song?.id != currentSongId) {
             currentSongId = song?.id
             tvTitle?.text  = song?.title ?: "- Nothing playing -"
+            tvSender?.text = song?.requestedBy?.takeIf { it.isNotBlank() } ?: "Kanae"
             tvTitle?.alpha = 0f
+            tvSender?.alpha = 0f
             tvTitle?.animate()?.alpha(1f)?.setDuration(300)?.start()
+            tvSender?.animate()?.alpha(1f)?.setDuration(300)?.start()
             updateThumbnail(song?.thumbnail)
         }
 
@@ -472,10 +485,12 @@ class OverlayManager(
     }
 
     fun updateQueueCount(count: Int) {
+        lastQueueCount = count
         tvQueue?.text = "Q: $count"
     }
 
     fun setLiveStatus(connected: Boolean) {
+        lastLiveConnected = connected
         dotLive?.setBackgroundResource(
             if (connected) R.drawable.dot_green else R.drawable.dot_red
         )

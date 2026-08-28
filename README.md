@@ -36,7 +36,13 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.3.4)
+## 🆕 Pembaruan Terkini (v12.3.6)
+
+- **Bug Fixes**: Perbaikan beberapa kendala bug di sebagian hp.
+- **Library Update**: Pembaruan beberapa library sistem untuk performa lebih stabil.
+- **Media Player Style**: Penambahan desain gaya baru untuk media player.
+
+## 🆕 Pembaruan Sebelumnya (v12.3.4)
 
 - **Authorized User**: Kontrol penuh siapa yang bisa melakukan skip lagu (Followers atau User Spesifik).
 - **AIDL Fix**: Perbaikan sinkronisasi dengan aplikasi NL Studio.
@@ -46,24 +52,6 @@
 - **Background Stability**: Implementasi *Auto-Renewing Wake Lock* dan optimasi prioritas thread untuk mencegah aplikasi terhenti di background.
 - **Battery Optimization**: Fitur dialog otomatis untuk memudahkan pengguna memberikan pengecualian baterai (Battery Optimization Exemption).
 - **Service Enhancement**: Peningkatan prioritas Notification Channel untuk stabilitas streaming yang lebih konsisten pada berbagai ROM Android.
-
-## 🆕 Pembaruan Sebelumnya (v12.2.5)
-
-- Integrasi link ke NL Studio App
-- Bug fixes and performance improvements
-
-- Always Show Chat
-- Chat History
-- JSON Cache Optimization
-- New Splash Screen
-- UI Improvements
-
-## 🆕 Pembaruan Sebelumnya (v10.1.7)
-
-- **Quick Custom Overlay Scale**: Kontrol skala penuh untuk quick custom overlay.
-- **Gift System Improvements**: Perbaikan bug suara gift dan penambahan item gift baru.
-- **Landscape Optimization**: Perbaikan layout mode landscape untuk pengaturan quick custom overlay.
-- **Visual Punch in Web Overlay**: Fungsi efek visual punch kini tersedia untuk web browser overlay.
 
 ---
 

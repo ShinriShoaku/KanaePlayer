@@ -1,5 +1,16 @@
 # Changelog - KanaePlayer
 
+## [12.3.6] - 2026-08-06
+
+### 🐞 Bug Fixes
+- **Device Compatibility**: Perbaikan beberapa kendala bug dan crash yang dilaporkan pada model smartphone tertentu.
+
+### ⚙️ Improvements
+- **Library Updates**: Pembaruan beberapa library sistem dan dependensi pihak ketiga untuk performa dan keamanan yang lebih stabil.
+
+### ✨ New Features
+- **Media Player Style**: Penambahan desain gaya baru untuk media player, memberikan tampilan visual yang lebih modern dan segar.
+
 ## [12.3.4] - 2026-08-05
 
 ### ✨ New Features
