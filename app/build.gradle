@@ -26,8 +26,8 @@ android {
         applicationId "ame.project.kanae"
         minSdk 26
         targetSdk 35
-        versionCode 23
-        versionName "12.3.5"
+        versionCode 24
+        versionName "12.3.6"
         ndk { abiFilters "arm64-v8a","x86_64"} //mobile
      //   ndk { abiFilters "x86_64"} // chrome os (desktop)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
