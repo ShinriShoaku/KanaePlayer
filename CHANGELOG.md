@@ -1,5 +1,11 @@
 # Changelog - KanaePlayer
 
+## [12.3.7] - 2026-08-07
+
+### 🐞 Bug Fixes
+- **ProGuard/R8 Stability**: Memperbaiki bug `ExceptionInInitializerError` yang menyebabkan crash pada build rilis saat inisialisasi yt-dlp (fallback library).
+- **Library Obfuscation**: Optimasi konfigurasi ProGuard untuk library `Apache Commons Compress` guna mencegah error refleksi `ja.a is not a concrete class`.
+
 ## [12.3.6] - 2026-08-06
 
 ### 🐞 Bug Fixes

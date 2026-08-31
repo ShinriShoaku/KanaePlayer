@@ -1,5 +1,5 @@
 {
-  "versionCode": 24,
-  "versionName": "12.3.6",
-  "updateMessage": "Perbaikan bug di sebagian HP, update library, dan penambahan media player style design."
+  "versionCode": 25,
+  "versionName": "12.3.7",
+  "updateMessage": "Memperbaiki bug ExceptionInInitializerError di Android 16 untuk ver klukai"
 }
