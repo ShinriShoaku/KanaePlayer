@@ -1,5 +1,5 @@
 {
   "versionCode": 25,
-  "versionName": "12.3.7",
+  "versionName": "12.3.7-klukai",
   "updateMessage": "Memperbaiki bug ExceptionInInitializerError di Android 16 untuk ver klukai"
 }
