@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/extraNotifSettings"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1AFFFFFF"
+        android:layout_marginVertical="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp"
+        android:baselineAligned="false">
+
+        <!-- Share Group -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingRight="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="SHARE CONFIG"
+                android:textColor="@color/orange"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectShareImg"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="IMG"
+                android:textSize="10sp"
+                app:icon="@android:drawable/ic_menu_gallery"
+                app:iconSize="14dp"
+                app:cornerRadius="8dp"
+                android:padding="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectShareAudio"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="AUD"
+                android:textSize="10sp"
+                app:icon="@android:drawable/ic_lock_silent_mode_off"
+                app:iconSize="14dp"
+                app:cornerRadius="8dp"
+                android:padding="0dp"
+                android:layout_marginTop="4dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+        </LinearLayout>
+
+        <!-- Gift Group -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingLeft="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="GIFT CONFIG"
+                android:textColor="@color/orange"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectGiftImg"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="IMG"
+                android:textSize="10sp"
+                app:icon="@android:drawable/ic_menu_gallery"
+                app:iconSize="14dp"
+                app:cornerRadius="8dp"
+                android:padding="0dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSelectGiftAudio"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:text="AUD"
+                android:textSize="10sp"
+                app:icon="@android:drawable/ic_lock_silent_mode_off"
+                app:iconSize="14dp"
+                app:cornerRadius="8dp"
+                android:padding="0dp"
+                android:layout_marginTop="4dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:layout_marginTop="4dp">
+
+        <CheckBox
+            android:id="@+id/cbUseTiktokGiftIcon"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="TikTok Gift Icon"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
+
+        <CheckBox
+            android:id="@+id/cbUseCustomGiftSound"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Custom Sound"
+            android:textColor="@color/text_primary"
+            android:textSize="11sp" />
+    </GridLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+        <TextView
+            android:id="@+id/tvNotifDurationLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Duration: 5s"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbNotifDuration"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:min="1"
+            android:max="30"
+            android:progress="5" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+        <TextView
+            android:id="@+id/tvNotifVolumeLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Volume: 100%"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbNotifVolume"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:max="200"
+            android:progress="100" />
+    </LinearLayout>
+</LinearLayout>

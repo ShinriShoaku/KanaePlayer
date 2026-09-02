@@ -1,5 +1,17 @@
 # Changelog - KanaePlayer
 
+## [12.3.8] - 2026-08-08
+
+### ✨ New Features
+- **Custom Audio Events**: Menambahkan fitur untuk menggunakan file audio kustom sendiri untuk notifikasi Join dan Follow.
+
+### 🎨 UI/UX Improvements
+- **BottomSheet Overlay**: Optimalisasi tampilan dan interaksi pada bottomsheet overlay agar lebih responsif dan stabil.
+
+### 🐞 Bug Fixes
+- **ProGuard Optimization**: Perbaikan konfigurasi ProGuard untuk memastikan stabilitas aplikasi pada build rilis.
+- **Small Fixes**: Berbagai perbaikan kecil pada sistem dan antarmuka.
+
 ## [12.3.7] - 2026-08-07
 
 ### 🐞 Bug Fixes

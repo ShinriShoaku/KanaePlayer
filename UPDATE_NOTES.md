@@ -1,5 +1,25 @@
 # Update Notes - KanaePlayer
 
+## Update 12.3.8: Custom Audio, Overlay Improvement & Fixes
+
+Update ini menghadirkan fitur kustomisasi audio untuk event serta peningkatan stabilitas UI.
+
+### 1. Custom Audio for Join & Follow
+- **Personalized Sounds**: Kamu sekarang bisa memilih dan menggunakan file audio kustom untuk notifikasi saat penonton bergabung (Join) atau mengikuti (Follow).
+- **Flexible Configuration**: Atur suara unik untuk memberikan sambutan yang lebih personal bagi komunitasmu.
+
+### 2. BottomSheet Overlay Improvement
+- **UI Refinement**: Peningkatan tata letak dan interaksi pada BottomSheet overlay untuk pengalaman pengguna yang lebih mulus.
+- **Stability Fix**: Memperbaiki masalah responsivitas pada beberapa elemen overlay di dalam BottomSheet.
+
+### 3. ProGuard & Small Fixes
+- **Build Stability**: Optimasi aturan ProGuard untuk mencegah crash pada versi rilis dan memastikan pengecilan kode berjalan aman.
+- **General Fixes**: Perbaikan bug minor dan optimasi sistem secara keseluruhan.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 12.3.6: Bug Fixes, Library Updates & New Design
 
 Update ini membawa perbaikan stabilitas dan penyegaran visual pada bagian media player.

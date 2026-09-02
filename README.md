@@ -36,7 +36,13 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.3.6)
+## 🆕 Pembaruan Terkini (v12.3.8)
+
+- **Custom Audio Events**: Mendukung penggunaan audio kustom untuk notifikasi Join dan Follow.
+- **BottomSheet Improvement**: Peningkatan stabilitas dan tampilan pada bottomsheet overlay.
+- **Small Fixes**: Perbaikan ProGuard dan bug minor lainnya.
+
+## 🆕 Pembaruan Sebelumnya (v12.3.6)
 
 - **Bug Fixes**: Perbaikan beberapa kendala bug di sebagian hp.
 - **Library Update**: Pembaruan beberapa library sistem untuk performa lebih stabil.

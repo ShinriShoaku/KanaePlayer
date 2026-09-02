@@ -27,557 +27,79 @@
             android:paddingBottom="16dp">
 
             <!-- MAIN GRID -->
-        <LinearLayout
-            android:id="@+id/panelGrid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="visible">
+            <include
+                android:id="@+id/panelGrid"
+                layout="@layout/layout_overlay_grid" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Overlays"
-                android:textColor="@color/text_primary"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginLeft="24dp"
-                android:layout_marginBottom="20dp" />
-
-            <GridLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:columnCount="4"
-                android:paddingLeft="16dp"
-                android:paddingRight="16dp">
-
-                <!-- Row 1: Player, Queue, Lyrics, Canvas -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_teal"
-                        android:src="@android:drawable/ic_media_play"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelPlayer"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Player"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnQueueOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_purple"
-                        android:src="@android:drawable/ic_menu_sort_by_size"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelQueue"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Queue"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnLyricsOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_lyrics"
-                        android:src="@android:drawable/ic_menu_edit"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelLyrics"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Lyrics"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnCanvas"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_canvas"
-                        android:src="@android:drawable/ic_menu_gallery"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelCanvas"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Canvas"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <!-- Row 2: Chat, Notif, Custom -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnChatOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_teal"
-                        android:src="@android:drawable/stat_notify_chat"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelChat"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Chat"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnNotifOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_red"
-                        android:src="@android:drawable/ic_popup_reminder"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelNotif"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/btn_notif"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnCustomOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_purple"
-                        android:src="@android:drawable/ic_menu_today"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Browser"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <!-- Row 3: Join, Like, Follow, Keyboards -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnJoinOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_yellow"
-                        android:src="@android:drawable/ic_menu_add"
-                        app:tint="@color/bg_dark"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelJoin"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Join"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnLikeOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_red"
-                        android:src="@drawable/ic_heart"
-                        app:tint="@color/white"
-                        android:scaleType="center"
-                        android:padding="12dp" />
-                    <TextView
-                        android:id="@+id/tvLabelLike"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Like/Tap"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnFollowOverlay"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_teal"
-                        android:src="@android:drawable/ic_input_add"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:id="@+id/tvLabelFollow"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Follow"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnMapping"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_purple"
-                        android:src="?attr/actionModeSelectAllDrawable"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Keyboards"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <!-- Row 4: Quick Custom, Gift Sound -->
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center">
-                    <ImageButton
-                        android:id="@+id/btnGesture"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_teal"
-                        android:src="@android:drawable/ic_menu_edit"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Quick Custom"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/containerGiftSound"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_columnWeight="1"
-                    android:layout_marginTop="16dp"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:visibility="gone">
-                    <ImageButton
-                        android:id="@+id/btnGiftSound"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:background="@drawable/bg_circle_purple"
-                        android:src="@android:drawable/ic_lock_silent_mode_off"
-                        app:tint="@color/white"
-                        android:scaleType="center" />
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Gift Sound"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:layout_marginTop="8dp" />
-                </LinearLayout>
-
-            </GridLayout>
-        </LinearLayout>
-
-        <!-- SETTINGS PANEL (Dynamically shown) -->
-        <LinearLayout
-            android:id="@+id/panelSettings"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingLeft="24dp"
-            android:paddingRight="24dp"
-            android:visibility="gone">
-
+            <!-- SETTINGS PANEL (Dynamically shown) -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginBottom="16dp"
-                android:gravity="center_vertical">
-                <TextView
-                    android:id="@+id/tvSettingsTitle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Overlay Settings"
-                    android:textColor="@color/orange"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-                <ImageButton
-                    android:id="@+id/btnBackToGrid"
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@android:drawable/ic_menu_revert"
-                    app:tint="@color/text_secondary" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/posSettingsContainer"
+                android:id="@+id/panelSettings"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginBottom="8dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Position X"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-
-                <SeekBar
-                    android:id="@+id/sbPosX"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="4dp"
-                    android:max="2000" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Position Y"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-
-                <SeekBar
-                    android:id="@+id/sbPosY"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginVertical="4dp"
-                    android:max="3000" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="4dp">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Scale (%)"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp" />
-                <SeekBar
-                    android:id="@+id/sbScale"
-                    android:layout_width="180dp"
-                    android:layout_height="wrap_content"
-                    android:min="20"
-                    android:max="250"
-                    android:progress="100" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:id="@+id/sizeSettingsContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical">
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvWidthLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Width: Auto"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbWidth"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:max="1000"
-                        android:progress="0" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvHeightLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Height: Auto"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbHeight"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:max="2000"
-                        android:progress="0" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <CheckBox
-                android:id="@+id/cbVisualPunch"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Visual Punch (Experimental)"
-                android:textColor="@color/orange"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:layout_marginTop="8dp" />
-
-            <!-- EXTRA SETTINGS FOR CHAT -->
-            <LinearLayout
-                android:id="@+id/extraChatSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
                 android:visibility="gone">
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
+                    android:layout_marginBottom="16dp"
                     android:gravity="center_vertical">
                     <TextView
-                        android:id="@+id/tvMaxLinesLabel"
+                        android:id="@+id/tvSettingsTitle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Max Lines: 5"
+                        android:text="Overlay Settings"
+                        android:textColor="@color/orange"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <ImageButton
+                        android:id="@+id/btnBackToGrid"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_menu_revert"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/posSettingsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Position X"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
+
                     <SeekBar
-                        android:id="@+id/sbMaxLines"
-                        android:layout_width="180dp"
+                        android:id="@+id/sbPosX"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="20"
-                        android:progress="5" />
+                        android:layout_marginVertical="4dp"
+                        android:max="2000" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Position Y"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <SeekBar
+                        android:id="@+id/sbPosY"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="4dp"
+                        android:max="3000" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -587,540 +109,129 @@
                     android:gravity="center_vertical"
                     android:layout_marginTop="4dp">
                     <TextView
-                        android:id="@+id/tvChatDurationLabel"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Duration: 6s"
+                        android:text="Scale (%)"
                         android:textColor="@color/text_secondary"
                         android:textSize="11sp" />
                     <SeekBar
-                        android:id="@+id/sbChatDuration"
+                        android:id="@+id/sbScale"
                         android:layout_width="180dp"
                         android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="30"
-                        android:progress="6" />
-                </LinearLayout>
-
-                <GridLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:layout_marginTop="4dp">
-
-                    <CheckBox
-                        android:id="@+id/cbChatTransparent"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="Transparent BG"
-                        android:textColor="@color/text_primary"
-                        android:checked="true"
-                        android:textSize="12sp" />
-
-                    <CheckBox
-                        android:id="@+id/cbChatAlwaysShow"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="Selalu Tampil"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <CheckBox
-                        android:id="@+id/cbChatHistory"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="History Chat"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-
-                    <CheckBox
-                        android:id="@+id/cbStickerAnimation"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="Stickers"
-                        android:textColor="@color/text_primary"
-                        android:textSize="12sp" />
-                </GridLayout>
-
-                <!-- TTS SETTINGS -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
-                <CheckBox
-                    android:id="@+id/cbChatTts"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Enable Chat TTS (Voice)"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvTtsVolumeLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="TTS Volume: 100%"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbTtsVolume"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:max="200"
+                        android:min="20"
+                        android:max="250"
                         android:progress="100" />
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/sizeSettingsContainer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvTtsMaxLengthLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Max Len: 100"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbTtsMaxLength"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:min="10"
-                        android:max="500"
-                        android:progress="100" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- EXTRA SETTINGS FOR QUEUE -->
-            <LinearLayout
-                android:id="@+id/extraQueueSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
-                <CheckBox
-                    android:id="@+id/cbQueueAutoHide"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Auto Hide Queue Overlay"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvQueueDurationLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Duration: 10s"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbQueueDuration"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="30"
-                        android:progress="10" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- EXTRA SETTINGS FOR LIKE -->
-            <LinearLayout
-                android:id="@+id/extraLikeSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
-                <CheckBox
-                    android:id="@+id/cbLikeAnimation"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Enable Love/Bubble Animation"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvLikeDurationLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Duration: 4s"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbLikeDuration"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="30"
-                        android:progress="4" />
-                </LinearLayout>
-            </LinearLayout>
-
-            <!-- EXTRA SETTINGS FOR JOIN -->
-            <LinearLayout
-                android:id="@+id/extraJoinSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvJoinDurationLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Duration: 4s"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbJoinDuration"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="30"
-                        android:progress="4" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSelectJoinAudio"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:text="CUSTOM JOIN AUDIO"
-                    android:textSize="10sp"
-                    app:icon="@android:drawable/ic_lock_silent_mode_off"
-                    app:iconSize="14dp"
-                    app:cornerRadius="8dp"
-                    android:padding="0dp"
-                    android:layout_marginTop="8dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp" />
-            </LinearLayout>
-
-            <!-- EXTRA SETTINGS FOR FOLLOW -->
-            <LinearLayout
-                android:id="@+id/extraFollowSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvFollowDurationLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Duration: 4s"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbFollowDuration"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="30"
-                        android:progress="4" />
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSelectFollowAudio"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:text="CUSTOM FOLLOW AUDIO"
-                    android:textSize="10sp"
-                    app:icon="@android:drawable/ic_lock_silent_mode_off"
-                    app:iconSize="14dp"
-                    app:cornerRadius="8dp"
-                    android:padding="0dp"
-                    android:layout_marginTop="8dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp" />
-            </LinearLayout>
-
-            <!-- EXTRA SETTINGS FOR NOTIF -->
-            <LinearLayout
-                android:id="@+id/extraNotifSettings"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#1AFFFFFF"
-                    android:layout_marginVertical="8dp" />
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="4dp"
-                    android:baselineAligned="false">
-
-                    <!-- Share Group -->
+                    android:orientation="vertical">
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingRight="4dp">
-
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp">
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvWidthLabel"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="SHARE CONFIG"
-                            android:textColor="@color/orange"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectShareImg"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="40dp"
-                            android:text="IMG"
-                            android:textSize="10sp"
-                            app:icon="@android:drawable/ic_menu_gallery"
-                            app:iconSize="14dp"
-                            app:cornerRadius="8dp"
-                            android:padding="0dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectShareAudio"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="40dp"
-                            android:text="AUD"
-                            android:textSize="10sp"
-                            app:icon="@android:drawable/ic_lock_silent_mode_off"
-                            app:iconSize="14dp"
-                            app:cornerRadius="8dp"
-                            android:padding="0dp"
-                            android:layout_marginTop="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp" />
+                            android:layout_weight="1"
+                            android:text="Width: Auto"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                        <SeekBar
+                            android:id="@+id/sbWidth"
+                            android:layout_width="180dp"
+                            android:layout_height="wrap_content"
+                            android:max="1000"
+                            android:progress="0" />
                     </LinearLayout>
 
-                    <!-- Gift Group -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:paddingLeft="4dp">
-
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp">
                         <TextView
-                            android:layout_width="wrap_content"
+                            android:id="@+id/tvHeightLabel"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="GIFT CONFIG"
-                            android:textColor="@color/orange"
-                            android:textSize="10sp"
-                            android:textStyle="bold"
-                            android:layout_marginBottom="4dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectGiftImg"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="40dp"
-                            android:text="IMG"
-                            android:textSize="10sp"
-                            app:icon="@android:drawable/ic_menu_gallery"
-                            app:iconSize="14dp"
-                            app:cornerRadius="8dp"
-                            android:padding="0dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnSelectGiftAudio"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                            android:layout_width="match_parent"
-                            android:layout_height="40dp"
-                            android:text="AUD"
-                            android:textSize="10sp"
-                            app:icon="@android:drawable/ic_lock_silent_mode_off"
-                            app:iconSize="14dp"
-                            app:cornerRadius="8dp"
-                            android:padding="0dp"
-                            android:layout_marginTop="4dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp" />
+                            android:layout_weight="1"
+                            android:text="Height: Auto"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                        <SeekBar
+                            android:id="@+id/sbHeight"
+                            android:layout_width="180dp"
+                            android:layout_height="wrap_content"
+                            android:max="2000"
+                            android:progress="0" />
                     </LinearLayout>
                 </LinearLayout>
 
-                <GridLayout
+                <CheckBox
+                    android:id="@+id/cbVisualPunch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:layout_marginTop="4dp">
+                    android:text="Visual Punch (Experimental)"
+                    android:textColor="@color/orange"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp" />
 
-                    <CheckBox
-                        android:id="@+id/cbUseTiktokGiftIcon"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="TikTok Gift Icon"
-                        android:textColor="@color/text_primary"
-                        android:textSize="11sp" />
+                <!-- EXTRA SETTINGS (Included) -->
+                <include
+                    android:id="@+id/extraChatSettings"
+                    layout="@layout/layout_settings_chat" />
+                <include
+                    android:id="@+id/extraQueueSettings"
+                    layout="@layout/layout_settings_queue" />
+                <include
+                    android:id="@+id/extraLikeSettings"
+                    layout="@layout/layout_settings_like" />
+                <include
+                    android:id="@+id/extraJoinSettings"
+                    layout="@layout/layout_settings_join" />
+                <include
+                    android:id="@+id/extraFollowSettings"
+                    layout="@layout/layout_settings_follow" />
+                <include
+                    android:id="@+id/extraNotifSettings"
+                    layout="@layout/layout_settings_notif" />
 
-                    <CheckBox
-                        android:id="@+id/cbUseCustomGiftSound"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_columnWeight="1"
-                        android:text="Custom Sound"
-                        android:textColor="@color/text_primary"
-                        android:textSize="11sp" />
-                </GridLayout>
-
-                <LinearLayout
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveOverlaySettings"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvNotifDurationLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Duration: 5s"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbNotifDuration"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:min="1"
-                        android:max="30"
-                        android:progress="5" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-                    <TextView
-                        android:id="@+id/tvNotifVolumeLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Volume: 100%"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp" />
-                    <SeekBar
-                        android:id="@+id/sbNotifVolume"
-                        android:layout_width="180dp"
-                        android:layout_height="wrap_content"
-                        android:max="200"
-                        android:progress="100" />
-                </LinearLayout>
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    android:text="SAVE SETTINGS"
+                    app:backgroundTint="@color/orange"
+                    android:textColor="@color/bg_dark"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp" />
             </LinearLayout>
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSaveOverlaySettings"
+            <View
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="16dp"
-                android:text="SAVE SETTINGS"
-                app:backgroundTint="@color/orange"
-                android:textColor="@color/bg_dark"
-                android:textStyle="bold"
-                app:cornerRadius="16dp" />
-        </LinearLayout>
+                android:layout_height="1dp"
+                android:background="#1AFFFFFF"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp" />
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#1AFFFFFF"
-            android:layout_marginTop="24dp"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Hold icon to open settings. Use sliders for precise control if gestures are bugged."
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp"
-            android:gravity="center"
-            android:paddingLeft="24dp"
-            android:paddingRight="24dp" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Hold icon to open settings. Use sliders for precise control if gestures are bugged."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

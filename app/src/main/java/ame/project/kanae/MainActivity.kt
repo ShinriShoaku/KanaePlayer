@@ -188,12 +188,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        updateBtnText(b.btnSelectShareImg, s.notifShareImg, R.string.btn_image)
-        updateBtnText(b.btnSelectGiftImg, s.notifGiftImg, R.string.btn_image)
-        updateBtnText(b.btnSelectShareAudio, s.notifShareAud, R.string.btn_audio)
-        updateBtnText(b.btnSelectGiftAudio, s.notifGiftAud, R.string.btn_audio)
-        updateBtnText(b.btnSelectJoinAudio, s.notifJoinAud, R.string.btn_audio)
-        updateBtnText(b.btnSelectFollowAudio, s.notifFollowAud, R.string.btn_audio)
+        updateBtnText(b.extraNotifSettings.btnSelectShareImg, s.notifShareImg, R.string.btn_image)
+        updateBtnText(b.extraNotifSettings.btnSelectGiftImg, s.notifGiftImg, R.string.btn_image)
+        updateBtnText(b.extraNotifSettings.btnSelectShareAudio, s.notifShareAud, R.string.btn_audio)
+        updateBtnText(b.extraNotifSettings.btnSelectGiftAudio, s.notifGiftAud, R.string.btn_audio)
+        updateBtnText(b.extraJoinSettings.btnSelectJoinAudio, s.notifJoinAud, R.string.btn_audio)
+        updateBtnText(b.extraFollowSettings.btnSelectFollowAudio, s.notifFollowAud, R.string.btn_audio)
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -660,10 +660,10 @@ class MainActivity : AppCompatActivity() {
             if (currentConfigKey.isNotEmpty()) service?.updateVisualPunchEnabled(currentConfigKey, isChecked)
         }
 
-        b.sbMaxLines.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraChatSettings.sbMaxLines.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvMaxLinesLabel.text = "Max Lines: $p"
+                    b.extraChatSettings.tvMaxLinesLabel.text = "Max Lines: $p"
                     service?.updateChatMaxLines(p)
                 }
             }
@@ -671,14 +671,14 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.cbChatTransparent.setOnCheckedChangeListener { _, isChecked -> service?.updateChatTransparency(isChecked) }
-        b.cbChatAlwaysShow.setOnCheckedChangeListener { _, isChecked -> service?.updateChatAlwaysShow(isChecked) }
-        b.cbChatHistory.setOnCheckedChangeListener { _, isChecked -> service?.updateChatHistory(isChecked) }
+        b.extraChatSettings.cbChatTransparent.setOnCheckedChangeListener { _, isChecked -> service?.updateChatTransparency(isChecked) }
+        b.extraChatSettings.cbChatAlwaysShow.setOnCheckedChangeListener { _, isChecked -> service?.updateChatAlwaysShow(isChecked) }
+        b.extraChatSettings.cbChatHistory.setOnCheckedChangeListener { _, isChecked -> service?.updateChatHistory(isChecked) }
 
-        b.sbChatDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraChatSettings.sbChatDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvChatDurationLabel.text = "Duration: ${p}s"
+                    b.extraChatSettings.tvChatDurationLabel.text = "Duration: ${p}s"
                     service?.updateChatDuration(p)
                 }
             }
@@ -686,12 +686,12 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.cbChatTts.setOnCheckedChangeListener { _, isChecked -> service?.updateTtsEnabled(isChecked) }
+        b.extraChatSettings.cbChatTts.setOnCheckedChangeListener { _, isChecked -> service?.updateTtsEnabled(isChecked) }
 
-        b.sbTtsVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraChatSettings.sbTtsVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvTtsVolumeLabel.text = "Volume: $p%"
+                    b.extraChatSettings.tvTtsVolumeLabel.text = "Volume: $p%"
                     service?.updateTtsVolume(p.toFloat() / 100f)
                 }
             }
@@ -699,10 +699,10 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.sbTtsMaxLength.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraChatSettings.sbTtsMaxLength.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvTtsMaxLengthLabel.text = "Max Len: $p"
+                    b.extraChatSettings.tvTtsMaxLengthLabel.text = "Max Len: $p"
                     service?.updateTtsMaxLength(p)
                 }
             }
@@ -710,12 +710,12 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.cbQueueAutoHide.setOnCheckedChangeListener { _, isChecked -> service?.updateQueueAutoHide(isChecked) }
+        b.extraQueueSettings.cbQueueAutoHide.setOnCheckedChangeListener { _, isChecked -> service?.updateQueueAutoHide(isChecked) }
 
-        b.sbQueueDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraQueueSettings.sbQueueDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvQueueDurationLabel.text = "Duration: ${p}s"
+                    b.extraQueueSettings.tvQueueDurationLabel.text = "Duration: ${p}s"
                     service?.updateQueueDuration(p)
                 }
             }
@@ -723,10 +723,10 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.sbJoinDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraJoinSettings.sbJoinDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvJoinDurationLabel.text = "Duration: ${p}s"
+                    b.extraJoinSettings.tvJoinDurationLabel.text = "Duration: ${p}s"
                     service?.updateJoinDuration(p)
                 }
             }
@@ -734,10 +734,10 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.sbLikeDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraLikeSettings.sbLikeDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvLikeDurationLabel.text = "Duration: ${p}s"
+                    b.extraLikeSettings.tvLikeDurationLabel.text = "Duration: ${p}s"
                     service?.updateLikeDuration(p)
                 }
             }
@@ -745,10 +745,10 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.sbFollowDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraFollowSettings.sbFollowDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvFollowDurationLabel.text = "Duration: ${p}s"
+                    b.extraFollowSettings.tvFollowDurationLabel.text = "Duration: ${p}s"
                     service?.updateFollowDuration(p)
                 }
             }
@@ -758,7 +758,7 @@ class MainActivity : AppCompatActivity() {
 
         fun openSettings(key: String, title: String) {
             currentConfigKey = key
-            b.panelGrid.visibility = View.GONE
+            b.panelGrid.root.visibility = View.GONE
             b.panelSettings.visibility = View.VISIBLE
             b.tvSettingsTitle.text = "$title Settings"
             dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
@@ -801,82 +801,82 @@ class MainActivity : AppCompatActivity() {
             b.cbVisualPunch.visibility = if (key == "notif") View.GONE else View.VISIBLE
             b.posSettingsContainer.visibility = View.GONE
 
-            b.extraChatSettings.visibility = View.GONE
-            b.extraQueueSettings.visibility = View.GONE
-            b.extraNotifSettings.visibility = View.GONE
-            b.extraLikeSettings.visibility = View.GONE
-            b.extraJoinSettings.visibility = View.GONE
-            b.extraFollowSettings.visibility = View.GONE
+            b.extraChatSettings.root.visibility = View.GONE
+            b.extraQueueSettings.root.visibility = View.GONE
+            b.extraNotifSettings.root.visibility = View.GONE
+            b.extraLikeSettings.root.visibility = View.GONE
+            b.extraJoinSettings.root.visibility = View.GONE
+            b.extraFollowSettings.root.visibility = View.GONE
 
             if (key == "chat") {
-                b.extraChatSettings.visibility = View.VISIBLE
-                b.sbMaxLines.progress = s.chatMaxLines
-                b.tvMaxLinesLabel.text = "Max Lines: ${s.chatMaxLines}"
-                b.sbChatDuration.progress = s.chatDuration
-                b.tvChatDurationLabel.text = "Duration: ${s.chatDuration}s"
-                b.cbChatTransparent.isChecked = s.chatTransparent
-                b.cbChatAlwaysShow.isChecked = s.chatAlwaysShow
-                b.cbChatHistory.isChecked = s.chatHistoryEnabled
-                b.cbStickerAnimation.isChecked = s.chatStickerAnimation
-                b.cbChatTts.isChecked = s.chatTtsEnabled
+                b.extraChatSettings.root.visibility = View.VISIBLE
+                b.extraChatSettings.sbMaxLines.progress = s.chatMaxLines
+                b.extraChatSettings.tvMaxLinesLabel.text = "Max Lines: ${s.chatMaxLines}"
+                b.extraChatSettings.sbChatDuration.progress = s.chatDuration
+                b.extraChatSettings.tvChatDurationLabel.text = "Duration: ${s.chatDuration}s"
+                b.extraChatSettings.cbChatTransparent.isChecked = s.chatTransparent
+                b.extraChatSettings.cbChatAlwaysShow.isChecked = s.chatAlwaysShow
+                b.extraChatSettings.cbChatHistory.isChecked = s.chatHistoryEnabled
+                b.extraChatSettings.cbStickerAnimation.isChecked = s.chatStickerAnimation
+                b.extraChatSettings.cbChatTts.isChecked = s.chatTtsEnabled
                 val ttsVolPct = (s.chatTtsVolume * 100).toInt()
-                b.sbTtsVolume.progress = ttsVolPct
-                b.tvTtsVolumeLabel.text = "Volume: $ttsVolPct%"
-                b.sbTtsMaxLength.progress = s.chatTtsMaxLength
-                b.tvTtsMaxLengthLabel.text = "Max Len: ${s.chatTtsMaxLength}"
+                b.extraChatSettings.sbTtsVolume.progress = ttsVolPct
+                b.extraChatSettings.tvTtsVolumeLabel.text = "Volume: $ttsVolPct%"
+                b.extraChatSettings.sbTtsMaxLength.progress = s.chatTtsMaxLength
+                b.extraChatSettings.tvTtsMaxLengthLabel.text = "Max Len: ${s.chatTtsMaxLength}"
                 service?.showChatOverlay()
                 service?.showChatDummy(persistent = true)
             } else if (key == "join") {
-                b.extraJoinSettings.visibility = View.VISIBLE
-                b.sbJoinDuration.progress = s.joinDuration
-                b.tvJoinDurationLabel.text = "Duration: ${s.joinDuration}s"
+                b.extraJoinSettings.root.visibility = View.VISIBLE
+                b.extraJoinSettings.sbJoinDuration.progress = s.joinDuration
+                b.extraJoinSettings.tvJoinDurationLabel.text = "Duration: ${s.joinDuration}s"
                 syncNotifSettingsButtons()
                 service?.showJoinDummy(persistent = true)
             } else if (key == "follow") {
-                b.extraFollowSettings.visibility = View.VISIBLE
-                b.sbFollowDuration.progress = s.followDuration
-                b.tvFollowDurationLabel.text = "Duration: ${s.followDuration}s"
+                b.extraFollowSettings.root.visibility = View.VISIBLE
+                b.extraFollowSettings.sbFollowDuration.progress = s.followDuration
+                b.extraFollowSettings.tvFollowDurationLabel.text = "Duration: ${s.followDuration}s"
                 syncNotifSettingsButtons()
                 service?.showFollowDummy(persistent = true)
             } else if (key == "like") {
-                b.extraLikeSettings.visibility = View.VISIBLE
-                b.cbLikeAnimation.isChecked = s.likeAnimationEnabled
-                b.sbLikeDuration.progress = s.likeDuration
-                b.tvLikeDurationLabel.text = "Duration: ${s.likeDuration}s"
+                b.extraLikeSettings.root.visibility = View.VISIBLE
+                b.extraLikeSettings.cbLikeAnimation.isChecked = s.likeAnimationEnabled
+                b.extraLikeSettings.sbLikeDuration.progress = s.likeDuration
+                b.extraLikeSettings.tvLikeDurationLabel.text = "Duration: ${s.likeDuration}s"
                 service?.showLikeDummy(persistent = true)
             } else if (key == "queue") {
-                b.extraQueueSettings.visibility = View.VISIBLE
-                b.cbQueueAutoHide.isChecked = s.queueAutoHide
-                b.sbQueueDuration.progress = s.queueDuration
-                b.tvQueueDurationLabel.text = "Duration: ${s.queueDuration}s"
+                b.extraQueueSettings.root.visibility = View.VISIBLE
+                b.extraQueueSettings.cbQueueAutoHide.isChecked = s.queueAutoHide
+                b.extraQueueSettings.sbQueueDuration.progress = s.queueDuration
+                b.extraQueueSettings.tvQueueDurationLabel.text = "Duration: ${s.queueDuration}s"
                 service?.updateQueueAutoHide(false)
                 service?.showQueueOverlay()
             } else if (key == "notif") {
-                b.extraNotifSettings.visibility = View.VISIBLE
-                b.sbNotifDuration.progress = s.notifDuration
-                b.tvNotifDurationLabel.text = "Duration: ${s.notifDuration}s"
+                b.extraNotifSettings.root.visibility = View.VISIBLE
+                b.extraNotifSettings.sbNotifDuration.progress = s.notifDuration
+                b.extraNotifSettings.tvNotifDurationLabel.text = "Duration: ${s.notifDuration}s"
                 val vol = (s.notifVolume * 100).toInt()
-                b.sbNotifVolume.progress = vol
-                b.tvNotifVolumeLabel.text = "Volume: $vol%"
-                b.cbUseTiktokGiftIcon.isChecked = s.useTiktokGiftIcon
-                b.cbUseCustomGiftSound.isChecked = s.useCustomGiftSound
-                b.containerGiftSound.visibility = if (s.useCustomGiftSound) View.VISIBLE else View.GONE
+                b.extraNotifSettings.sbNotifVolume.progress = vol
+                b.extraNotifSettings.tvNotifVolumeLabel.text = "Volume: $vol%"
+                b.extraNotifSettings.cbUseTiktokGiftIcon.isChecked = s.useTiktokGiftIcon
+                b.extraNotifSettings.cbUseCustomGiftSound.isChecked = s.useCustomGiftSound
+                b.panelGrid.containerGiftSound.visibility = if (s.useCustomGiftSound) View.VISIBLE else View.GONE
                 syncNotifSettingsButtons()
                 service?.showNotifDummy(persistent = true)
             }
         }
 
-        b.btnSelectShareImg.setOnClickListener { pickShareImg.launch(arrayOf("image/*")) }
-        b.btnSelectGiftImg.setOnClickListener { pickGiftImg.launch(arrayOf("image/*")) }
-        b.btnSelectShareAudio.setOnClickListener { pickShareAudio.launch(arrayOf("audio/*")) }
-        b.btnSelectGiftAudio.setOnClickListener { pickGiftAudio.launch(arrayOf("audio/*")) }
-        b.btnSelectJoinAudio.setOnClickListener { pickJoinAudio.launch(arrayOf("audio/*")) }
-        b.btnSelectFollowAudio.setOnClickListener { pickFollowAudio.launch(arrayOf("audio/*")) }
+        b.extraNotifSettings.btnSelectShareImg.setOnClickListener { pickShareImg.launch(arrayOf("image/*")) }
+        b.extraNotifSettings.btnSelectGiftImg.setOnClickListener { pickGiftImg.launch(arrayOf("image/*")) }
+        b.extraNotifSettings.btnSelectShareAudio.setOnClickListener { pickShareAudio.launch(arrayOf("audio/*")) }
+        b.extraNotifSettings.btnSelectGiftAudio.setOnClickListener { pickGiftAudio.launch(arrayOf("audio/*")) }
+        b.extraJoinSettings.btnSelectJoinAudio.setOnClickListener { pickJoinAudio.launch(arrayOf("audio/*")) }
+        b.extraFollowSettings.btnSelectFollowAudio.setOnClickListener { pickFollowAudio.launch(arrayOf("audio/*")) }
 
-        b.sbNotifDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraNotifSettings.sbNotifDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvNotifDurationLabel.text = "Duration: ${p}s"
+                    b.extraNotifSettings.tvNotifDurationLabel.text = "Duration: ${p}s"
                     settingsManager.settings.notifDuration = p
                     settingsManager.saveSettings()
                     updateNotifToService()
@@ -886,10 +886,10 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.sbNotifVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        b.extraNotifSettings.sbNotifVolume.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
                 if (fromUser) {
-                    b.tvNotifVolumeLabel.text = "Volume: $p%"
+                    b.extraNotifSettings.tvNotifVolumeLabel.text = "Volume: $p%"
                     service?.updateNotifVolume(p.toFloat() / 100f)
                 }
             }
@@ -897,83 +897,83 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
-        b.cbUseTiktokGiftIcon.setOnCheckedChangeListener { _, isChecked -> service?.updateUseTiktokGiftIcon(isChecked) }
-        b.cbUseCustomGiftSound.setOnCheckedChangeListener { _, isChecked ->
-            b.containerGiftSound.visibility = if (isChecked) View.VISIBLE else View.GONE
+        b.extraNotifSettings.cbUseTiktokGiftIcon.setOnCheckedChangeListener { _, isChecked -> service?.updateUseTiktokGiftIcon(isChecked) }
+        b.extraNotifSettings.cbUseCustomGiftSound.setOnCheckedChangeListener { _, isChecked ->
+            b.panelGrid.containerGiftSound.visibility = if (isChecked) View.VISIBLE else View.GONE
             service?.updateUseCustomGiftSound(isChecked)
         }
 
-        b.btnGiftSound.setOnClickListener { startActivity(Intent(this, GiftSoundActivity::class.java)) }
-        b.cbLikeAnimation.setOnCheckedChangeListener { _, isChecked -> service?.updateLikeAnimationEnabled(isChecked) }
-        b.cbStickerAnimation.setOnCheckedChangeListener { _, isChecked -> service?.updateStickerAnimationEnabled(isChecked) }
+        b.panelGrid.btnGiftSound.setOnClickListener { startActivity(Intent(this, GiftSoundActivity::class.java)) }
+        b.extraLikeSettings.cbLikeAnimation.setOnCheckedChangeListener { _, isChecked -> service?.updateLikeAnimationEnabled(isChecked) }
+        b.extraChatSettings.cbStickerAnimation.setOnCheckedChangeListener { _, isChecked -> service?.updateStickerAnimationEnabled(isChecked) }
 
-        b.btnOverlay.setOnClickListener {
+        b.panelGrid.btnOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             Log.d("Kanae_UI", "[UI_CLICK] Player Overlay Toggle")
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             if (svc.overlayVisible) svc.hideOverlay() else svc.showOverlay()
             syncUi(true)
         }
-        b.btnOverlay.setOnLongClickListener { openSettings("player", "Player"); true }
+        b.panelGrid.btnOverlay.setOnLongClickListener { openSettings("player", "Player"); true }
 
-        b.btnQueueOverlay.setOnClickListener {
+        b.panelGrid.btnQueueOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleQueueOverlay()
             syncUi(true)
         }
-        b.btnQueueOverlay.setOnLongClickListener { openSettings("queue", "Queue"); true }
+        b.panelGrid.btnQueueOverlay.setOnLongClickListener { openSettings("queue", "Queue"); true }
 
-        b.btnLyricsOverlay.setOnClickListener {
+        b.panelGrid.btnLyricsOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleLyricsOverlay()
             syncUi(true)
         }
-        b.btnLyricsOverlay.setOnLongClickListener { openSettings("lyrics", "Lyrics"); true }
+        b.panelGrid.btnLyricsOverlay.setOnLongClickListener { openSettings("lyrics", "Lyrics"); true }
 
-        b.btnChatOverlay.setOnClickListener {
+        b.panelGrid.btnChatOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             Log.d("Kanae_UI", "[UI_CLICK] Chat Overlay Toggle")
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleChatOverlay()
             syncUi(true)
         }
-        b.btnChatOverlay.setOnLongClickListener { openSettings("chat", "Chat"); true }
+        b.panelGrid.btnChatOverlay.setOnLongClickListener { openSettings("chat", "Chat"); true }
 
-        b.btnNotifOverlay.setOnClickListener {
+        b.panelGrid.btnNotifOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleNotifOverlay()
             syncUi(true)
         }
-        b.btnNotifOverlay.setOnLongClickListener { openSettings("notif", "Notif"); true }
+        b.panelGrid.btnNotifOverlay.setOnLongClickListener { openSettings("notif", "Notif"); true }
 
-        b.btnJoinOverlay.setOnClickListener {
+        b.panelGrid.btnJoinOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleJoinOverlay()
             syncUi(true)
         }
-        b.btnJoinOverlay.setOnLongClickListener { openSettings("join", "Join"); true }
+        b.panelGrid.btnJoinOverlay.setOnLongClickListener { openSettings("join", "Join"); true }
 
-        b.btnLikeOverlay.setOnClickListener {
+        b.panelGrid.btnLikeOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleLikeOverlay()
             syncUi(true)
         }
-        b.btnLikeOverlay.setOnLongClickListener { openSettings("like", "Like"); true }
+        b.panelGrid.btnLikeOverlay.setOnLongClickListener { openSettings("like", "Like"); true }
 
-        b.btnFollowOverlay.setOnClickListener {
+        b.panelGrid.btnFollowOverlay.setOnClickListener {
             val svc = service ?: return@setOnClickListener
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             svc.toggleFollowOverlay()
             syncUi(true)
         }
-        b.btnFollowOverlay.setOnLongClickListener { openSettings("follow", "Follow"); true }
+        b.panelGrid.btnFollowOverlay.setOnLongClickListener { openSettings("follow", "Follow"); true }
 
-        b.btnCanvas.setOnClickListener {
+        b.panelGrid.btnCanvas.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             val canvasActive = service?.getStateMap()?.get("canvas_mode") as? Boolean ?: false
             if (canvasActive) {
@@ -985,9 +985,9 @@ class MainActivity : AppCompatActivity() {
             }
             syncUi(true)
         }
-        b.btnCustomOverlay.setOnClickListener { startActivity(Intent(this, CustomWebOverlaySettingsActivity::class.java)); dialog.dismiss() }
-        b.btnMapping.setOnClickListener { startActivity(Intent(this, MappingActivity::class.java)); dialog.dismiss() }
-        b.btnGesture.setOnClickListener { startActivity(Intent(this, QuickOverlayActivity::class.java)); dialog.dismiss() }
+        b.panelGrid.btnCustomOverlay.setOnClickListener { startActivity(Intent(this, CustomWebOverlaySettingsActivity::class.java)); dialog.dismiss() }
+        b.panelGrid.btnMapping.setOnClickListener { startActivity(Intent(this, MappingActivity::class.java)); dialog.dismiss() }
+        b.panelGrid.btnGesture.setOnClickListener { startActivity(Intent(this, QuickOverlayActivity::class.java)); dialog.dismiss() }
 
         b.btnBackToGrid.setOnClickListener {
             if (currentConfigKey == "queue") service?.updateQueueAutoHide(settingsManager.settings.queueAutoHide)
@@ -996,7 +996,7 @@ class MainActivity : AppCompatActivity() {
             if (currentConfigKey == "join") service?.hideJoinOverlay()
             if (currentConfigKey == "like") service?.hideLikeOverlay()
             if (currentConfigKey == "follow") service?.hideFollowOverlay()
-            b.panelGrid.visibility = View.VISIBLE
+            b.panelGrid.root.visibility = View.VISIBLE
             b.panelSettings.visibility = View.GONE
         }
 
@@ -1007,7 +1007,7 @@ class MainActivity : AppCompatActivity() {
             val w = if (rawW == 0) 0 else if (rawW < 200) 200 else rawW
             val h = b.sbHeight.progress
 
-            if (currentConfigKey == "queue") service?.updateQueueAutoHide(b.cbQueueAutoHide.isChecked)
+            if (currentConfigKey == "queue") service?.updateQueueAutoHide(b.extraQueueSettings.cbQueueAutoHide.isChecked)
             if (currentConfigKey == "notif") service?.resetNotifTimer()
             if (currentConfigKey == "chat") service?.hideChatDummy()
             if (currentConfigKey == "join") service?.hideJoinOverlay()
@@ -1015,7 +1015,7 @@ class MainActivity : AppCompatActivity() {
             if (currentConfigKey == "follow") service?.hideFollowOverlay()
 
             snack("${b.tvSettingsTitle.text} saved!")
-            b.panelGrid.visibility = View.VISIBLE
+            b.panelGrid.root.visibility = View.VISIBLE
             b.panelSettings.visibility = View.GONE
             service?.applyOverlayConfig(currentConfigKey, currentPos.first, currentPos.second, scale.toFloat()/100f, w, h)
             service?.persistSettings()
@@ -1173,45 +1173,45 @@ class MainActivity : AppCompatActivity() {
     private fun syncBottomSheetOnly(svc: PlayerForegroundService, state: Map<String, Any?>) {
         overlaySheetBinding?.let { b ->
             // Update labels & Alphas Overlay (Ini harus responsif saat diklik)
-            b.tvLabelPlayer.text = if (svc.overlayVisible) "Player ON" else "Player"
-            b.btnOverlay.alpha = if (svc.overlayVisible) 1.0f else 0.6f
+            b.panelGrid.tvLabelPlayer.text = if (svc.overlayVisible) "Player ON" else "Player"
+            b.panelGrid.btnOverlay.alpha = if (svc.overlayVisible) 1.0f else 0.6f
 
             val queueOn = state["queue_visible"] as? Boolean ?: false
-            b.tvLabelQueue.text = if (queueOn) "Queue ON" else "Queue"
-            b.btnQueueOverlay.alpha = if (queueOn) 1.0f else 0.6f
+            b.panelGrid.tvLabelQueue.text = if (queueOn) "Queue ON" else "Queue"
+            b.panelGrid.btnQueueOverlay.alpha = if (queueOn) 1.0f else 0.6f
 
             val lyricsOn = state["lyrics_visible"] as? Boolean ?: false
-            b.tvLabelLyrics.text = if (lyricsOn) "Lyrics ON" else "Lyrics"
-            b.btnLyricsOverlay.alpha = if (lyricsOn) 1.0f else 0.6f
+            b.panelGrid.tvLabelLyrics.text = if (lyricsOn) "Lyrics ON" else "Lyrics"
+            b.panelGrid.btnLyricsOverlay.alpha = if (lyricsOn) 1.0f else 0.6f
 
             val chatOn = state["chat_visible"] as? Boolean ?: false
-            b.tvLabelChat.text = if (chatOn) "Chat ON" else "Chat"
-            b.btnChatOverlay.alpha = if (chatOn) 1.0f else 0.6f
+            b.panelGrid.tvLabelChat.text = if (chatOn) "Chat ON" else "Chat"
+            b.panelGrid.btnChatOverlay.alpha = if (chatOn) 1.0f else 0.6f
 
             val notifEnabled = state["notif_enabled"] as? Boolean ?: false
-            b.tvLabelNotif.text = if (notifEnabled) "Notif ON" else "Notif"
-            b.btnNotifOverlay.alpha = if (notifEnabled) 1.0f else 0.6f
+            b.panelGrid.tvLabelNotif.text = if (notifEnabled) "Notif ON" else "Notif"
+            b.panelGrid.btnNotifOverlay.alpha = if (notifEnabled) 1.0f else 0.6f
 
             val joinEnabled = state["join_enabled"] as? Boolean ?: false
-            b.tvLabelJoin.text = if (joinEnabled) "Join ON" else "Join"
-            b.btnJoinOverlay.alpha = if (joinEnabled) 1.0f else 0.6f
+            b.panelGrid.tvLabelJoin.text = if (joinEnabled) "Join ON" else "Join"
+            b.panelGrid.btnJoinOverlay.alpha = if (joinEnabled) 1.0f else 0.6f
 
             val likeEnabled = state["like_enabled"] as? Boolean ?: false
-            b.tvLabelLike.text = if (likeEnabled) "Like ON" else "Like"
-            b.btnLikeOverlay.alpha = if (likeEnabled) 1.0f else 0.6f
+            b.panelGrid.tvLabelLike.text = if (likeEnabled) "Like ON" else "Like"
+            b.panelGrid.btnLikeOverlay.alpha = if (likeEnabled) 1.0f else 0.6f
 
             val followEnabled = state["follow_enabled"] as? Boolean ?: false
-            b.tvLabelFollow.text = if (followEnabled) "Follow ON" else "Follow"
-            b.btnFollowOverlay.alpha = if (followEnabled) 1.0f else 0.6f
+            b.panelGrid.tvLabelFollow.text = if (followEnabled) "Follow ON" else "Follow"
+            b.panelGrid.btnFollowOverlay.alpha = if (followEnabled) 1.0f else 0.6f
 
             val canvasOn = state["canvas_mode"]  as? Boolean ?: false
-            b.tvLabelCanvas.text = if (canvasOn) "Canvas ON" else "Canvas"
-            b.btnCanvas.alpha = if (canvasOn) 1.0f else 0.6f
+            b.panelGrid.tvLabelCanvas.text = if (canvasOn) "Canvas ON" else "Canvas"
+            b.panelGrid.btnCanvas.alpha = if (canvasOn) 1.0f else 0.6f
 
             // Update Panel Settings jika sedang aktif
             if (currentConfigKey == "chat" && b.panelSettings.visibility == View.VISIBLE) {
                 val ttsEnabled = state["chat_tts_enabled"] as? Boolean ?: false
-                if (b.cbChatTts.isChecked != ttsEnabled) b.cbChatTts.isChecked = ttsEnabled
+                if (b.extraChatSettings.cbChatTts.isChecked != ttsEnabled) b.extraChatSettings.cbChatTts.isChecked = ttsEnabled
             }
         }
     }

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/extraJoinSettings"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1AFFFFFF"
+        android:layout_marginVertical="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+        <TextView
+            android:id="@+id/tvJoinDurationLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Duration: 4s"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbJoinDuration"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:min="1"
+            android:max="30"
+            android:progress="4" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnSelectJoinAudio"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:text="CUSTOM JOIN AUDIO"
+        android:textSize="10sp"
+        app:icon="@android:drawable/ic_lock_silent_mode_off"
+        app:iconSize="14dp"
+        app:iconGravity="textTop"
+        app:cornerRadius="8dp"
+        android:padding="0dp"
+        android:layout_marginTop="8dp"
+        android:insetTop="0dp"
+        android:insetBottom="0dp" />
+</LinearLayout>
