@@ -1,5 +1,5 @@
 {
-  "versionCode": 25,
-  "versionName": "12.3.7-klukai",
-  "updateMessage": "Memperbaiki bug ExceptionInInitializerError di Android 16 untuk ver klukai"
+  "versionCode": 26,
+  "versionName": "12.3.8-klukai",
+  "updateMessage": "add custom audio untuk join & follow, perbaikan bottomsheet overlay, dan optimasi ProGuard."
 }
