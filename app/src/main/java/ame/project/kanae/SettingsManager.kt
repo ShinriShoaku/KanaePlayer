@@ -94,6 +94,8 @@ data class AppSettings(
     var notifGiftImg: String? = null,
     var notifShareAud: String? = null,
     var notifGiftAud: String? = null,
+    var notifJoinAud: String? = null,
+    var notifFollowAud: String? = null,
     var notifDuration: Int = 5,
 
     var joinDuration: Int = 4,

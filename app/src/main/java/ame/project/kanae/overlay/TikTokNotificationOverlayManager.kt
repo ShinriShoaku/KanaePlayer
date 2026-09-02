@@ -59,6 +59,8 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     private var giftImageUri: Uri? = null
     private var shareAudioUri: Uri? = null
     private var giftAudioUri: Uri? = null
+    private var joinAudioUri: Uri? = null
+    private var followAudioUri: Uri? = null
     private var mediaPlayer: MediaPlayer? = null
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var notificationVolume: Float = 1.0f
@@ -131,6 +133,72 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         try { loudnessEnhancer?.setTargetGain(gainMb) } catch (_: Exception) {}
     }
 
+    private val mediaPlayers = mutableMapOf<String, MediaPlayer>()
+    private val enhancers = mutableMapOf<String, LoudnessEnhancer>()
+    private val lastPlayTime = mutableMapOf<String, Long>()
+    private val SOUND_COOLDOWN = 300L // ms
+
+    fun playNotificationSound(type: String) {
+        val now = System.currentTimeMillis()
+        if (now - (lastPlayTime[type] ?: 0L) < SOUND_COOLDOWN) return
+        lastPlayTime[type] = now
+
+        val audioUri = when (type) {
+            "gift" -> giftAudioUri
+            "join" -> joinAudioUri
+            "follow" -> followAudioUri
+            else -> shareAudioUri
+        }
+        audioUri?.let { playAudioInternal(it, type) }
+    }
+
+    private fun playAudioInternal(uri: Uri, type: String) {
+        try {
+            // Release previous player for this specific type to avoid OOM
+            mediaPlayers[type]?.let {
+                it.stop()
+                it.release()
+            }
+            enhancers[type]?.let {
+                it.release()
+            }
+
+            val mp = MediaPlayer()
+            mp.setDataSource(context, uri)
+            
+            // Set volume & Enhancer
+            val actualVol = if (notificationVolume > 1.0f) 1.0f else notificationVolume
+            mp.setVolume(actualVol, actualVol)
+            
+            mp.setOnPreparedListener { player ->
+                val sessionId = player.audioSessionId
+                if (sessionId != 0 && notificationVolume > 1.0f) {
+                    val enhancer = LoudnessEnhancer(sessionId)
+                    enhancer.setTargetGain(((notificationVolume - 1.0f) * 2000).toInt())
+                    enhancer.enabled = true
+                    enhancers[type] = enhancer
+                }
+                player.start()
+            }
+
+            mp.setOnCompletionListener { player ->
+                enhancers[type]?.release()
+                enhancers.remove(type)
+                player.release()
+                if (mediaPlayers[type] == player) mediaPlayers.remove(type)
+            }
+
+            mp.setOnErrorListener { player, _, _ ->
+                player.release()
+                mediaPlayers.remove(type)
+                true
+            }
+
+            mediaPlayers[type] = mp
+            mp.prepareAsync()
+        } catch (_: Exception) {}
+    }
+
     @Synchronized
     fun showNotification(userName: String, action: String, type: String, isDummy: Boolean = false, persistent: Boolean = false, giftIconUrl: String? = null, giftName: String? = null, giftId: Int? = null) {
         if (windowView == null) setupView()
@@ -139,7 +207,7 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         tvAction?.text = action
 
         var imageUri = if (type == "gift") giftImageUri else shareImageUri
-        var audioUri = if (type == "gift") giftAudioUri else shareAudioUri
+        var audioUri: Uri? = null // Handled by playNotificationSound if needed
 
         if (type == "gift" && useCustomGiftSound) {
             val settingsManager = SettingsManager.getInstance(context)
@@ -172,30 +240,11 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         }
 
         if (!isDummy) {
-            audioUri?.let {
-                try {
-                    mediaPlayer?.stop()
-                    mediaPlayer?.release()
-                    loudnessEnhancer?.release()
-
-                    mediaPlayer = MediaPlayer.create(context, it)
-                    val actualVol = if (notificationVolume > 1.0f) 1.0f else notificationVolume
-                    mediaPlayer?.setVolume(actualVol, actualVol)
-
-                    val sessionId = mediaPlayer?.audioSessionId ?: 0
-                    if (sessionId != 0) {
-                        loudnessEnhancer = LoudnessEnhancer(sessionId)
-                        if (notificationVolume > 1.0f) {
-                            loudnessEnhancer?.setTargetGain(((notificationVolume - 1.0f) * 2000).toInt())
-                        }
-                        loudnessEnhancer?.enabled = true
-                    }
-                    mediaPlayer?.setOnCompletionListener { player ->
-                        loudnessEnhancer?.release(); loudnessEnhancer = null
-                        player.release(); if (mediaPlayer == player) mediaPlayer = null
-                    }
-                    mediaPlayer?.start()
-                } catch (_: Exception) {}
+            if (type == "gift" && audioUri != null) {
+                // For custom gift sounds, play directly
+                playAudioInternal(audioUri, "gift_custom_$giftId")
+            } else {
+                playNotificationSound(type)
             }
         }
 
@@ -247,8 +296,17 @@ class TikTokNotificationOverlayManager(private val context: Context) {
     fun hide() {
         handler.removeCallbacks(hideRunnable)
         if (isShowing && windowView != null) try { wm.removeView(windowView) } catch (_: Exception) {}
-        try { mediaPlayer?.stop(); mediaPlayer?.release(); loudnessEnhancer?.release() } catch (_: Exception) {}
-        mediaPlayer = null; loudnessEnhancer = null; isShowing = false; windowView = null; contentView = null; ivImage = null; tvUser = null; tvAction = null; gestureHelper = null; layoutParams = null
+        
+        mediaPlayers.values.forEach { 
+            try { it.stop(); it.release() } catch (_: Exception) {}
+        }
+        mediaPlayers.clear()
+        enhancers.values.forEach { 
+            try { it.release() } catch (_: Exception) {}
+        }
+        enhancers.clear()
+
+        isShowing = false; windowView = null; contentView = null; ivImage = null; tvUser = null; tvAction = null; gestureHelper = null; layoutParams = null
     }
 
     fun resetHideTimer() {
@@ -257,8 +315,14 @@ class TikTokNotificationOverlayManager(private val context: Context) {
         handler.postDelayed(hideRunnable, displayDurationMs)
     }
 
-    fun setConfig(shareImg: String?, giftImg: String?, shareAud: String?, giftAud: String?, duration: Int) {
-        shareImageUri = shareImg?.let { Uri.parse(it) }; giftImageUri = giftImg?.let { Uri.parse(it) }; shareAudioUri = shareAud?.let { Uri.parse(it) }; giftAudioUri = giftAud?.let { Uri.parse(it) }; displayDurationMs = duration * 1000L
+    fun setConfig(shareImg: String?, giftImg: String?, shareAud: String?, giftAud: String?, joinAud: String?, followAud: String?, duration: Int) {
+        shareImageUri = shareImg?.let { Uri.parse(it) }
+        giftImageUri = giftImg?.let { Uri.parse(it) }
+        shareAudioUri = shareAud?.let { Uri.parse(it) }
+        giftAudioUri = giftAud?.let { Uri.parse(it) }
+        joinAudioUri = joinAud?.let { Uri.parse(it) }
+        followAudioUri = followAud?.let { Uri.parse(it) }
+        displayDurationMs = duration * 1000L
     }
 
     private var giftCache: Map<Int, String>? = null

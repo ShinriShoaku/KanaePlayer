@@ -429,6 +429,8 @@ class PlayerForegroundService : Service() {
                 s.notifGiftImg,
                 s.notifShareAud,
                 s.notifGiftAud,
+                s.notifJoinAud,
+                s.notifFollowAud,
                 s.notifDuration
             )
             setUseTiktokGiftIcon(s.useTiktokGiftIcon)
@@ -1191,16 +1193,18 @@ class PlayerForegroundService : Service() {
         broadcastState()
     }
 
-    fun updateNotifConfig(shareImg: String?, giftImg: String?, shareAud: String?, giftAud: String?, duration: Int, refreshType: String? = null) {
+    fun updateNotifConfig(shareImg: String?, giftImg: String?, shareAud: String?, giftAud: String?, joinAud: String?, followAud: String?, duration: Int, refreshType: String? = null) {
         settingsManager.settings.apply {
             notifShareImg = shareImg
             notifGiftImg = giftImg
             notifShareAud = shareAud
             notifGiftAud = giftAud
+            notifJoinAud = joinAud
+            notifFollowAud = followAud
             notifDuration = duration
         }
         settingsManager.saveSettings()
-        notifOverlayManager.setConfig(shareImg, giftImg, shareAud, giftAud, duration)
+        notifOverlayManager.setConfig(shareImg, giftImg, shareAud, giftAud, joinAud, followAud, duration)
         if (notifOverlayManager.isShowing || refreshType != null) {
             showNotifDummy(refreshType ?: "gift")
         }
@@ -1354,6 +1358,7 @@ class PlayerForegroundService : Service() {
         val config = settingsManager.getOverlayConfig("join")
         joinOverlayManager.showJoin("Preview", null, isDummy = true, persistent = persistent)
         joinOverlayManager.applyConfig(config.x, config.y, config.scale)
+        if (!persistent) notifOverlayManager.playNotificationSound("join")
     }
 
     fun showLikeDummy(persistent: Boolean = false) {
@@ -1366,6 +1371,7 @@ class PlayerForegroundService : Service() {
         val config = settingsManager.getOverlayConfig("follow")
         followOverlayManager.showFollow("Preview", null, isDummy = true, persistent = persistent)
         followOverlayManager.applyConfig(config.x, config.y, config.scale)
+        if (!persistent) notifOverlayManager.playNotificationSound("follow")
     }
 
     fun showWidthPreview(key: String, widthDp: Int) {
@@ -1820,7 +1826,10 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onJoin = { nick, _, profile ->
-                if (s.joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) joinOverlayManager.showJoin(nick, profile)
+                if (s.joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    joinOverlayManager.showJoin(nick, profile)
+                    notifOverlayManager.playNotificationSound("join")
+                }
 
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()
@@ -1830,7 +1839,10 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onFollow = { nick, _, profile ->
-                if (s.followEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) followOverlayManager.showFollow(nick, profile)
+                if (s.followEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
+                    followOverlayManager.showFollow(nick, profile)
+                    notifOverlayManager.playNotificationSound("follow")
+                }
 
                 // Notify AIDL
                 val n = remoteCallbacks.beginBroadcast()

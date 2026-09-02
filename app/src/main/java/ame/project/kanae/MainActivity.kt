@@ -143,6 +143,22 @@ class MainActivity : AppCompatActivity() {
             updateNotifToService("gift")
         }
     }
+    private val pickJoinAudio = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            settingsManager.settings.notifJoinAud = it.toString()
+            settingsManager.saveSettings()
+            updateNotifToService("join")
+        }
+    }
+    private val pickFollowAudio = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let {
+            contentResolver.takePersistableUriPermission(it, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            settingsManager.settings.notifFollowAud = it.toString()
+            settingsManager.saveSettings()
+            updateNotifToService("follow")
+        }
+    }
 
     private fun updateNotifToService(type: String? = null) {
         val s = settingsManager.settings
@@ -151,6 +167,8 @@ class MainActivity : AppCompatActivity() {
             s.notifGiftImg,
             s.notifShareAud,
             s.notifGiftAud,
+            s.notifJoinAud,
+            s.notifFollowAud,
             s.notifDuration,
             type
         )
@@ -174,6 +192,8 @@ class MainActivity : AppCompatActivity() {
         updateBtnText(b.btnSelectGiftImg, s.notifGiftImg, R.string.btn_image)
         updateBtnText(b.btnSelectShareAudio, s.notifShareAud, R.string.btn_audio)
         updateBtnText(b.btnSelectGiftAudio, s.notifGiftAud, R.string.btn_audio)
+        updateBtnText(b.btnSelectJoinAudio, s.notifJoinAud, R.string.btn_audio)
+        updateBtnText(b.btnSelectFollowAudio, s.notifFollowAud, R.string.btn_audio)
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -810,11 +830,13 @@ class MainActivity : AppCompatActivity() {
                 b.extraJoinSettings.visibility = View.VISIBLE
                 b.sbJoinDuration.progress = s.joinDuration
                 b.tvJoinDurationLabel.text = "Duration: ${s.joinDuration}s"
+                syncNotifSettingsButtons()
                 service?.showJoinDummy(persistent = true)
             } else if (key == "follow") {
                 b.extraFollowSettings.visibility = View.VISIBLE
                 b.sbFollowDuration.progress = s.followDuration
                 b.tvFollowDurationLabel.text = "Duration: ${s.followDuration}s"
+                syncNotifSettingsButtons()
                 service?.showFollowDummy(persistent = true)
             } else if (key == "like") {
                 b.extraLikeSettings.visibility = View.VISIBLE
@@ -848,6 +870,8 @@ class MainActivity : AppCompatActivity() {
         b.btnSelectGiftImg.setOnClickListener { pickGiftImg.launch(arrayOf("image/*")) }
         b.btnSelectShareAudio.setOnClickListener { pickShareAudio.launch(arrayOf("audio/*")) }
         b.btnSelectGiftAudio.setOnClickListener { pickGiftAudio.launch(arrayOf("audio/*")) }
+        b.btnSelectJoinAudio.setOnClickListener { pickJoinAudio.launch(arrayOf("audio/*")) }
+        b.btnSelectFollowAudio.setOnClickListener { pickFollowAudio.launch(arrayOf("audio/*")) }
 
         b.sbNotifDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
