@@ -23,6 +23,15 @@
 # App Models (Penting untuk GSON/Refleksi)
 -keep class ame.project.kanae.model.** { *; }
 -keepclassmembers class ame.project.kanae.model.** { *; }
+-keep class ame.project.kanae.AppSettings { *; }
+-keep class ame.project.kanae.OverlayConfig { *; }
+-keep class ame.project.kanae.CustomThemeConfig { *; }
+-keep class ame.project.kanae.GiftSoundConfig { *; }
+-keep class ame.project.kanae.StyleThemeConfig { *; }
+-keep class ame.project.kanae.KeyMapping { *; }
+-keep class ame.project.kanae.SoundMapping { *; }
+-keep class ame.project.kanae.overlay.CustomOverlayConfig { *; }
+-keep class ame.project.kanae.MainActivity$UpdateInfo { *; }
 
 # GSON rules
 -keepattributes Signature
@@ -70,8 +79,15 @@
 -keep class com.bumptech.glide.Generated*GlideModuleImpl { *; }
 
 # youtube-dl-android (fallback library)
--keep class com.yausername.youtubedl_android.** { *; }
--dontwarn com.yausername.youtubedl_android.**
+-keep class com.yausername.** { *; }
+-dontwarn com.yausername.**
+
+# Apache Commons Compress (Used by youtube-dl-android)
+-keep class org.apache.commons.compress.** { *; }
+-keep class * implements org.apache.commons.compress.archivers.zip.ZipExtraField {
+    <init>();
+}
+-dontwarn org.apache.commons.compress.**
 
 # Firebase Crashlytics
 -keepattributes SourceFile,LineNumberTable

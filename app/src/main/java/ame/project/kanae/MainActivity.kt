@@ -23,6 +23,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.*
+import androidx.annotation.Keep
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -486,6 +487,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     // ── Update Checker ───────────────────────────────────────────────
+    @Keep
     private data class UpdateInfo(
         val versionCode: Int,
         val versionName: String,
@@ -495,9 +497,16 @@ class MainActivity : AppCompatActivity() {
     private fun checkForUpdates() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
+                val isDebug = (applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0
+                val updateUrl = if (isDebug) {
+                    "https://raw.githubusercontent.com/ShinriShoaku/KanaePlayer/master/version.json"
+                } else {
+                    "https://raw.githubusercontent.com/ShinriShoaku/KanaePlayer/master/klukai.json"
+                }
+
                 val client = OkHttpClient()
                 val request = Request.Builder()
-                    .url("https://raw.githubusercontent.com/ShinriShoaku/KanaePlayer/master/version.json")
+                    .url(updateUrl)
                     .build()
 
                 client.newCall(request).execute().use { response ->

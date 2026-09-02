@@ -14,10 +14,12 @@
 package ame.project.kanae
 
 import android.content.Context
+import androidx.annotation.Keep
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import java.io.File
 
+@Keep
 data class StyleThemeConfig(
     var bgPrimary: Int? = null,
     var bgSecondary: Int? = null,

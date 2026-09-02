@@ -34,9 +34,11 @@ import android.widget.SeekBar
 import android.widget.TextView
 import ame.project.kanae.R
 import ame.project.kanae.SettingsManager
+import androidx.annotation.Keep
 import com.google.gson.Gson
 import kotlinx.coroutines.*
 
+@Keep
 data class CustomOverlayConfig(
     val id: String,
     var name: String,

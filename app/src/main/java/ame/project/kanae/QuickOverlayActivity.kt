@@ -23,6 +23,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.annotation.Keep
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -40,6 +41,7 @@ import kotlinx.coroutines.withContext
 import ame.project.kanae.overlay.QuickOverlayManager
 import ame.project.kanae.overlay.SoundButtonConfig
 
+@Keep
 data class SoundMapping(
     var id: String = System.currentTimeMillis().toString(),
     var label: String,

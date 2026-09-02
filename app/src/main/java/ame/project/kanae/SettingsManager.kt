@@ -15,10 +15,12 @@ package ame.project.kanae
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.Keep
 import com.google.gson.GsonBuilder
 import java.io.File
 import ame.project.kanae.overlay.CustomOverlayConfig
 
+@Keep
 data class OverlayConfig(
     var x: Int = 100,
     var y: Int = 100,
@@ -35,6 +37,7 @@ data class OverlayConfig(
     @Deprecated("Use bgKey") var bgId: Int = 0
 )
 
+@Keep
 data class CustomThemeConfig(
     var bgPrimary: Int? = null,
     var bgSecondary: Int? = null,
@@ -43,12 +46,14 @@ data class CustomThemeConfig(
     var alpha: Int = 255
 )
 
+@Keep
 data class GiftSoundConfig(
     val giftId: String,
     val giftName: String,
     val soundUri: String
 )
 
+@Keep
 data class AppSettings(
     var tiktokApiKey: String = "",
     var tiktokUsername: String = "",
