@@ -20,6 +20,9 @@
 
     <queries>
         <package android:name="ame.project.nlstudio" />
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
     </queries>
 
     <application

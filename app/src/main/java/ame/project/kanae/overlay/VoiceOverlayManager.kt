@@ -185,7 +185,11 @@ class VoiceOverlayManager(
         handler.post {
             try {
                 if (speechRecognizer == null) {
-                    speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+                        speechRecognizer = SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+                    } else {
+                        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+                    }
                     speechRecognizer?.setRecognitionListener(object : RecognitionListener {
                         override fun onReadyForSpeech(params: Bundle?) {
                             isListening = true
