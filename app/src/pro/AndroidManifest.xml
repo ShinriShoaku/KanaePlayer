@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ─── Permissions ─────────────────────────────────────── -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <!-- Overlay window (drag-drop floating UI) -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- Wake lock so service keeps running -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Prompt user to whitelist app from OEM battery/background CPU restriction -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!-- Notification (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Read/write for yt-dlp binary cache -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <queries>
+        <package android:name="ame.project.nlstudio" />
+        <intent>
+            <action android:name="android.speech.RecognitionService" />
+        </intent>
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:extractNativeLibs="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="false"
+        android:theme="@style/Theme.YTTikTokPlayer"
+        android:allowAudioPlaybackCapture="true">
+
+        <!-- ─── Splash Activity ──────────────────────────────────── -->
+        <activity
+            android:name=".SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.YTTikTokPlayer">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ─── Main Activity ──────────────────────────────────── -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize">
+        </activity>
+
+        <activity
+            android:name=".canvas.CanvasActivity"
+            android:theme="@style/Theme.Canvas"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="fullUser" />
+
+        <activity
+            android:name=".overlay.CustomWebOverlaySettingsActivity"
+            android:label="Custom Overlay"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+
+        <activity
+            android:name=".AdminListActivity"
+            android:label="Authorized Users"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+
+        <activity
+            android:name=".MappingActivity"
+            android:label="Keyboard Mapping"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+
+        <activity
+            android:name=".QuickOverlayActivity"
+            android:label="Quick Overlay"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+
+        <activity
+            android:name=".tiktok.GiftSoundActivity"
+            android:label="Gift Custom Sound"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
+        <!-- ─── Foreground Service ────────────────────────────── -->
+        <service
+            android:name=".service.PlayerForegroundService"
+            android:exported="true"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:foregroundServiceType="mediaPlayback"
+            android:stopWithTask="false">
+            <intent-filter>
+                <action android:name="ame.project.kanae.AIDL_SERVICE" />
+            </intent-filter>
+        </service>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <service
+            android:name=".accessibility.KanaeAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
+    </application>
+</manifest>

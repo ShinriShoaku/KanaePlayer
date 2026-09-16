@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Kanae</string>
+    <string name="notif_channel_name">Kanae Player</string>
+    <string name="notif_channel_desc">YouTube TikTok Live Player notification</string>
+
+    <string name="header_title">Kanae Player</string>
+    <string name="feedback_label">feedback</string>
+    <string name="overlay_warning_msg">⚠️ Izin overlay diperlukan untuk fitur floating window.</string>
+    <string name="grant_permission">Berikan Izin</string>
+    <string name="now_playing_label">NOW PLAYING</string>
+    <string name="nothing_playing">– Nothing playing –</string>
+    <string name="quick_overlays_label">QUICK OVERLAYS</string>
+    <string name="btn_player">Player</string>
+    <string name="btn_queue">Queue</string>
+    <string name="btn_lyrics">Lyrics</string>
+    <string name="btn_canvas">Canvas</string>
+    <string name="add_to_queue_label">ADD TO QUEUE</string>
+    <string name="yt_url_hint">YouTube URL or search keywords</string>
+    <string name="btn_add">Add to Queue</string>
+    <string name="btn_clear_all">Clear All</string>
+    <string name="up_next_label">UP NEXT</string>
+    <string name="zero_songs">0 songs</string>
+    <string name="tiktok_chat_label">TIKTOK LIVE CHAT</string>
+    <string name="config_label">CONFIGURATION</string>
+    <string name="api_key_hint">EulerStream API Key</string>
+    <string name="tiktok_user_hint">TikTok Username</string>
+    <string name="request_limit_hint">Request Limit per User</string>
+    <string name="lyrics_pref_label">LYRICS PREFERENCE</string>
+    <string name="lyrics_lang_hint">Language (id, en, ja)</string>
+    <string name="cmd_prefixes_label">COMMAND PREFIXES</string>
+    <string name="cmd_req_hint">Request Command</string>
+    <string name="cmd_skip_hint">Skip Command</string>
+    <string name="cmd_stop_hint">Stop Command</string>
+    <string name="cmd_queue_hint">Queue Command</string>
+    <string name="cmd_clear_music_hint">Clear Music Command</string>
+    <string name="cmd_lyric_hint">Lyric Overlay Toggle Command</string>
+    <string name="btn_play">Play</string>
+    <string name="btn_save_connect">SAVE &amp; CONNECT</string>
+
+    <string name="btn_notif">Notif</string>
+    <string name="label_share_img">Share Image/GIF</string>
+    <string name="label_share_audio">Share Audio</string>
+    <string name="label_gift_img">Gift Image/GIF</string>
+    <string name="label_gift_audio">Gift Audio</string>
+    <string name="btn_select_file">Select File</string>
+    <string name="label_share_config">SHARE CONFIG</string>
+    <string name="label_gift_config">GIFT CONFIG</string>
+    <string name="btn_image">IMAGE</string>
+    <string name="btn_audio">AUDIO</string>
+    <string name="enable_commands_label">ENABLE CHAT COMMANDS</string>
+    <string name="quick_sounds_title">Quick Sounds</string>
+    <string name="version_format">v%s</string>
+    <string name="link_to_nl_studio">Link to NL Studio</string>
+    <string name="btn_skip_nl">Lewati ></string>
+    <string name="accessibility_service_description">
+    KanaePlayer Pro menggunakan Accessibility Service untuk mengakses mikrofon
+    secara bersamaan dengan aplikasi live streaming lain, guna menampilkan
+    teks overlay dari suara Anda. Layanan ini TIDAK membaca konten layar
+    atau aplikasi lain.
+</string>
+</resources>
