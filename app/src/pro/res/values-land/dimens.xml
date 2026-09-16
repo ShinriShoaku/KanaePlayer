@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="quick_overlay_panel_width">440dp</dimen>
+    <dimen name="quick_overlay_margin">0dp</dimen>
+</resources>

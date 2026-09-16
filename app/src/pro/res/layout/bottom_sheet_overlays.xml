@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_bg"
+    android:paddingBottom="8dp">
+
+    <!-- Handle Bar -->
+    <View
+        android:layout_width="40dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="12dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/header_pill" />
+
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="16dp">
+
+            <!-- MAIN GRID -->
+            <include
+                android:id="@+id/panelGrid"
+                layout="@layout/layout_overlay_grid" />
+
+            <!-- SETTINGS PANEL (Dynamically shown) -->
+            <LinearLayout
+                android:id="@+id/panelSettings"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="16dp"
+                    android:gravity="center_vertical">
+                    <TextView
+                        android:id="@+id/tvSettingsTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Overlay Settings"
+                        android:textColor="@color/orange"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+                    <ImageButton
+                        android:id="@+id/btnBackToGrid"
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@android:drawable/ic_menu_revert"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/posSettingsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Position X"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <SeekBar
+                        android:id="@+id/sbPosX"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="4dp"
+                        android:max="2000" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Position Y"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+
+                    <SeekBar
+                        android:id="@+id/sbPosY"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginVertical="4dp"
+                        android:max="3000" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginTop="4dp">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Scale (%)"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="11sp" />
+                    <SeekBar
+                        android:id="@+id/sbScale"
+                        android:layout_width="180dp"
+                        android:layout_height="wrap_content"
+                        android:min="20"
+                        android:max="250"
+                        android:progress="100" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/sizeSettingsContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp">
+                        <TextView
+                            android:id="@+id/tvWidthLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Width: Auto"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                        <SeekBar
+                            android:id="@+id/sbWidth"
+                            android:layout_width="180dp"
+                            android:layout_height="wrap_content"
+                            android:max="1000"
+                            android:progress="0" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginTop="4dp">
+                        <TextView
+                            android:id="@+id/tvHeightLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Height: Auto"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+                        <SeekBar
+                            android:id="@+id/sbHeight"
+                            android:layout_width="180dp"
+                            android:layout_height="wrap_content"
+                            android:max="2000"
+                            android:progress="0" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <CheckBox
+                    android:id="@+id/cbVisualPunch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Visual Punch (Experimental)"
+                    android:textColor="@color/orange"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="8dp" />
+
+                <!-- EXTRA SETTINGS (Included) -->
+                <include
+                    android:id="@+id/extraChatSettings"
+                    layout="@layout/layout_settings_chat" />
+                <include
+                    android:id="@+id/extraQueueSettings"
+                    layout="@layout/layout_settings_queue" />
+                <include
+                    android:id="@+id/extraLikeSettings"
+                    layout="@layout/layout_settings_like" />
+                <include
+                    android:id="@+id/extraJoinSettings"
+                    layout="@layout/layout_settings_join" />
+                <include
+                    android:id="@+id/extraFollowSettings"
+                    layout="@layout/layout_settings_follow" />
+                <include
+                    android:id="@+id/extraNotifSettings"
+                    layout="@layout/layout_settings_notif" />
+                <include
+                    android:id="@+id/extraVoiceSettings"
+                    layout="@layout/layout_settings_voice" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSaveOverlaySettings"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:layout_marginTop="16dp"
+                    android:text="SAVE SETTINGS"
+                    app:backgroundTint="@color/orange"
+                    android:textColor="@color/bg_dark"
+                    android:textStyle="bold"
+                    app:cornerRadius="16dp" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#1AFFFFFF"
+                android:layout_marginTop="24dp"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Hold icon to open settings. Use sliders for precise control if gestures are bugged."
+                android:textColor="@color/text_secondary"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingLeft="24dp"
+                android:paddingRight="24dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+</LinearLayout>

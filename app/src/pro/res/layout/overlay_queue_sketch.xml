@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/overlay_queue_root"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- Header / Drag Handle -->
+    <LinearLayout
+        android:id="@+id/overlay_queue_header"
+        android:layout_width="260dp"
+        android:layout_height="48dp"
+        android:background="@drawable/bg_sketch_box"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        android:layout_marginBottom="12dp">
+
+        <!-- A thick black bar representing the icon in sketch -->
+        <View
+            android:layout_width="20dp"
+            android:layout_height="8dp"
+            android:background="#000000"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="QUEUE"
+            android:textColor="#000000"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:fontFamily="sans-serif-black" />
+
+        <TextView
+            android:id="@+id/overlay_queue_count_badge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="#000000"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginEnd="8dp" />
+
+        <ImageButton
+            android:id="@+id/overlay_queue_close"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="@android:color/transparent"
+            app:tint="#000000"
+            android:scaleType="centerInside" />
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/overlay_queue_empty"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:text="Queue is empty"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="20dp"
+        android:background="@drawable/bg_sketch_box"
+        android:visibility="gone" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/overlay_rv_queue"
+        android:layout_width="260dp"
+        android:layout_height="wrap_content"
+        android:nestedScrollingEnabled="false"
+        android:visibility="visible" />
+
+</LinearLayout>

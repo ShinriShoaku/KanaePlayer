@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/extraChatSettings"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:visibility="gone">
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1AFFFFFF"
+        android:layout_marginVertical="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <TextView
+            android:id="@+id/tvMaxLinesLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Max Lines: 5"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbMaxLines"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:min="1"
+            android:max="20"
+            android:progress="5" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+        <TextView
+            android:id="@+id/tvChatDurationLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Duration: 6s"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbChatDuration"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:min="1"
+            android:max="30"
+            android:progress="6" />
+    </LinearLayout>
+
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:layout_marginTop="4dp">
+
+        <CheckBox
+            android:id="@+id/cbChatTransparent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Transparent BG"
+            android:textColor="@color/text_primary"
+            android:checked="true"
+            android:textSize="12sp" />
+
+        <CheckBox
+            android:id="@+id/cbChatAlwaysShow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Selalu Tampil"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp" />
+
+        <CheckBox
+            android:id="@+id/cbChatHistory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="History Chat"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp" />
+
+        <CheckBox
+            android:id="@+id/cbStickerAnimation"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_columnWeight="1"
+            android:text="Stickers"
+            android:textColor="@color/text_primary"
+            android:textSize="12sp" />
+    </GridLayout>
+
+    <!-- TTS SETTINGS -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1AFFFFFF"
+        android:layout_marginVertical="8dp" />
+
+    <CheckBox
+        android:id="@+id/cbChatTts"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Enable Chat TTS (Voice)"
+        android:textColor="@color/text_primary"
+        android:textSize="13sp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+        <TextView
+            android:id="@+id/tvTtsVolumeLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="TTS Volume: 100%"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbTtsVolume"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:max="200"
+            android:progress="100" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="4dp">
+        <TextView
+            android:id="@+id/tvTtsMaxLengthLabel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Max Len: 100"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp" />
+        <SeekBar
+            android:id="@+id/sbTtsMaxLength"
+            android:layout_width="180dp"
+            android:layout_height="wrap_content"
+            android:min="10"
+            android:max="500"
+            android:progress="100" />
+    </LinearLayout>
+</LinearLayout>

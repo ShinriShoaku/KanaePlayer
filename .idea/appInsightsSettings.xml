@@ -7,6 +7,14 @@
         <entry key="Firebase Crashlytics">
           <value>
             <InsightsFilterSettings>
+              <option name="connection">
+                <ConnectionSetting>
+                  <option name="appId" value="ame.project.kanae.pro" />
+                  <option name="mobileSdkAppId" value="1:930626121330:android:54843cad5d3b97e52b1cec" />
+                  <option name="projectId" value="kanae-85935" />
+                  <option name="projectNumber" value="930626121330" />
+                </ConnectionSetting>
+              </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
               <option name="timeIntervalDays" value="THIRTY_DAYS" />
               <option name="visibilityType" value="ALL" />
