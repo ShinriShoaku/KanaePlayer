@@ -203,6 +203,9 @@
                 <include
                     android:id="@+id/extraNotifSettings"
                     layout="@layout/layout_settings_notif" />
+                <include
+                    android:id="@+id/extraVoiceSettings"
+                    layout="@layout/layout_settings_voice" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSaveOverlaySettings"

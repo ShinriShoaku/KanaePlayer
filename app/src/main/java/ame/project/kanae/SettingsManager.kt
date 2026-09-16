@@ -71,11 +71,13 @@ data class AppSettings(
     var cmdStop: String = "#stop",
     var cmdQueue: String = "#queue,#antrian,#q",
     var cmdClearMusic: String = "#cm,#hapus",
+    var cmdLyric: String = "#lyric",
 
     var notifEnabled: Boolean = true,
     var joinEnabled: Boolean = true,
     var likeEnabled: Boolean = true,
     var followEnabled: Boolean = false,
+    var voiceEnabled: Boolean = false,
     
     var chatMaxLines: Int = 5,
     var chatTransparent: Boolean = true,
@@ -86,6 +88,12 @@ data class AppSettings(
     var chatTtsEnabled: Boolean = false,
     var chatTtsVolume: Float = 1.0f,
     var chatTtsMaxLength: Int = 100,
+
+    var voiceOnline: Boolean = true,
+    var voiceContinuous: Boolean = true,
+    var voiceTextSize: Float = 16f,
+    var voiceDuration: Int = 5,
+    var voiceLanguage: String = "id-ID",
 
     var queueAutoHide: Boolean = false,
     var queueDuration: Int = 10,
@@ -163,7 +171,7 @@ class SettingsManager private constructor(context: Context) {
     }
 
     fun prepopulateDefaults() {
-        val keys = listOf("player", "queue", "lyrics", "chat", "notif", "join", "like", "follow")
+        val keys = listOf("player", "queue", "lyrics", "chat", "notif", "join", "like", "follow", "voice")
         keys.forEach { getOverlayConfig(it) }
         Log.d("SettingsManager", "Default overlay configs prepopulated")
     }
@@ -197,6 +205,7 @@ class SettingsManager private constructor(context: Context) {
                 cmdStop = mainPrefs.getString("cmd_stop", "#stop") ?: "#stop"
                 cmdQueue = mainPrefs.getString("cmd_queue", "#queue,#antrian,#q") ?: "#queue,#antrian,#q"
                 cmdClearMusic = mainPrefs.getString("cmd_clear_music", "#cm,#hapus") ?: "#cm,#hapus"
+                cmdLyric = mainPrefs.getString("cmd_lyric", "#lyric") ?: "#lyric"
                 notifEnabled = mainPrefs.getBoolean("notif_enabled", true)
                 joinEnabled = mainPrefs.getBoolean("join_enabled", true)
                 likeEnabled = mainPrefs.getBoolean("like_enabled", true)
@@ -310,6 +319,7 @@ class SettingsManager private constructor(context: Context) {
                 "join" -> config.layoutKey = "join_card"
                 "like" -> config.layoutKey = "like_card"
                 "follow" -> config.layoutKey = "follow_standard"
+                "voice" -> config.layoutKey = "voice_standard"
             }
         }
         return config

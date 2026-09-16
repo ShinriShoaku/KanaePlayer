@@ -160,6 +160,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val requestVoicePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            service?.toggleVoiceOverlay()
+            syncUi(true)
+        } else {
+            snack("Izin mikrofon diperlukan untuk Voice Overlay")
+        }
+    }
+
     private fun updateNotifToService(type: String? = null) {
         val s = settingsManager.settings
         service?.updateNotifConfig(
@@ -469,6 +478,7 @@ class MainActivity : AppCompatActivity() {
         binding.etCmdStop.setText(s.cmdStop)
         binding.etCmdQueue.setText(s.cmdQueue)
         binding.etCmdClearMusic.setText(s.cmdClearMusic)
+        binding.etCmdLyric.setText(s.cmdLyric)
         binding.etLyricsLang.setText(s.lyricsLang)
     }
 
@@ -489,6 +499,7 @@ class MainActivity : AppCompatActivity() {
                 cmdStop = c.stopPrefixes.joinToString(",")
                 cmdQueue = c.queuePrefixes.joinToString(",")
                 cmdClearMusic = c.clearMusicPrefixes.joinToString(",")
+                cmdLyric = c.lyricPrefixes.joinToString(",")
             }
         }
         settingsManager.saveSettings()
@@ -502,7 +513,8 @@ class MainActivity : AppCompatActivity() {
             skipPrefixes       = field(binding.etCmdSkip.text.toString()),
             stopPrefixes       = field(binding.etCmdStop.text.toString()),
             queuePrefixes      = field(binding.etCmdQueue.text.toString()),
-            clearMusicPrefixes = field(binding.etCmdClearMusic.text.toString())
+            clearMusicPrefixes = field(binding.etCmdClearMusic.text.toString()),
+            lyricPrefixes      = field(binding.etCmdLyric.text.toString())
         )
     }
 
@@ -756,6 +768,43 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(s: SeekBar?) {}
         })
 
+        b.extraVoiceSettings.cbVoiceOnline.setOnCheckedChangeListener { _, isChecked -> service?.updateVoiceOnline(isChecked) }
+        b.extraVoiceSettings.cbVoiceContinuous.setOnCheckedChangeListener { _, isChecked -> service?.updateVoiceContinuous(isChecked) }
+        
+        val langCodes = listOf("id-ID", "en-US", "ja-JP", "ms-MY", "zh-CN")
+        val langNames = listOf("Indonesia (id-ID)", "English (en-US)", "Japanese (ja-JP)", "Malay (ms-MY)", "Chinese (zh-CN)")
+        val langAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, langNames).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        b.extraVoiceSettings.spVoiceLanguage.adapter = langAdapter
+        b.extraVoiceSettings.spVoiceLanguage.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                service?.updateVoiceLanguage(langCodes[position])
+            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        b.extraVoiceSettings.sbVoiceTextSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    b.extraVoiceSettings.tvVoiceTextSizeLabel.text = "Text Size: ${p}sp"
+                    service?.updateVoiceTextSize(p.toFloat())
+                }
+            }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
+        b.extraVoiceSettings.sbVoiceDuration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(s: SeekBar?, p: Int, fromUser: Boolean) {
+                if (fromUser) {
+                    b.extraVoiceSettings.tvVoiceDurationLabel.text = "Auto Hide: ${p}s"
+                    service?.updateVoiceDuration(p)
+                }
+            }
+            override fun onStartTrackingTouch(s: SeekBar?) {}
+            override fun onStopTrackingTouch(s: SeekBar?) {}
+        })
+
         fun openSettings(key: String, title: String) {
             currentConfigKey = key
             b.panelGrid.root.visibility = View.GONE
@@ -807,6 +856,7 @@ class MainActivity : AppCompatActivity() {
             b.extraLikeSettings.root.visibility = View.GONE
             b.extraJoinSettings.root.visibility = View.GONE
             b.extraFollowSettings.root.visibility = View.GONE
+            b.extraVoiceSettings.root.visibility = View.GONE
 
             if (key == "chat") {
                 b.extraChatSettings.root.visibility = View.VISIBLE
@@ -863,6 +913,19 @@ class MainActivity : AppCompatActivity() {
                 b.panelGrid.containerGiftSound.visibility = if (s.useCustomGiftSound) View.VISIBLE else View.GONE
                 syncNotifSettingsButtons()
                 service?.showNotifDummy(persistent = true)
+            } else if (key == "voice") {
+                b.extraVoiceSettings.root.visibility = View.VISIBLE
+                b.extraVoiceSettings.cbVoiceOnline.isChecked = s.voiceOnline
+                b.extraVoiceSettings.cbVoiceContinuous.isChecked = s.voiceContinuous
+                b.extraVoiceSettings.sbVoiceTextSize.progress = s.voiceTextSize.toInt()
+                b.extraVoiceSettings.tvVoiceTextSizeLabel.text = "Text Size: ${s.voiceTextSize.toInt()}sp"
+                b.extraVoiceSettings.sbVoiceDuration.progress = s.voiceDuration
+                b.extraVoiceSettings.tvVoiceDurationLabel.text = "Auto Hide: ${s.voiceDuration}s"
+                
+                val currentLangIndex = langCodes.indexOf(s.voiceLanguage).coerceAtLeast(0)
+                b.extraVoiceSettings.spVoiceLanguage.setSelection(currentLangIndex)
+
+                service?.showVoiceOverlay()
             }
         }
 
@@ -973,6 +1036,18 @@ class MainActivity : AppCompatActivity() {
         }
         b.panelGrid.btnFollowOverlay.setOnLongClickListener { openSettings("follow", "Follow"); true }
 
+        b.panelGrid.btnVoiceOverlay.setOnClickListener {
+            val svc = service ?: return@setOnClickListener
+            if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestVoicePermission.launch(Manifest.permission.RECORD_AUDIO)
+            } else {
+                svc.toggleVoiceOverlay()
+                syncUi(true)
+            }
+        }
+        b.panelGrid.btnVoiceOverlay.setOnLongClickListener { openSettings("voice", "Voice"); true }
+
         b.panelGrid.btnCanvas.setOnClickListener {
             if (!Settings.canDrawOverlays(this)) { requestOverlayPermission(); return@setOnClickListener }
             val canvasActive = service?.getStateMap()?.get("canvas_mode") as? Boolean ?: false
@@ -996,6 +1071,7 @@ class MainActivity : AppCompatActivity() {
             if (currentConfigKey == "join") service?.hideJoinOverlay()
             if (currentConfigKey == "like") service?.hideLikeOverlay()
             if (currentConfigKey == "follow") service?.hideFollowOverlay()
+            if (currentConfigKey == "voice") service?.hideVoiceOverlay()
             b.panelGrid.root.visibility = View.VISIBLE
             b.panelSettings.visibility = View.GONE
         }
@@ -1013,6 +1089,7 @@ class MainActivity : AppCompatActivity() {
             if (currentConfigKey == "join") service?.hideJoinOverlay()
             if (currentConfigKey == "like") service?.hideLikeOverlay()
             if (currentConfigKey == "follow") service?.hideFollowOverlay()
+            if (currentConfigKey == "voice") service?.hideVoiceOverlay()
 
             snack("${b.tvSettingsTitle.text} saved!")
             b.panelGrid.root.visibility = View.VISIBLE
@@ -1203,6 +1280,10 @@ class MainActivity : AppCompatActivity() {
             val followEnabled = state["follow_enabled"] as? Boolean ?: false
             b.panelGrid.tvLabelFollow.text = if (followEnabled) "Follow ON" else "Follow"
             b.panelGrid.btnFollowOverlay.alpha = if (followEnabled) 1.0f else 0.6f
+
+            val voiceOn = state["voice_visible"] as? Boolean ?: false
+            b.panelGrid.tvLabelVoice.text = if (voiceOn) "Voice ON" else "Voice"
+            b.panelGrid.btnVoiceOverlay.alpha = if (voiceOn) 1.0f else 0.6f
 
             val canvasOn = state["canvas_mode"]  as? Boolean ?: false
             b.panelGrid.tvLabelCanvas.text = if (canvasOn) "Canvas ON" else "Canvas"

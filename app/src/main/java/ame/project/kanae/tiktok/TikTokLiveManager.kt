@@ -45,7 +45,8 @@ class TikTokLiveManager(
         val stopPrefixes: List<String>       = listOf("#stop"),
         val queuePrefixes: List<String>      = listOf("#queue", "#antrian", "#q"),
         /** #cm 1, #cm 2 … clear song at that queue position */
-        val clearMusicPrefixes: List<String> = listOf("#cm", "#hapus")
+        val clearMusicPrefixes: List<String> = listOf("#cm", "#hapus"),
+        val lyricPrefixes: List<String>      = listOf("#lyric")
     )
 
     var onChat: ((TikTokChat) -> Unit)? = null
@@ -648,6 +649,13 @@ class TikTokLiveManager(
         commandConfig.skipPrefixes.forEach  { if (lower.startsWith(it)) return TikTokChat.CommandType.SKIP  to null }
         commandConfig.stopPrefixes.forEach  { if (lower.startsWith(it)) return TikTokChat.CommandType.STOP  to null }
         commandConfig.queuePrefixes.forEach { if (lower.startsWith(it)) return TikTokChat.CommandType.QUEUE to null }
+
+        commandConfig.lyricPrefixes.forEach { prefix ->
+            if (lower.startsWith(prefix)) {
+                val arg = text.substring(prefix.length).trim()
+                return TikTokChat.CommandType.LYRIC_TOGGLE to arg.ifBlank { null }
+            }
+        }
 
         return TikTokChat.CommandType.NONE to null
     }

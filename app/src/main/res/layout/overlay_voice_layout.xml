@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <LinearLayout
+        android:id="@+id/voice_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_chat_bubble"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="8dp"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:id="@+id/iv_voice_indicator"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/presence_audio_online"
+            android:layout_marginRight="8dp"
+            android:visibility="gone"/>
+
+        <TextView
+            android:id="@+id/tv_voice_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Listening..."
+            android:textColor="@color/white"
+            android:textSize="16sp"
+            android:maxWidth="300dp" />
+
+    </LinearLayout>
+
+</FrameLayout>

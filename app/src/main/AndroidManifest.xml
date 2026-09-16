@@ -16,6 +16,7 @@
     <!-- Read/write for yt-dlp binary cache -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <queries>
         <package android:name="ame.project.nlstudio" />

@@ -34,6 +34,7 @@ import ame.project.kanae.overlay.TikTokNotificationOverlayManager
 import ame.project.kanae.overlay.TikTokJoinOverlayManager
 import ame.project.kanae.overlay.TikTokLikeOverlayManager
 import ame.project.kanae.overlay.TikTokFollowOverlayManager
+import ame.project.kanae.overlay.VoiceOverlayManager
 import ame.project.kanae.player.AudioPlayer
 import ame.project.kanae.player.YtDlpHelper
 import ame.project.kanae.tiktok.TikTokLiveManager
@@ -90,6 +91,7 @@ class PlayerForegroundService : Service() {
     private lateinit var joinOverlayManager: TikTokJoinOverlayManager
     private lateinit var likeOverlayManager: TikTokLikeOverlayManager
     private lateinit var followOverlayManager: TikTokFollowOverlayManager
+    private lateinit var voiceOverlayManager: VoiceOverlayManager
     private lateinit var customOverlayManager: CustomOverlayManager
 
     private val queue       = ArrayDeque<Song>()
@@ -484,6 +486,25 @@ class PlayerForegroundService : Service() {
 
             onPositionChanged = { nx, ny, ns ->
                 val cfg = settingsManager.getOverlayConfig("follow")
+                cfg.x = nx; cfg.y = ny; cfg.scale = ns
+                settingsManager.saveSettings()
+            }
+        }
+
+        voiceOverlayManager = VoiceOverlayManager(this) { broadcastState() }.apply {
+            val s = settingsManager.settings
+            val config = settingsManager.getOverlayConfig("voice")
+            setOnline(s.voiceOnline)
+            setContinuous(s.voiceContinuous)
+            setLanguage(s.voiceLanguage)
+            setTextSize(s.voiceTextSize)
+            setDisplayDuration(s.voiceDuration)
+            setOverlayWidth(config.width.takeIf { it > 0 } ?: 300)
+            setVisualPunchEnabled(config.visualPunch)
+            applyConfig(config.x, config.y, config.scale, config.width)
+
+            onPositionChanged = { nx, ny, ns ->
+                val cfg = settingsManager.getOverlayConfig("voice")
                 cfg.x = nx; cfg.y = ny; cfg.scale = ns
                 settingsManager.saveSettings()
             }
@@ -891,6 +912,29 @@ class PlayerForegroundService : Service() {
                 broadcastSystemChat("Commands ${if (newState) "ENABLED" else "DISABLED"} via @${chat.uniqueId}")
                 broadcastState()
             }
+            TikTokChat.CommandType.LYRIC_TOGGLE -> {
+                if (!isAdmin) return
+                val arg = chat.commandArg?.lowercase()?.trim()
+                val targetState = when (arg) {
+                    "on", "enable", "1" -> true
+                    "off", "disable", "0" -> false
+                    else -> !lyricsOverlayManager.isShowing
+                }
+                serviceScope.launch(Dispatchers.Main) {
+                    if (targetState) {
+                        if (!lyricsOverlayManager.isShowing) {
+                            lyricsOverlayManager.show()
+                            currentSong?.let { lyricsOverlayManager.loadForSong(it) }
+                        }
+                    } else {
+                        if (lyricsOverlayManager.isShowing) {
+                            lyricsOverlayManager.hide()
+                        }
+                    }
+                    broadcastState()
+                }
+                broadcastSystemChat("Lyrics overlay ${if (targetState) "ENABLED" else "DISABLED"} via @${chat.uniqueId}")
+            }
             TikTokChat.CommandType.NONE -> { }
         }
     }
@@ -1067,6 +1111,63 @@ class PlayerForegroundService : Service() {
         settingsManager.settings.chatHistoryEnabled = enabled
         settingsManager.saveSettings()
         chatOverlayManager.setHistoryEnabled(enabled)
+    }
+
+    // ── Voice overlay ─────────────────────────────────────────────────
+    fun toggleVoiceOverlay() {
+        if (voiceOverlayManager.isShowing) {
+            voiceOverlayManager.hide()
+            settingsManager.settings.voiceEnabled = false
+        } else {
+            showVoiceOverlay()
+            settingsManager.settings.voiceEnabled = true
+        }
+        settingsManager.saveSettings()
+        broadcastState()
+    }
+
+    fun showVoiceOverlay() {
+        if (!voiceOverlayManager.isShowing) {
+            val config = settingsManager.getOverlayConfig("voice")
+            voiceOverlayManager.show()
+            voiceOverlayManager.applyConfig(config.x, config.y, config.scale, config.width)
+        }
+    }
+
+    fun hideVoiceOverlay() {
+        voiceOverlayManager.hide()
+    }
+
+    val voiceOverlayVisible get() = voiceOverlayManager.isShowing
+
+    fun updateVoiceOnline(online: Boolean) {
+        settingsManager.settings.voiceOnline = online
+        voiceOverlayManager.setOnline(online)
+        settingsManager.saveSettings()
+    }
+
+    fun updateVoiceContinuous(continuous: Boolean) {
+        settingsManager.settings.voiceContinuous = continuous
+        voiceOverlayManager.setContinuous(continuous)
+        settingsManager.saveSettings()
+    }
+
+    fun updateVoiceLanguage(lang: String) {
+        settingsManager.settings.voiceLanguage = lang
+        voiceOverlayManager.setLanguage(lang)
+        settingsManager.saveSettings()
+    }
+
+    fun updateVoiceTextSize(size: Float) {
+        settingsManager.settings.voiceTextSize = size
+        voiceOverlayManager.setTextSize(size)
+        settingsManager.saveSettings()
+    }
+
+    fun updateVoiceDuration(seconds: Int) {
+        settingsManager.settings.voiceDuration = seconds
+        voiceOverlayManager.setDisplayDuration(seconds)
+        settingsManager.saveSettings()
     }
 
     fun updateJoinStyle(layoutId: Int) {
@@ -1503,9 +1604,11 @@ class PlayerForegroundService : Service() {
             "join_visible"      to joinOverlayManager.isShowing,
             "like_visible"      to likeOverlayManager.isShowing,
             "follow_visible"    to followOverlayManager.isShowing,
+            "voice_visible"     to voiceOverlayManager.isShowing,
             "join_enabled"      to s.joinEnabled,
             "like_enabled"      to s.likeEnabled,
             "follow_enabled"    to s.followEnabled,
+            "voice_enabled"     to s.voiceEnabled,
             "join_duration"     to s.joinDuration,
             "like_duration"     to s.likeDuration,
             "follow_duration"   to s.followDuration,
@@ -1806,7 +1909,8 @@ class PlayerForegroundService : Service() {
             skipPrefixes = s.cmdSkip.split(",").map { it.trim() }.filter { it.isNotBlank() },
             stopPrefixes = s.cmdStop.split(",").map { it.trim() }.filter { it.isNotBlank() },
             queuePrefixes = s.cmdQueue.split(",").map { it.trim() }.filter { it.isNotBlank() },
-            clearMusicPrefixes = s.cmdClearMusic.split(",").map { it.trim() }.filter { it.isNotBlank() }
+            clearMusicPrefixes = s.cmdClearMusic.split(",").map { it.trim() }.filter { it.isNotBlank() },
+            lyricPrefixes = s.cmdLyric.split(",").map { it.trim() }.filter { it.isNotBlank() }
         )
     }
 

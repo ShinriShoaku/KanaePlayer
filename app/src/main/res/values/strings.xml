@@ -34,6 +34,7 @@
     <string name="cmd_stop_hint">Stop Command</string>
     <string name="cmd_queue_hint">Queue Command</string>
     <string name="cmd_clear_music_hint">Clear Music Command</string>
+    <string name="cmd_lyric_hint">Lyric Overlay Toggle Command</string>
     <string name="btn_play">Play</string>
     <string name="btn_save_connect">SAVE &amp; CONNECT</string>
 
