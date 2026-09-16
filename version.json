@@ -1,5 +1,5 @@
 {
-  "versionCode": 26,
-  "versionName": "12.3.8",
-  "updateMessage": "add custom audio untuk join & follow, perbaikan bottomsheet overlay, dan optimasi ProGuard."
+  "versionCode": 27,
+  "versionName": "12.4.0",
+  "updateMessage": "Fitur Voice Overlay (Speech-to-Text) dengan dukungan multi-bahasa, perintah chat #lyric on/off, dan optimasi stabilitas Android 12+."
 }

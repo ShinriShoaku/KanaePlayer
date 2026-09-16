@@ -1,5 +1,19 @@
 # Changelog - KanaePlayer
 
+## [12.4.0] - 2026-08-09
+
+### ✨ New Features
+- **Voice Overlay (Speech-to-Text)**: Fitur revolusioner yang menampilkan ucapan Anda secara realtime di atas layar.
+    - **Language Support**: Mendukung berbagai bahasa termasuk **Indonesia (id-ID)**, Inggris, Jepang, Malaysia, dan Mandarin.
+    - **Continuous Listening**: Mode pendengaran terus-menerus untuk interaksi yang mulus tanpa henti.
+    - **On-Device Recognition**: Mendukung pemrosesan suara lokal (offline) di Android 12+ untuk latensi yang lebih rendah dan privasi lebih baik.
+    - **Customizable Appearance**: Atur posisi, skala, ukuran teks, dan durasi auto-hide sesuai kebutuhan streaming Anda.
+- **Lyric Toggle Command**: Admin/Moderator kini dapat menyembunyikan atau menampilkan Lyric Overlay secara dinamis menggunakan perintah chat `#lyric on` atau `#lyric off`.
+
+### ⚙️ Technical Improvements
+- **Android 12+ Compatibility Patch**: Optimasi engine `SpeechRecognizer` dan deklarasi visibilitas paket untuk menjamin stabilitas pada versi Android terbaru.
+- **Microphone Permission Handling**: Sistem manajemen izin mikrofon yang lebih aman dan transparan bagi pengguna.
+
 ## [12.3.8] - 2026-08-08
 
 ### ✨ New Features

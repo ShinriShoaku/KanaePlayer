@@ -1,5 +1,27 @@
 # Update Notes - KanaePlayer
 
+## Update 12.4.0: Voice Overlay, Lyric Command & Android 12+ Stability
+
+Update ini menghadirkan fitur interaksi suara baru dan peningkatan kompatibilitas sistem.
+
+### 1. Voice Overlay (Realtime Speech-to-Text)
+- **Live Transcription**: Menampilkan apa yang Anda ucapkan langsung ke layar dalam bentuk teks overlay yang menarik.
+- **Multilingual Support**: Pilihan bahasa yang luas (Indonesia, Inggris, Jepang, Malaysia, Mandarin) untuk akurasi pengenalan yang lebih baik.
+- **On-Device Engine**: Khusus pengguna Android 12+, sistem akan memprioritaskan pengenalan suara lokal (offline) untuk respon yang lebih instan dan hemat kuota.
+- **Continuous Mode**: Aplikasi tetap mendengarkan tanpa perlu menekan tombol berkali-kali, cocok untuk menemani sesi Live yang panjang.
+
+### 2. Lyric Toggle via Chat Command
+- **Remote Control**: Admin atau moderator kini bisa menyembunyikan lirik yang menutupi layar atau menampilkannya kembali cukup dengan mengetik `#lyric off` atau `#lyric on` di chat TikTok.
+- **Dynamic UX**: Memberikan fleksibilitas lebih bagi streamer untuk mengatur kebersihan layar secara instan.
+
+### 3. Android 12 & 13+ Compatibility
+- **Package Visibility Fix**: Menambahkan deklarasi query sistem agar aplikasi dapat mendeteksi Google Speech Services pada Android versi terbaru.
+- **Permission Optimization**: Perbaikan alur permintaan izin mikrofon agar lebih stabil dan mematuhi standar privasi Android 12+.
+
+---
+
+# Update Notes - KanaePlayer
+
 ## Update 12.3.8: Custom Audio, Overlay Improvement & Fixes
 
 Update ini menghadirkan fitur kustomisasi audio untuk event serta peningkatan stabilitas UI.

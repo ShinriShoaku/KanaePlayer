@@ -28,21 +28,22 @@
 - **🖼️ Advanced Floating Overlays**:
   - **Playing Overlay**: Menampilkan informasi lagu saat ini.
   - **Queue Overlay**: Daftar antrian lagu yang transparan.
+  - **Voice Overlay**: Menampilkan teks suara Anda secara realtime (Speech-to-Text).
   - **Chat & Event Overlays**: Menampilkan chat, stiker, gift, join, dan follow secara real-time.
 - **🛡️ Anti-Bot Bypass**: Sistem **PoTokenGenerator** (WebView-based) unik untuk menghindari error 403 & blokir YouTube.
 - **📻 Background Playback**: Berjalan sebagai Foreground Service agar musik tetap mengalir meskipun layar mati.
-- **🎮 Chat Command System**: Kendali penuh via chat (`#req`, `#skip`, `#seekbar`, dll) yang bisa dikustomisasi.
+- **🎮 Chat Command System**: Kendali penuh via chat (`#req`, `#skip`, `#seekbar`, `#lyric`, dll) yang bisa dikustomisasi.
 - **🎨 Custom Styling**: Atur gaya visual, durasi, dan posisi overlay sesuai keinginan Anda.
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.3.8)
+## 🆕 Pembaruan Terkini (v12.4.0)
 
-- **Custom Audio Events**: Mendukung penggunaan audio kustom untuk notifikasi Join dan Follow.
-- **BottomSheet Improvement**: Peningkatan stabilitas dan tampilan pada bottomsheet overlay.
-- **Small Fixes**: Perbaikan ProGuard dan bug minor lainnya.
+- **Voice Overlay**: Menampilkan ucapan Anda menjadi teks secara realtime di layar dengan dukungan berbagai bahasa (Indo, Eng, Jap, dll).
+- **Lyric Toggle Command**: Tambahan perintah chat `#lyric on/off` untuk mengontrol visibilitas lirik secara remote.
+- **Android 12+ Optimization**: Peningkatan kompatibilitas engine Speech Recognition untuk perangkat Android terbaru.
 
-## 🆕 Pembaruan Sebelumnya (v12.3.6)
+## 🆕 Pembaruan Sebelumnya (v12.3.8)
 
 - **Bug Fixes**: Perbaikan beberapa kendala bug di sebagian hp.
 - **Library Update**: Pembaruan beberapa library sistem untuk performa lebih stabil.
@@ -96,7 +97,8 @@
 | `#skip` | Melewati lagu saat ini | `#skip` |
 | `#q` | Melihat daftar antrian | `#q` |
 | `#stop` | Menghentikan musik | `#stop` |
-| `#seekbar` | Toggle Untuk Mematikan fungsi command atau tidak | `#seekbar on` |
+| `#seekbar` | Toggle untuk mematikan fungsi seekbar atau tidak | `#seekbar on` |
+| `#lyric` | Menampilkan atau menyembunyikan overlay lirik | `#lyric off` |
 | `#cm` | Menghapus antrian spesifik | `#cm 1` |
 
 > [!TIP]
