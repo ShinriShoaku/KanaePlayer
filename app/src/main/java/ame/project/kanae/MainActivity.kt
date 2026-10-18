@@ -22,6 +22,8 @@ import android.os.*
 import android.provider.Settings
 import android.util.Log
 import android.view.View
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.widget.*
 import androidx.annotation.Keep
 import androidx.activity.result.contract.ActivityResultContracts
@@ -1246,6 +1248,20 @@ class MainActivity : AppCompatActivity() {
             NotifBadgeState.NONE -> "📝 Dev Note"
         }
         binding.btnDevNote.text = btnText
+
+        if (state != NotifBadgeState.NONE) {
+            if (binding.btnDevNote.animation == null) {
+                val fadeAnim = AlphaAnimation(1.0f, 0.3f).apply {
+                    duration = 800
+                    repeatCount = Animation.INFINITE
+                    repeatMode = Animation.REVERSE
+                }
+                binding.btnDevNote.startAnimation(fadeAnim)
+            }
+        } else {
+            binding.btnDevNote.clearAnimation()
+            binding.btnDevNote.alpha = 1.0f
+        }
     }
 
     private fun showDevNoteDialog() {
