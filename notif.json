@@ -7,10 +7,10 @@
     "is_active": true
   },
   {
-    "notification_id": "info_global_09",
+    "notification_id": "info_global_10",
     "target_uid": "all",
-    "title": "Pengumuman Penting 🚀",
-    "message": "Ini cuman test ke 5!",
+    "title": "Developer Note ☕",
+    "message": "Hai, Shinri here! Terima kasih sudah jadi bagian dari perjalanan project ini. Setiap feedback adalah commit berharga yang bikin project ini makin berkembang. ",
     "is_active": true
   }
 ]
