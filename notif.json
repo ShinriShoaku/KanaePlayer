@@ -7,10 +7,10 @@
     "is_active": true
   },
   {
-    "notification_id": "info_global_06",
+    "notification_id": "info_global_07",
     "target_uid": "all",
     "title": "Pengumuman Penting 🚀",
-    "message": "Ini cuman test ke 2!",
+    "message": "Ini cuman test ke 3!",
     "is_active": true
   }
 ]
