@@ -1,0 +1,16 @@
+[
+  {
+    "notification_id": "reply_feedback_001",
+    "target_uid": "333ad6f4-791e-4cda-a367-eb409ad8787b",
+    "title": "Balasan Feedback ✉️",
+    "message": "Halo! Bug yang kamu laporkan sudah kami perbaiki di versi terbaru.",
+    "is_active": true
+  },
+  {
+    "notification_id": "info_global_02",
+    "target_uid": "all",
+    "title": "Pengumuman Penting 🚀",
+    "message": "Terima kasih sudah menggunakan aplikasi ini!",
+    "is_active": true
+  }
+]
