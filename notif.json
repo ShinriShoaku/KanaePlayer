@@ -7,10 +7,10 @@
     "is_active": true
   },
   {
-    "notification_id": "info_global_04",
+    "notification_id": "info_global_05",
     "target_uid": "all",
     "title": "Pengumuman Penting 🚀",
-    "message": "Shinri :3 test_2",
+    "message": "Ini cuman test!",
     "is_active": true
   }
 ]
