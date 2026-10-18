@@ -1,5 +1,5 @@
 {
-  "versionCode": 27,
-  "versionName": "12.4.0-klukai",
-  "updateMessage": "add custom audio untuk join & follow, perbaikan bottomsheet overlay, dan optimasi ProGuard."
+  "versionCode": 28,
+  "versionName": "12.5.1-klukai",
+  "updateMessage": "Pembaruan antarmuka Metro UI ala Windows Phone, peralihan default STT ke Speech Recognizer, serta perbaikan bug Android 12 & 14 dan sistem feedback."
 }

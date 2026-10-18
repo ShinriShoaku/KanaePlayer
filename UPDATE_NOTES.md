@@ -1,5 +1,25 @@
 # Update Notes - KanaePlayer
 
+## Update 12.5.1: Metro UI Style, Default Speech Recognizer & Android 12/14 Optimization
+
+Update ini membawa penyegaran visual total dengan adopsi gaya *Metro UI box*, optimalisasi engine Speech-to-Text, serta perbaikan bug penting untuk Android 12 & 14.
+
+### 1. Metro UI Box Design (Windows Phone Theme Style)
+- **Modern & Clean Aesthetic**: Antarmuka aplikasi kini mengusung konsep *Metro UI box* yang terinspirasi dari gaya Windows Phone, memberikan pengalaman navigasi yang lebih terstruktur, tegas, dan elegan.
+
+### 2. Native Speech Recognizer as Default (Removal of Wit.ai)
+- **Simplified STT Engine**: Menghapus ketergantungan pada `wit.ai` dan menetapkan sistem `SpeechRecognizer` bawaan Android sebagai standar utama (default) untuk fitur Speech-to-Text.
+- **Better Reliability**: Memastikan proses pengenalan suara berjalan lebih cepat, efisien, dan mulus tanpa memerlukan konfigurasi eksternal tambahan.
+
+### 3. Android 12 & 14 Compatibility & Bug Fixes
+- **OS Stability**: Mengatasi berbagai isu kompatibilitas, *crash*, serta kendala penanganan sistem khusus pada perangkat dengan sistem operasi Android 12 dan Android 14.
+
+### 4. Feedback System Enhancement
+- **UID for Response**: Penambahan parameter `uid` pada sistem balasan atau *response feedback* untuk memastikan pelacakan dan manajemen pesan/feedback pengguna menjadi jauh lebih akurat dan terorganisir.
+
+---
+# Update Notes - KanaePlayer
+
 ## Update 12.4.0: Voice Overlay, Lyric Command & Android 12+ Stability
 
 Update ini menghadirkan fitur interaksi suara baru dan peningkatan kompatibilitas sistem.

@@ -1,5 +1,32 @@
 # Changelog - KanaePlayer
 
+## [12.5.1] - 2026-10-18
+
+### 🎨 UI/UX Improvements
+- **Metro UI Box Design**: Mengubah dan menyegarkan tampilan antarmuka aplikasi mengadopsi gaya *Metro UI box* ala Windows Phone untuk navigasi yang lebih bersih, tegas, dan modern.
+
+### ✨ New Features & Changes
+- **Default Speech Recognizer**: Menghapus integrasi `wit.ai` dan menetapkan `SpeechRecognizer` bawaan Android sebagai engine default untuk fitur Speech-to-Text.
+- **Feedback System Upgrades**: Peningkatan fungsionalitas feedback serta penambahan identifier `uid` pada sistem balasan/response feedback untuk pelacakan pesan yang lebih presisi.
+
+### 🐞 Bug Fixes & Stability
+- **Android 12 & 14 Optimization**: Memperbaiki berbagai bug, masalah izin akses, dan kendala stabilitas khusus pada perangkat Android versi 12 dan 14.
+
+## [12.4.0] - 2026-08-09
+
+### ✨ New Features
+- **Voice Overlay (Speech-to-Text)**: Fitur revolusioner yang menampilkan ucapan Anda secara realtime di atas layar.
+  - **Language Support**: Mendukung berbagai bahasa termasuk **Indonesia (id-ID)**, Inggris, Jepang, Malaysia, dan Mandarin.
+  - **Continuous Listening**: Mode pendengaran terus-menerus untuk interaksi yang mulus tanpa henti.
+  - **On-Device Recognition**: Mendukung pemrosesan suara lokal (offline) di Android 12+ untuk latensi yang lebih rendah dan privasi lebih baik.
+  - **Customizable Appearance**: Atur posisi, skala, ukuran teks, dan durasi auto-hide sesuai kebutuhan streaming Anda.
+- **Lyric Toggle Command**: Admin/Moderator kini dapat menyembunyikan atau menampilkan Lyric Overlay secara dinamis menggunakan perintah chat `#lyric on` atau `#lyric off`.
+
+### ⚙️ Technical Improvements
+- **Android 12+ Compatibility Patch**: Optimasi engine `SpeechRecognizer` dan deklarasi visibilitas paket untuk menjamin stabilitas pada versi Android terbaru.
+- **Microphone Permission Handling**: Sistem manajemen izin mikrofon yang lebih aman dan transparan bagi pengguna.
+
+---
 ## [12.4.0] - 2026-08-09
 
 ### ✨ New Features

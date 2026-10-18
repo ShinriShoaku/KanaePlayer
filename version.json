@@ -1,5 +1,5 @@
 {
-  "versionCode": 27,
-  "versionName": "12.4.0",
-  "updateMessage": "Fitur Voice Overlay (Speech-to-Text) dengan dukungan multi-bahasa, perintah chat #lyric on/off, dan optimasi stabilitas Android 12+."
+  "versionCode": 28,
+  "versionName": "12.5.1",
+  "updateMessage": "Pembaruan antarmuka Metro UI ala Windows Phone, peralihan default STT ke Speech Recognizer, serta perbaikan bug Android 12 & 14 dan sistem feedback."
 }

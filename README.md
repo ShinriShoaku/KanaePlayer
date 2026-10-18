@@ -37,7 +37,14 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.4.0)
+## 🆕 Pembaruan Terkini (v12.5.1)
+
+- **Metro UI Design**: Penyegaran antarmuka dengan gaya *Metro UI box* ala Windows Phone yang clean, tegas, dan modern.
+- **Native Speech Recognizer**: Penghapusan dukungan `wit.ai` dan menetapkan sistem bawaan Android (`SpeechRecognizer`) sebagai engine default untuk STT yang lebih andal.
+- **Android 12 & 14 Optimization**: Perbaikan berbagai bug dan peningkatan stabilitas sistem secara spesifik pada perangkat Android 12 dan 14.
+- **Feedback System Update**: Peningkatan fungsionalitas feedback serta penambahan dukungan `uid` untuk balasan/response feedback yang lebih terstruktur.
+
+## 🆕 Pembaruan Sebelumnya (v12.4.0)
 
 - **Voice Overlay**: Menampilkan ucapan Anda menjadi teks secara realtime di layar dengan dukungan berbagai bahasa (Indo, Eng, Jap, dll).
 - **Lyric Toggle Command**: Tambahan perintah chat `#lyric on/off` untuk mengontrol visibilitas lirik secara remote.
@@ -48,17 +55,6 @@
 - **Bug Fixes**: Perbaikan beberapa kendala bug di sebagian hp.
 - **Library Update**: Pembaruan beberapa library sistem untuk performa lebih stabil.
 - **Media Player Style**: Penambahan desain gaya baru untuk media player.
-
-## 🆕 Pembaruan Sebelumnya (v12.3.4)
-
-- **Authorized User**: Kontrol penuh siapa yang bisa melakukan skip lagu (Followers atau User Spesifik).
-- **AIDL Fix**: Perbaikan sinkronisasi dengan aplikasi NL Studio.
-
-## 🆕 Pembaruan Sebelumnya (v12.3.0)
-
-- **Background Stability**: Implementasi *Auto-Renewing Wake Lock* dan optimasi prioritas thread untuk mencegah aplikasi terhenti di background.
-- **Battery Optimization**: Fitur dialog otomatis untuk memudahkan pengguna memberikan pengecualian baterai (Battery Optimization Exemption).
-- **Service Enhancement**: Peningkatan prioritas Notification Channel untuk stabilitas streaming yang lebih konsisten pada berbagai ROM Android.
 
 ---
 
