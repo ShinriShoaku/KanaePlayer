@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Palet Windows Phone (Metro). Ganti metro_accent untuk mengubah warna aksen seluruh app. -->
+<resources>
+    <color name="metro_black">#000000</color>
+    <color name="metro_tile">#1F1F1F</color>
+    <color name="metro_tile_light">#2B2B2B</color>
+    <color name="metro_tile_overlay">#33000000</color>
+    <color name="metro_text">#FFFFFF</color>
+    <color name="metro_text_dim">#999999</color>
+    <color name="metro_scrim">#B3000000</color>
+
+    <color name="metro_accent">#FA6800</color>   <!-- orange -->
+    <color name="metro_cobalt">#0050EF</color>
+    <color name="metro_teal">#00ABA9</color>
+    <color name="metro_magenta">#D80073</color>
+    <color name="metro_violet">#6A00FF</color>
+    <color name="metro_lime">#60A917</color>
+    <color name="metro_red">#E51400</color>
+    <color name="metro_amber">#F0A30A</color>
+</resources>

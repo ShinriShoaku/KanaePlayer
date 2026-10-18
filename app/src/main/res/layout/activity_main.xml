@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  activity_main.xml — Kanae Player Redesign (Modern Dark)
-  High-contrast UI with Material Components.
-  All IDs preserved for compatibility with MainActivity.kt
+  activity_main.xml - Kanae Player: Windows Phone "Iconic" theme.
+  Semua ID lama dipertahankan agar kompatibel dengan MainActivity.kt.
+  ID baru: tileNowPlaying, ivNowPlayingArt, ivNowPlayingArtLarge, tvNowPlayingMeta,
+           eqPlaying, ivChevron, nowPlayingExpanded
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -10,7 +11,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_dark"
+    android:background="@color/metro_black"
     android:fillViewport="true"
     tools:context=".MainActivity">
 
@@ -18,228 +19,361 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
+        android:paddingHorizontal="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="48dp"
         android:clipToPadding="false">
+        <TextView
+            android:id="@+id/tvHeaderTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="12dp"
+            android:fontFamily="sans-serif-light"
+            android:includeFontPadding="false"
+            android:letterSpacing="-0.02"
+            android:text="kanae player"
+            android:textColor="@color/metro_text"
+            android:textSize="44sp" />
 
-        <!-- HEADER SECTION -->
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
-
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
             <TextView
-                android:id="@+id/tvHeaderTitle"
+                android:id="@+id/tvTiktokStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_alignParentStart="true"
-                android:layout_alignParentTop="true"
-                android:text="@string/header_title"
-                android:textSize="26sp"
-                android:textColor="@color/orange"
-                android:fontFamily="sans-serif-black"
-                android:shadowColor="#40000000"
-                android:shadowDx="2"
-                android:shadowDy="2"
-                android:shadowRadius="4"/>
-
-            <RelativeLayout
-                android:layout_width="match_parent"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/metro_pill_bg"
+                android:fontFamily="sans-serif-light"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="⚫ tiktok"
+                android:textColor="@color/metro_text_dim"
+                android:textSize="11sp" />
+            <TextView
+                android:id="@+id/tvYtdlpStatus"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_below="@id/tvHeaderTitle"
-                android:layout_marginTop="8dp">
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/metro_pill_bg"
+                android:fontFamily="sans-serif-light"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="⚫ yt-dlp"
+                android:textColor="@color/metro_text_dim"
+                android:textSize="11sp" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:orientation="horizontal">
+            <TextView
+                android:id="@+id/btnDevNote"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:background="@drawable/metro_pill_bg"
+                android:fontFamily="sans-serif-light"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="📝 dev note"
+                android:textColor="@color/metro_text_dim"
+                android:textSize="11sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground" />
+            <TextView
+                android:id="@+id/btnFeedback"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="0dp"
+                android:background="@drawable/metro_pill_bg"
+                android:fontFamily="sans-serif-light"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="6dp"
+                android:text="💬 feedback"
+                android:textColor="@color/metro_text_dim"
+                android:textSize="11sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackground" />
+        </LinearLayout>
 
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:layout_centerVertical="true"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/tvTiktokStatus"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="⚫ TikTok"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        android:background="@drawable/status_pill_bg"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp"
-                        android:layout_marginEnd="8dp" />
-
-                    <TextView
-                        android:id="@+id/tvYtdlpStatus"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="⚫ yt-dlp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        android:background="@drawable/status_pill_bg"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:id="@+id/btnDevNote"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="📝 Dev Note"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        android:background="@drawable/status_pill_bg"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground"
-                        android:layout_marginEnd="8dp" />
-
-                    <TextView
-                        android:id="@+id/btnFeedback"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="💬 Feedback"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        android:background="@drawable/status_pill_bg"
-                        android:paddingHorizontal="10dp"
-                        android:paddingVertical="4dp"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:foreground="?attr/selectableItemBackground" />
-                </LinearLayout>
-            </RelativeLayout>
-        </RelativeLayout>
-
-        <!-- PERMISSION WARNING (Styled as a block) -->
         <TextView
             android:id="@+id/tvOverlayWarning"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/overlay_warning_msg"
-            android:textColor="@color/yellow"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:background="#22F59E0B"
-            android:padding="16dp"
+            android:layout_marginTop="16dp"
+            android:background="@color/metro_amber"
+            android:fontFamily="sans-serif"
             android:gravity="center"
-            android:layout_marginBottom="4dp"
+            android:padding="16dp"
+            android:text="@string/overlay_warning_msg"
+            android:textColor="@color/metro_black"
+            android:textSize="13sp"
             android:visibility="gone" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGrantOverlay"
+            style="@style/Metro.Tile"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="2dp"
+            android:text="grant permission"
+            android:visibility="gone" />
+
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/grant_permission"
-            app:backgroundTint="@color/yellow"
-            android:textColor="@color/bg_dark"
-            app:cornerRadius="12dp"
-            android:layout_marginBottom="16dp"
-            android:visibility="gone"
-            android:insetTop="0dp"
-            android:insetBottom="0dp" />
+            android:layout_marginTop="28dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:text="now playing"
+            style="@style/Metro.Label" />
 
-        <!-- NOW PLAYING CARD -->
-        <com.google.android.material.card.MaterialCardView
+        <LinearLayout
+            android:id="@+id/tileNowPlaying"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="20dp">
+            android:background="@color/metro_accent"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:orientation="vertical">
 
+            <!-- Bagian collapsed: cover (icon lagu) + judul + equalizer -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp">
+                android:orientation="horizontal"
+                android:padding="12dp">
 
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/now_playing_label"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.2"
-                    android:layout_marginBottom="12dp" />
+                <FrameLayout
+                    android:layout_width="112dp"
+                    android:layout_height="112dp"
+                    android:background="@color/metro_tile_overlay">
 
-                <TextView
-                    android:id="@+id/tvNowPlaying"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/nothing_playing"
-                    android:textColor="@color/text_primary"
-                    android:textSize="22sp"
-                    android:fontFamily="sans-serif-medium"
-                    android:maxLines="2"
-                    android:ellipsize="end"
-                    android:layout_marginBottom="24dp" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:fontFamily="sans-serif-light"
+                        android:gravity="center"
+                        android:text="♪"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="48sp" />
 
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="6dp"
-                    android:max="100"
-                    android:progress="0"
-                    android:progressTint="@color/orange"
-                    android:progressBackgroundTint="#33FFFFFF"
-                    android:layout_marginBottom="8dp" />
+                    <ImageView
+                        android:id="@+id/ivNowPlayingArt"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:contentDescription="@null"
+                        android:scaleType="centerCrop" />
+                </FrameLayout>
 
-                <TextView
-                    android:id="@+id/tvProgress"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="0:00 / 0:00"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:gravity="end"
-                    android:fontFamily="monospace" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="112dp"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="sans-serif-light"
+                            android:text="now playing"
+                            android:textColor="#CCFFFFFF"
+                            android:textSize="12sp" />
+
+                        <ame.project.kanae.EqualizerView
+                            android:id="@+id/eqPlaying"
+                            android:layout_width="18dp"
+                            android:layout_height="14dp" />
+
+                        <ImageView
+                            android:id="@+id/ivChevron"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_marginStart="10dp"
+                            android:contentDescription="@null"
+                            android:src="@android:drawable/arrow_down_float"
+                            app:tint="@color/metro_text" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvNowPlaying"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="2"
+                        android:text="nothing playing"
+                        android:textColor="@color/metro_text"
+                        android:textSize="20sp" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <TextView
+                        android:id="@+id/tvProgress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-light"
+                        android:text="0:00 / 0:00"
+                        android:textColor="#CCFFFFFF"
+                        android:textSize="12sp" />
+                </LinearLayout>
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <!-- PLAYBACK CONTROLS -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="20dp">
+            <ProgressBar
+                android:id="@+id/progressBar"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:max="100"
+                android:progress="0"
+                android:progressBackgroundTint="#40FFFFFF"
+                android:progressTint="@color/metro_text" />
 
+            <!-- Bagian expanded: cover besar + kontrol (muncul saat tile diketuk) -->
             <LinearLayout
+                android:id="@+id/nowPlayingExpanded"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="12dp"
+                android:visibility="gone">
 
-                <!-- MUSIC VOLUME SLIDER -->
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:background="@color/metro_tile_overlay"
+                        android:fontFamily="sans-serif-light"
+                        android:gravity="center"
+                        android:text="♪"
+                        android:textColor="#B3FFFFFF"
+                        android:textSize="84sp"
+                        app:layout_constraintBottom_toBottomOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintEnd_toEndOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintStart_toStartOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintTop_toTopOf="@id/ivNowPlayingArtLarge" />
+
+                    <ImageView
+                        android:id="@+id/ivNowPlayingArtLarge"
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:contentDescription="@null"
+                        android:scaleType="centerCrop"
+                        app:layout_constraintDimensionRatio="H,16:10"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:background="@drawable/metro_art_scrim"
+                        app:layout_constraintBottom_toBottomOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintEnd_toEndOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintStart_toStartOf="@id/ivNowPlayingArtLarge" />
+
+                    <TextView
+                        android:id="@+id/tvNowPlayingMeta"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
+                        android:layout_marginBottom="10dp"
+                        android:ellipsize="end"
+                        android:fontFamily="sans-serif-light"
+                        android:maxLines="1"
+                        android:textColor="@color/metro_text"
+                        android:textSize="13sp"
+                        app:layout_constraintBottom_toBottomOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintEnd_toEndOf="@id/ivNowPlayingArtLarge"
+                        app:layout_constraintStart_toStartOf="@id/ivNowPlayingArtLarge" />
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnStop"
+                        style="@style/Metro.Tile"
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:contentDescription="stop"
+                        android:paddingHorizontal="0dp"
+                        app:backgroundTint="@color/metro_tile_overlay"
+                        app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        app:iconSize="28dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPlayPause"
+                        style="@style/Metro.Tile"
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="2"
+                        android:text="play"
+                        android:textSize="20sp"
+                        app:backgroundTint="@color/metro_tile_overlay"
+                        app:icon="@android:drawable/ic_media_play"
+                        app:iconGravity="textStart"
+                        app:iconSize="28dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnSkip"
+                        style="@style/Metro.Tile"
+                        android:layout_width="0dp"
+                        android:layout_height="72dp"
+                        android:layout_weight="1"
+                        android:contentDescription="next"
+                        android:paddingHorizontal="0dp"
+                        app:backgroundTint="@color/metro_tile_overlay"
+                        app:icon="@android:drawable/ic_media_next"
+                        app:iconGravity="textStart"
+                        app:iconPadding="0dp"
+                        app:iconSize="28dp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="16dp"
-                    android:paddingHorizontal="4dp">
+                    android:orientation="horizontal">
 
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
+                        android:contentDescription="@null"
                         android:src="@android:drawable/ic_lock_silent_mode_off"
-                        app:tint="@color/text_secondary" />
+                        app:tint="@color/metro_text" />
 
                     <SeekBar
                         android:id="@+id/sbMusicVolume"
@@ -248,679 +382,444 @@
                         android:layout_weight="1"
                         android:max="100"
                         android:progress="100"
-                        android:progressTint="@color/orange"
-                        android:thumbTint="@color/orange"
-                        android:splitTrack="false" />
+                        android:progressBackgroundTint="#66FFFFFF"
+                        android:progressTint="@color/metro_text"
+                        android:splitTrack="false"
+                        android:thumbTint="@color/metro_text" />
 
                     <TextView
                         android:id="@+id/tvMusicVolume"
-                        android:layout_width="40dp"
+                        android:layout_width="44dp"
                         android:layout_height="wrap_content"
-                        android:text="100%"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="12sp"
+                        android:fontFamily="sans-serif-light"
                         android:gravity="end"
-                        android:fontFamily="monospace" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginBottom="20dp">
-
-                    <!-- Stop Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnStop"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:padding="0dp"
-                        app:icon="@android:drawable/ic_menu_close_clear_cancel"
-                        app:iconSize="24dp"
-                        app:iconTint="@color/red"
-                        app:iconGravity="textStart"
-                        app:iconPadding="0dp"
-                        app:cornerRadius="30dp"
-                        app:strokeColor="@color/red"
-                        android:insetLeft="0dp"
-                        android:insetRight="0dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp" />
-
-                    <!-- Play/Pause Button (Wider to support text + icon) -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnPlayPause"
-                        android:layout_width="140dp"
-                        android:layout_height="64dp"
-                        android:layout_marginHorizontal="16dp"
-                        android:text="@string/btn_play"
-                        app:backgroundTint="@color/orange"
-                        app:cornerRadius="32dp"
-
-                        app:iconSize="24dp"
-                        app:iconTint="@color/bg_dark"
-                        android:textColor="@color/bg_dark"
-                        android:textStyle="bold"
-                        app:elevation="4dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp" />
-
-                    <!-- Skip Button -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSkip"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="60dp"
-                        android:layout_height="60dp"
-                        android:padding="0dp"
-                        app:icon="@android:drawable/ic_media_next"
-                        app:iconSize="24dp"
-                        app:iconTint="@color/purple"
-                        app:iconGravity="textStart"
-                        app:iconPadding="0dp"
-                        app:cornerRadius="30dp"
-                        app:strokeColor="@color/purple"
-                        android:insetLeft="0dp"
-                        android:insetRight="0dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp" />
-
+                        android:text="100%"
+                        android:textColor="@color/metro_text"
+                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnShuffle"
+                    style="@style/Metro.Tile"
                     android:layout_width="match_parent"
-                    android:layout_height="54dp"
-                    android:text="🔀 Shuffle OFF"
-                    app:backgroundTint="#12121F"
-                    android:textColor="@color/text_secondary"
-                    app:cornerRadius="16dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="#1FFFFFFF"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp" />
-
+                    android:layout_height="52dp"
+                    android:layout_marginTop="8dp"
+                    android:text="shuffle off"
+                    app:backgroundTint="@color/metro_tile_overlay" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
 
-        <!-- COMMAND PERMISSIONS -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="COMMAND PERMISSIONS"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.15"
-            android:layout_marginStart="12dp"
-            android:layout_marginBottom="10dp" />
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:text="manage"
+            style="@style/Metro.Label" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAdminList"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:layout_marginBottom="20dp"
-            android:text="AUTHORIZED USERS (SKIP/STOP/CM)"
-            app:icon="@android:drawable/ic_lock_lock"
-            app:backgroundTint="@color/card_bg"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            app:cornerRadius="20dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:textColor="@color/text_primary" />
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:orientation="horizontal">
 
-        <!-- OVERLAY CONTROLS -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnAdminList"
+                style="@style/Metro.Tile.Iconic"
+                android:layout_width="0dp"
+                android:layout_height="140dp"
+                android:layout_marginEnd="3dp"
+                android:layout_weight="1"
+                android:text="authorized users"
+                app:backgroundTint="@color/metro_teal"
+                app:icon="@android:drawable/ic_lock_lock" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnShowOverlays"
+                style="@style/Metro.Tile.Iconic"
+                android:layout_width="0dp"
+                android:layout_height="140dp"
+                android:layout_marginStart="3dp"
+                android:layout_weight="1"
+                android:text="quick overlays"
+                app:backgroundTint="@color/metro_cobalt"
+                app:icon="@android:drawable/ic_menu_manage" />
+        </LinearLayout>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/quick_overlays_label"
-            android:textColor="@color/text_secondary"
-            android:textSize="11sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.15"
-            android:layout_marginStart="12dp"
-            android:layout_marginBottom="10dp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnShowOverlays"
-            android:layout_width="match_parent"
-            android:layout_height="64dp"
-            android:layout_marginBottom="20dp"
-            android:text="OPEN QUICK OVERLAYS"
-            app:icon="@android:drawable/ic_menu_manage"
-            app:backgroundTint="@color/card_bg"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            app:cornerRadius="20dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:textColor="@color/text_primary" />
-
-        <!-- ADD TO QUEUE -->
-        <com.google.android.material.card.MaterialCardView
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:text="add to queue"
+            style="@style/Metro.Label" />
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="20dp">
+            android:background="@color/metro_tile"
+            android:orientation="vertical"
+            android:padding="16dp">
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="@string/yt_url_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etYoutubeUrl"
+                    style="@style/Metro.Edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri" />
+            </com.google.android.material.textfield.TextInputLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:orientation="horizontal">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnAddToQueue"
+                    style="@style/Metro.Tile"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginEnd="3dp"
+                    android:layout_weight="1.3"
+                    android:text="add to queue"
+                    app:backgroundTint="@color/metro_accent" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearQueue"
+                    style="@style/Metro.Tile"
+                    android:layout_width="0dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="3dp"
+                    android:layout_weight="1"
+                    android:text="clear all"
+                    app:backgroundTint="@color/metro_red" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:text="up next"
+                style="@style/Metro.Label" />
+
+            <TextView
+                android:id="@+id/tvQueueCount"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:background="@drawable/metro_pill_bg"
+                android:fontFamily="sans-serif-light"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="4dp"
+                android:text="@string/zero_songs"
+                android:textColor="@color/metro_text_dim"
+                android:textSize="12sp" />
+        </RelativeLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvQueue"
+            android:layout_width="match_parent"
+            android:layout_height="320dp"
+            android:background="@color/metro_tile"
+            android:overScrollMode="never"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:text="tiktok live chat"
+            style="@style/Metro.Label" />
+        <ScrollView
+            android:id="@+id/scrollChat"
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="@color/metro_tile"
+            android:padding="12dp">
+
+            <TextView
+                android:id="@+id/tvChatLog"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="monospace"
+                android:textColor="#BBBBBB"
+                android:textSize="12sp" />
+        </ScrollView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:text="eulerstream connect"
+            style="@style/Metro.Label" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/metro_tile"
+            android:orientation="vertical"
+            android:padding="16dp">
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:hint="@string/api_key_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etApiKey"
+                    style="@style/Metro.Edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textPassword" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:hint="@string/tiktok_user_hint">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTiktokUser"
+                    style="@style/Metro.Edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConnectTiktok"
+                style="@style/Metro.Tile"
+                android:layout_width="match_parent"
+                android:layout_height="72dp"
+                android:text="connect tiktok"
+                android:textSize="20sp"
+                app:backgroundTint="@color/metro_accent" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp"
+            android:layout_marginStart="4dp"
+            android:text="player configuration"
+            style="@style/Metro.Label" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/metro_tile"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:id="@+id/tvEnableCommandsLabel"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:text="@string/add_to_queue_label"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_weight="1"
+                    android:fontFamily="sans-serif-light"
+                    android:text="enable chat commands"
+                    android:textColor="@color/metro_text"
+                    android:textSize="16sp" />
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
+                <SeekBar
+                    android:id="@+id/sbEnableCommands"
+                    android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:hint="@string/yt_url_hint"
-                    app:boxBackgroundColor="#0A0A0F"
-                    app:boxCornerRadiusTopStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:hintTextColor="@color/orange"
-                    app:boxStrokeColor="@color/orange"
-                    app:boxStrokeWidth="1dp"
-                    android:layout_marginBottom="20dp"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etYoutubeUrl"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textUri"
-                        android:textColor="@color/text_primary"
-                        android:paddingVertical="16dp" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnAddToQueue"
-                        android:layout_width="0dp"
-                        android:layout_height="56dp"
-                        android:layout_weight="1"
-                        android:text="@string/btn_add"
-                        app:backgroundTint="@color/orange"
-                        android:textColor="@color/bg_dark"
-                        android:layout_marginEnd="10dp"
-                        app:cornerRadius="16dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:textStyle="bold" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnClearQueue"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="56dp"
-                        android:layout_weight="0.8"
-                        android:text="@string/btn_clear_all"
-                        android:textColor="@color/red"
-                        app:strokeColor="@color/red"
-                        app:cornerRadius="16dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp" />
-                </LinearLayout>
+                    android:max="1"
+                    android:progress="1"
+                    android:progressTint="@color/metro_accent"
+                    android:splitTrack="false"
+                    android:thumbTint="@color/metro_accent" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="20dp"
+                android:hint="@string/request_limit_hint">
 
-        <!-- QUEUE LIST -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="20dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etRequestLimit"
+                    style="@style/Metro.Edit"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="lyrics preference"
+                style="@style/Metro.Label" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:layout_marginBottom="20dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/up_next_label"
-                        android:textColor="@color/orange"
-                        android:textSize="11sp"
-                        android:textStyle="bold"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true" />
-
-                    <TextView
-                        android:id="@+id/tvQueueCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/zero_songs"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        android:background="@drawable/status_pill_bg"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="4dp"
-                        android:layout_alignParentEnd="true" />
-                </RelativeLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvQueue"
-                    android:layout_width="match_parent"
-                    android:layout_height="320dp"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                    android:overScrollMode="never" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- TIKTOK CHAT -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="20dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/tiktok_chat_label"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
-
-                <ScrollView
-                    android:id="@+id/scrollChat"
-                    android:layout_width="match_parent"
-                    android:layout_height="180dp"
-                    android:background="#0A0A0F"
-                    android:padding="12dp">
-
-                    <TextView
-                        android:id="@+id/tvChatLog"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="#BBBBBB"
-                        android:textSize="12sp"
-                        android:fontFamily="monospace" />
-                </ScrollView>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- EULERSTREAM & TIKTOK CONNECT -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="20dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="EULERSTREAM CONNECT"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="24dp" />
-
-                <!-- API Key -->
                 <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
+                    style="@style/Metro.Input"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:hint="@string/api_key_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="16dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etApiKey"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textPassword"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_weight="1"
+                    android:hint="@string/lyrics_lang_hint">
 
-                <!-- TikTok Username -->
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/tiktok_user_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="24dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
                     <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etTiktokUser"
+                        android:id="@+id/etLyricsLang"
+                        style="@style/Metro.Edit"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:inputType="text"
-                        android:textColor="@color/text_primary" />
+                        android:maxLength="5" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnConnectTiktok"
-                    android:layout_width="match_parent"
-                    android:layout_height="64dp"
-                    android:text="CONNECT TIKTOK"
-                    app:backgroundTint="@color/orange"
-                    android:textColor="@color/bg_dark"
-                    android:textStyle="bold"
-                    app:cornerRadius="20dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp" />
+                    android:id="@+id/btnLangId"
+                    style="@style/Metro.Tile"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="6dp"
+                    android:padding="0dp"
+                    android:text="ID"
+                    app:backgroundTint="@color/metro_cobalt" />
 
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangEn"
+                    style="@style/Metro.Tile"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="4dp"
+                    android:padding="0dp"
+                    android:text="EN"
+                    app:backgroundTint="@color/metro_violet" />
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <!-- PLAYER SETTINGS -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:cardBackgroundColor="@color/card_bg"
-            app:cardCornerRadius="28dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="#1FFFFFFF"
-            android:layout_marginBottom="40dp">
-
-            <LinearLayout
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="24dp">
+                android:layout_marginBottom="12dp"
+                android:text="command prefixes"
+                style="@style/Metro.Label" />
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/cmd_req_hint">
 
-                <TextView
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCmdRequest"
+                    style="@style/Metro.Edit"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="PLAYER CONFIGURATION"
-                    android:textColor="@color/orange"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/cmd_skip_hint">
 
-                <LinearLayout
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCmdSkip"
+                    style="@style/Metro.Edit"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="24dp">
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/cmd_stop_hint">
 
-                    <TextView
-                        android:id="@+id/tvEnableCommandsLabel"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/enable_commands_label"
-                        android:textColor="@color/text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                    <SeekBar
-                        android:id="@+id/sbEnableCommands"
-                        android:layout_width="80dp"
-                        android:layout_height="wrap_content"
-                        android:max="1"
-                        android:progress="1"
-                        android:progressTint="@color/orange"
-                        android:thumbTint="@color/orange"
-                        android:splitTrack="false" />
-                </LinearLayout>
-
-                <!-- Request Limit -->
-                <com.google.android.material.textfield.TextInputLayout
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCmdStop"
+                    style="@style/Metro.Edit"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/request_limit_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="28dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etRequestLimit"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="number"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/cmd_queue_hint">
 
-                <!-- LYRICS LANG -->
-                <TextView
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCmdQueue"
+                    style="@style/Metro.Edit"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/lyrics_pref_label"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:hint="@string/cmd_clear_music_hint">
 
-                <LinearLayout
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCmdClearMusic"
+                    style="@style/Metro.Edit"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="28dp">
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Metro.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="24dp"
+                android:hint="@string/cmd_lyric_hint">
 
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:hint="@string/lyrics_lang_hint"
-                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                        app:boxCornerRadiusBottomEnd="16dp"
-                        app:boxCornerRadiusBottomStart="16dp"
-                        app:boxCornerRadiusTopEnd="16dp"
-                        app:boxCornerRadiusTopStart="16dp">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etLyricsLang"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="text"
-                            android:maxLength="5"
-                            android:textColor="@color/text_primary" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLangId"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginStart="10dp"
-                        android:text="ID"
-                        android:padding="0dp"
-                        app:cornerRadius="16dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnLangEn"
-                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                        android:layout_width="56dp"
-                        android:layout_height="56dp"
-                        android:layout_marginStart="6dp"
-                        android:text="EN"
-                        android:padding="0dp"
-                        app:cornerRadius="16dp"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp" />
-                </LinearLayout>
-
-                <!-- COMMANDS -->
-                <TextView
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCmdLyric"
+                    style="@style/Metro.Edit"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/cmd_prefixes_label"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="16dp" />
+                    android:layout_height="wrap_content" />
+            </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/cmd_req_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="12dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCmdRequest"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/cmd_skip_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="12dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCmdSkip"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/cmd_stop_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="12dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCmdStop"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/cmd_queue_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="12dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCmdQueue"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/cmd_clear_music_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="12dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCmdClearMusic"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="@string/cmd_lyric_hint"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_marginBottom="32dp"
-                    app:boxCornerRadiusBottomEnd="16dp"
-                    app:boxCornerRadiusBottomStart="16dp"
-                    app:boxCornerRadiusTopEnd="16dp"
-                    app:boxCornerRadiusTopStart="16dp">
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etCmdLyric"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSaveSettings"
-                    android:layout_width="match_parent"
-                    android:layout_height="64dp"
-                    android:text="SAVE CONFIGURATION"
-                    app:backgroundTint="@color/purple"
-                    android:textColor="@color/white"
-                    android:textStyle="bold"
-                    app:cornerRadius="20dp"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveSettings"
+                style="@style/Metro.Tile"
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:text="save configuration"
+                android:textSize="20sp"
+                app:backgroundTint="@color/metro_cobalt" />
+        </LinearLayout>
 
     </LinearLayout>
 </ScrollView>

@@ -56,6 +56,21 @@ import ame.project.kanae.tiktok.GiftSoundActivity
 import ame.project.kanae.overlay.CustomWebOverlaySettingsActivity
 import ame.project.kanae.player.FastPlaybackState
 import android.content.res.Configuration
+import android.animation.ArgbEvaluator
+import android.animation.ValueAnimator
+import android.graphics.Bitmap
+import android.graphics.Rect
+import android.graphics.drawable.Drawable
+import android.transition.ChangeBounds
+import android.transition.Fade
+import android.transition.TransitionManager
+import android.transition.TransitionSet
+import android.view.ViewGroup
+import android.view.animation.DecelerateInterpolator
+import androidx.activity.OnBackPressedCallback
+import com.bumptech.glide.Glide
+import com.bumptech.glide.request.target.CustomTarget
+import com.bumptech.glide.request.transition.Transition as GlideTransition
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 
 class MainActivity : AppCompatActivity() {
@@ -74,6 +89,12 @@ class MainActivity : AppCompatActivity() {
     private var lastSyncTime: Long = 0L
     private var currentNotifs: List<NotificationItem> = emptyList()
     private var notifPollingJob: Job? = null
+
+    // ── Metro / Iconic now-playing tile ──
+    private var tileExpanded = false
+    private var tileColor = 0
+    private var artTarget: CustomTarget<Bitmap>? = null
+    private lateinit var tileBackCallback: OnBackPressedCallback
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -222,6 +243,7 @@ class MainActivity : AppCompatActivity() {
 
         setupRecyclerView()
         setupButtons()
+        setupMetroUi()
         loadSavedSettings()
 
         checkForUpdates()
@@ -269,6 +291,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        artTarget?.let { Glide.with(applicationContext).clear(it) }
+        artTarget = null
         if (serviceBound) {
             unbindService(connection)
             serviceBound = false
@@ -371,6 +395,96 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    // ── Metro / Iconic UI ─────────────────────────────────────────────
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private fun setupMetroUi() {
+        tileColor = ContextCompat.getColor(this, R.color.metro_accent)
+        binding.tileNowPlaying.setBackgroundColor(tileColor)
+
+        // Ketuk tile -> expand jadi kotak Now Playing; ketuk lagi -> collapse
+        binding.tileNowPlaying.setOnClickListener { setTileExpanded(!tileExpanded) }
+
+        // Tombol Back menutup tile yang sedang expand dulu sebelum keluar app
+        tileBackCallback = object : OnBackPressedCallback(false) {
+            override fun handleOnBackPressed() { setTileExpanded(false) }
+        }
+        onBackPressedDispatcher.addCallback(this, tileBackCallback)
+
+        // Efek tilt khas Windows Phone di semua tile
+        listOf<View>(
+            binding.tileNowPlaying, binding.btnAdminList, binding.btnShowOverlays,
+            binding.btnPlayPause, binding.btnSkip, binding.btnStop, binding.btnShuffle,
+            binding.btnAddToQueue, binding.btnClearQueue, binding.btnConnectTiktok,
+            binding.btnSaveSettings, binding.btnLangId, binding.btnLangEn, binding.btnGrantOverlay
+        ).forEach { Metro.tilt(it) }
+    }
+
+    private fun setTileExpanded(expand: Boolean) {
+        if (tileExpanded == expand) return
+        tileExpanded = expand
+        tileBackCallback.isEnabled = expand
+
+        val container = binding.tileNowPlaying.parent as ViewGroup
+        TransitionManager.beginDelayedTransition(
+            container,
+            TransitionSet()
+                .addTransition(ChangeBounds())
+                .addTransition(Fade())
+                .setDuration(320)
+                .setInterpolator(DecelerateInterpolator(1.5f))
+        )
+        binding.nowPlayingExpanded.visibility = if (expand) View.VISIBLE else View.GONE
+        binding.ivChevron.animate().rotation(if (expand) 180f else 0f).setDuration(300).start()
+
+        if (expand) {
+            // Pastikan tile yang membesar terlihat penuh di layar
+            binding.root.postDelayed({
+                val r = Rect(0, 0, binding.tileNowPlaying.width, binding.tileNowPlaying.height)
+                binding.root.offsetDescendantRectToMyCoords(binding.tileNowPlaying, r)
+                binding.root.smoothScrollTo(0, r.top - dp(12))
+            }, 120)
+        }
+    }
+
+    private fun animateTileColor(to: Int) {
+        val from = tileColor
+        if (from == to) return
+        tileColor = to
+        ValueAnimator.ofObject(ArgbEvaluator(), from, to).apply {
+            duration = 600
+            addUpdateListener { binding.tileNowPlaying.setBackgroundColor(it.animatedValue as Int) }
+            start()
+        }
+    }
+
+    /** Muat cover lagu ke tile (kecil + besar) dan ubah warna tile mengikuti cover. */
+    private fun loadNowPlayingArt(url: String?) {
+        artTarget?.let { Glide.with(this).clear(it) }
+        artTarget = null
+        val accent = ContextCompat.getColor(this, R.color.metro_accent)
+
+        if (url.isNullOrBlank()) {
+            binding.ivNowPlayingArt.setImageDrawable(null)
+            binding.ivNowPlayingArtLarge.setImageDrawable(null)
+            animateTileColor(accent)
+            return
+        }
+        val target = object : CustomTarget<Bitmap>() {
+            override fun onResourceReady(resource: Bitmap, transition: GlideTransition<in Bitmap>?) {
+                listOf(binding.ivNowPlayingArt, binding.ivNowPlayingArtLarge).forEach { iv ->
+                    iv.setImageBitmap(resource)
+                    iv.alpha = 0f
+                    iv.animate().alpha(1f).setDuration(350).start()
+                }
+                animateTileColor(Metro.accentFromBitmap(resource, accent))
+            }
+            override fun onLoadCleared(placeholder: Drawable?) {}
+        }
+        artTarget = target
+        Glide.with(this).asBitmap().load(url).override(640, 640).into(target)
+    }
+
     // ── RecyclerView ──────────────────────────────────────────────────
     private fun setupRecyclerView() {
         binding.rvQueue.apply {
@@ -387,7 +501,7 @@ class MainActivity : AppCompatActivity() {
         binding.btnClearQueue.setOnClickListener { service?.clearQueue() }
         binding.btnShuffle.setOnClickListener  {
             val on = service?.toggleShuffle() ?: false
-            binding.btnShuffle.text = if (on) "🔀 ON" else "🔀 OFF"
+            binding.btnShuffle.text = if (on) "shuffle on" else "shuffle off"
         }
 
         binding.btnAddToQueue.setOnClickListener {
@@ -1171,10 +1285,13 @@ class MainActivity : AppCompatActivity() {
         // 3. Update Nama Lagu (Hanya jika berubah)
         if (songJson != lastSongJson) {
             lastSongJson = songJson
-            binding.tvNowPlaying.text = if (songJson != null) {
-                val song = Gson().fromJson(songJson, Song::class.java)
-                "▶ ${song.title}"
-            } else "– Nothing playing –"
+            val song = songJson?.let { Gson().fromJson(it, Song::class.java) }
+            binding.tvNowPlaying.text = song?.title ?: "nothing playing"
+            binding.tvNowPlayingMeta.text = listOfNotNull(
+                song?.channel?.takeIf { it.isNotBlank() },
+                song?.requestedBy?.takeIf { it.isNotBlank() }?.let { "requested by @$it" }
+            ).joinToString("  ·  ")
+            loadNowPlayingArt(song?.thumbnail)
         }
 
         // Queue harus selalu di-sync tiap heavy-sync tick, TIDAK boleh digantung
@@ -1194,9 +1311,14 @@ class MainActivity : AppCompatActivity() {
         val musicVol  = state["music_volume"]     as? Float   ?: 1.0f
         val cmdsOn    = state["commands_enabled"] as? Boolean ?: true
 
-        binding.btnPlayPause.text = if (isPlaying && !isPaused) "Pause" else "Play"
-        binding.tvQueueCount.text = "Queue: $qCount"
-        binding.btnShuffle.text   = if (shuffle) "🔀 ON" else "🔀 OFF"
+        val playingNow = isPlaying && !isPaused
+        binding.btnPlayPause.text = if (playingNow) "pause" else "play"
+        binding.btnPlayPause.setIconResource(
+            if (playingNow) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
+        )
+        binding.eqPlaying.setPlaying(playingNow)
+        binding.tvQueueCount.text = "$qCount songs"
+        binding.btnShuffle.text   = if (shuffle) "shuffle on" else "shuffle off"
         val musicVolPct = (musicVol * 100).toInt()
         binding.sbMusicVolume.progress = musicVolPct
         binding.tvMusicVolume.text = "$musicVolPct%"
@@ -1204,22 +1326,22 @@ class MainActivity : AppCompatActivity() {
         binding.tvEnableCommandsLabel.alpha = if (cmdsOn) 1.0f else 0.5f
 
         binding.tvTiktokStatus.text  = when {
-            tiktokOk -> "🟢 TikTok Live"
-            tiktokConnecting -> "🟡 Connecting..."
-            else -> "🔴 TikTok Live"
+            tiktokOk -> "🟢 tiktok live"
+            tiktokConnecting -> "🟡 connecting..."
+            else -> "🔴 tiktok live"
         }
         binding.btnConnectTiktok.text = when {
-            tiktokOk -> "🔌 DISCONNECT"
-            tiktokConnecting -> "⏳ CONNECTING..."
-            else -> "💾 CONNECT TIKTOK"
+            tiktokOk -> "disconnect tiktok"
+            tiktokConnecting -> "connecting…"
+            else -> "connect tiktok"
         }
         binding.btnConnectTiktok.isEnabled = !tiktokConnecting
 
         binding.btnConnectTiktok.backgroundTintList = android.content.res.ColorStateList.valueOf(
             when {
-                tiktokOk -> ContextCompat.getColor(this, R.color.red)
-                tiktokConnecting -> ContextCompat.getColor(this, R.color.yellow)
-                else -> ContextCompat.getColor(this, R.color.orange)
+                tiktokOk -> ContextCompat.getColor(this, R.color.metro_red)
+                tiktokConnecting -> ContextCompat.getColor(this, R.color.metro_amber)
+                else -> ContextCompat.getColor(this, R.color.metro_accent)
             })
 
         binding.tvYtdlpStatus.text = if (ytdlpOk) "🟢 yt-dlp ready" else "🔴 yt-dlp missing"
@@ -1243,9 +1365,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateDevNoteButtonUi(state: NotifBadgeState) {
         val btnText = when (state) {
-            NotifBadgeState.RED_FEEDBACK -> "🔴 Dev Note"
-            NotifBadgeState.GREEN_GLOBAL -> "🟢 Dev Note"
-            NotifBadgeState.NONE -> "📝 Dev Note"
+            NotifBadgeState.RED_FEEDBACK -> "🔴 dev note"
+            NotifBadgeState.GREEN_GLOBAL -> "🟢 dev note"
+            NotifBadgeState.NONE -> "📝 dev note"
         }
         binding.btnDevNote.text = btnText
 
@@ -1396,7 +1518,7 @@ class QueueAdapter(private val onRemove: (Int) -> Unit, private val onPlay: (Son
         Log.d("QueueAdapter", "Adapter items updated: ${items.size}")
     }
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): VH {
-        val v = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_queue, parent, false)
+        val v = android.view.LayoutInflater.from(parent.context).inflate(R.layout.item_queue_metro, parent, false)
         return VH(v)
     }
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -1406,11 +1528,18 @@ class QueueAdapter(private val onRemove: (Int) -> Unit, private val onPlay: (Son
             if (!song.requestedBy.isNullOrBlank()) append("by ${song.requestedBy} ")
             if (song.duration > 0) append("• ${song.durationFormatted}")
         }
+        if (!song.thumbnail.isNullOrBlank()) {
+            Glide.with(holder.itemView).load(song.thumbnail).centerCrop().into(holder.ivThumb)
+        } else {
+            Glide.with(holder.itemView).clear(holder.ivThumb)
+            holder.ivThumb.setImageDrawable(null)
+        }
         holder.btnPlay.setOnClickListener { onPlay(song) }
         holder.btnRemove.setOnClickListener { onRemove(position) }
     }
     override fun getItemCount() = items.size
     class VH(v: View) : RecyclerView.ViewHolder(v) {
+        val ivThumb: ImageView = v.findViewById(R.id.iv_song_thumb)
         val tvTitle: TextView = v.findViewById(R.id.tv_song_title)
         val tvMeta: TextView = v.findViewById(R.id.tv_song_meta)
         val btnPlay: ImageButton = v.findViewById(R.id.btn_play_now)
