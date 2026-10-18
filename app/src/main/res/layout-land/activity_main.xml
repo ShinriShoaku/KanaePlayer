@@ -2,8 +2,8 @@
 <!--
   activity_main.xml - Kanae Player: Windows Phone "Iconic" theme.
   Semua ID lama dipertahankan agar kompatibel dengan MainActivity.kt.
-  ID baru: tileNowPlaying, ivNowPlayingArt, ivNowPlayingArtLarge, tvNowPlayingMeta,
-           eqPlaying, ivChevron, nowPlayingExpanded
+  Layout Start-screen: mosaik tile; tile Add/UpNext/Chat/Connect/Config expand di tempat.
+  ID baru: tile*/hdr*/body* (Now Playing, AddQueue, UpNext, Chat, Connect, Config), dll.
 -->
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
@@ -29,79 +29,13 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:layout_marginTop="12dp"
+            android:layout_marginBottom="16dp"
             android:fontFamily="sans-serif-light"
             android:includeFontPadding="false"
             android:letterSpacing="-0.02"
             android:text="kanae player"
             android:textColor="@color/metro_text"
-            android:textSize="34sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-            <TextView
-                android:id="@+id/tvTiktokStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/metro_pill_bg"
-                android:fontFamily="sans-serif-light"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="6dp"
-                android:text="⚫ tiktok"
-                android:textColor="@color/metro_text_dim"
-                android:textSize="11sp" />
-            <TextView
-                android:id="@+id/tvYtdlpStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/metro_pill_bg"
-                android:fontFamily="sans-serif-light"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="6dp"
-                android:text="⚫ yt-dlp"
-                android:textColor="@color/metro_text_dim"
-                android:textSize="11sp" />
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1" />
-            <TextView
-                android:id="@+id/btnDevNote"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                android:background="@drawable/metro_pill_bg"
-                android:fontFamily="sans-serif-light"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="6dp"
-                android:text="📝 dev note"
-                android:textColor="@color/metro_text_dim"
-                android:textSize="11sp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground" />
-            <TextView
-                android:id="@+id/btnFeedback"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="0dp"
-                android:background="@drawable/metro_pill_bg"
-                android:fontFamily="sans-serif-light"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="6dp"
-                android:text="💬 feedback"
-                android:textColor="@color/metro_text_dim"
-                android:textSize="11sp"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?attr/selectableItemBackground" />
-        </LinearLayout>
-
+            android:textSize="30sp" />
         <TextView
             android:id="@+id/tvOverlayWarning"
             android:layout_width="match_parent"
@@ -137,15 +71,6 @@
                 android:layout_marginEnd="6dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp"
-                    android:text="now playing"
-                    style="@style/Metro.Label" />
-
                 <LinearLayout
                     android:id="@+id/tileNowPlaying"
                     android:layout_width="match_parent"
@@ -419,68 +344,260 @@
                             app:backgroundTint="@color/metro_tile_overlay" />
                     </LinearLayout>
                 </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp"
-                    android:text="manage"
-                    style="@style/Metro.Label" />
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="6dp"
+                    android:baselineAligned="false"
                     android:orientation="horizontal">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnAdminList"
-                        style="@style/Metro.Tile.Iconic"
+                    <LinearLayout
+                        android:id="@+id/tileAddQueue"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
                         android:layout_marginEnd="3dp"
-                        android:layout_weight="1"
-                        android:text="authorized users"
-                        app:backgroundTint="@color/metro_teal"
-                        app:icon="@android:drawable/ic_lock_lock" />
+                        android:orientation="vertical">
+                        <FrameLayout
+                            android:id="@+id/hdrAddQueue"
+                            android:layout_width="match_parent"
+                            android:layout_height="160dp"
+                            android:background="@color/metro_teal"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground">
 
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnShowOverlays"
-                        style="@style/Metro.Tile.Iconic"
+                            <ImageView
+                                android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_metro_add" />
+
+                            <TextView
+                                android:layout_gravity="start|bottom" android:layout_marginStart="12dp" android:layout_marginBottom="10dp" android:textSize="14sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-light"
+                                android:includeFontPadding="false"
+                                android:text="add to queue"
+                                android:textColor="@color/metro_text" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:id="@+id/bodyAddQueue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@color/metro_tile"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:visibility="gone">
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Metro.Input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:hint="@string/yt_url_hint">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etYoutubeUrl"
+                                    style="@style/Metro.Edit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textUri" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnAddToQueue"
+                                    style="@style/Metro.Tile"
+                                    android:layout_width="0dp"
+                                    android:layout_height="56dp"
+                                    android:layout_marginEnd="3dp"
+                                    android:layout_weight="1.3"
+                                    android:text="add to queue"
+                                    app:backgroundTint="@color/metro_accent" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btnClearQueue"
+                                    style="@style/Metro.Tile"
+                                    android:layout_width="0dp"
+                                    android:layout_height="56dp"
+                                    android:layout_marginStart="3dp"
+                                    android:layout_weight="1"
+                                    android:text="clear all"
+                                    app:backgroundTint="@color/metro_red" />
+                            </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/tileUpNext"
                         android:layout_width="0dp"
-                        android:layout_height="140dp"
-                        android:layout_marginStart="3dp"
                         android:layout_weight="1"
-                        android:text="quick overlays"
-                        app:backgroundTint="@color/metro_cobalt"
-                        app:icon="@android:drawable/ic_menu_manage" />
-                </LinearLayout>
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="3dp"
+                        android:orientation="vertical">
+                        <FrameLayout
+                            android:id="@+id/hdrUpNext"
+                            android:layout_width="match_parent"
+                            android:layout_height="160dp"
+                            android:background="@color/metro_cobalt"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground">
 
-                <TextView
+                            <ImageView
+                                android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_metro_queue" />
+
+                            <TextView
+                                android:layout_gravity="start|bottom" android:layout_marginStart="12dp" android:layout_marginBottom="10dp" android:textSize="14sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-light"
+                                android:includeFontPadding="false"
+                                android:text="up next"
+                                android:textColor="@color/metro_text" />
+                            <TextView
+                                android:id="@+id/tvQueueCount"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="top|end"
+                                android:layout_margin="12dp"
+                                android:fontFamily="sans-serif-light"
+                                android:includeFontPadding="false"
+                                android:text="0"
+                                android:textColor="@color/metro_text"
+                                android:textSize="40sp" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:id="@+id/bodyUpNext"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@color/metro_tile"
+                            android:orientation="vertical"
+                            android:padding="0dp"
+                            android:visibility="gone">
+                            <androidx.recyclerview.widget.RecyclerView
+                                android:id="@+id/rvQueue"
+                                android:layout_width="match_parent"
+                                android:layout_height="320dp"
+                                android:background="@color/metro_tile"
+                                android:overScrollMode="never"
+                                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp"
-                    android:text="tiktok live chat"
-                    style="@style/Metro.Label" />
-                <ScrollView
-                    android:id="@+id/scrollChat"
-                    android:layout_width="match_parent"
-                    android:layout_height="180dp"
-                    android:background="@color/metro_tile"
-                    android:padding="12dp">
+                    android:layout_marginTop="6dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="160dp"
+                        android:layout_marginEnd="3dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
 
-                    <TextView
-                        android:id="@+id/tvChatLog"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:fontFamily="monospace"
-                        android:textColor="#BBBBBB"
-                        android:textSize="12sp" />
-                </ScrollView>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/tvTiktokStatus"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="3dp" android:layout_marginBottom="3dp"
+                                android:background="@color/metro_violet"
+                                android:fontFamily="sans-serif-light"
+                                android:gravity="center"
+                                android:text="⚫\ntiktok"
+                                android:textColor="@color/metro_text"
+                                android:textSize="11sp" />
+                            <TextView
+                                android:id="@+id/tvYtdlpStatus"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:layout_marginStart="3dp" android:layout_marginBottom="3dp"
+                                android:background="@color/metro_lime"
+                                android:fontFamily="sans-serif-light"
+                                android:gravity="center"
+                                android:text="⚫\nyt-dlp"
+                                android:textColor="@color/metro_text"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:orientation="horizontal">
+                            <TextView
+                                android:id="@+id/btnDevNote"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:layout_marginEnd="3dp" android:layout_marginTop="3dp"
+                                android:background="@color/metro_amber"
+                                android:fontFamily="sans-serif-light"
+                                android:gravity="center"
+                                android:text="📝\ndev note"
+                                android:textColor="@color/metro_text"
+                                android:textSize="11sp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground" />
+                            <TextView
+                                android:id="@+id/btnFeedback"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:layout_marginStart="3dp" android:layout_marginTop="3dp"
+                                android:background="@color/metro_magenta"
+                                android:fontFamily="sans-serif-light"
+                                android:gravity="center"
+                                android:text="💬\nfeedback"
+                                android:textColor="@color/metro_text"
+                                android:textSize="11sp"
+                                android:clickable="true"
+                                android:focusable="true"
+                                android:foreground="?attr/selectableItemBackground" />
+                        </LinearLayout>
+                    </LinearLayout>
+                    <FrameLayout
+                        android:id="@+id/btnAdminList"
+                        android:layout_width="0dp"
+                        android:layout_height="160dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="3dp"
+                        android:background="@color/metro_violet"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
+
+                        <ImageView
+                            android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_metro_lock" />
+
+                        <TextView
+                            android:layout_gravity="start|bottom" android:layout_marginStart="12dp" android:layout_marginBottom="10dp" android:textSize="14sp"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-light"
+                            android:includeFontPadding="false"
+                            android:text="authorized users"
+                            android:textColor="@color/metro_text" />
+                    </FrameLayout>
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout
@@ -489,354 +606,396 @@
                 android:layout_marginStart="6dp"
                 android:layout_weight="1"
                 android:orientation="vertical">
-                <TextView
+                <FrameLayout
+                    android:id="@+id/btnShowOverlays"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp"
-                    android:text="add to queue"
-                    style="@style/Metro.Label" />
+                    android:layout_height="96dp"
+                    android:layout_marginTop="0dp"
+                    android:background="@color/metro_magenta"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackground">
+
+                    <ImageView
+                        android:layout_width="32dp" android:layout_height="32dp" android:layout_gravity="start|center_vertical" android:layout_marginStart="20dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_metro_layers" />
+
+                    <TextView
+                        android:layout_gravity="start|center_vertical" android:layout_marginStart="72dp" android:textSize="22sp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="sans-serif-light"
+                        android:includeFontPadding="false"
+                        android:text="quick overlays"
+                        android:textColor="@color/metro_text" />
+                </FrameLayout>
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/metro_tile"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
+                    android:layout_marginTop="6dp"
+                    android:baselineAligned="false"
+                    android:orientation="horizontal">
+                    <LinearLayout
+                        android:id="@+id/tileChat"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:hint="@string/yt_url_hint">
+                        android:layout_marginEnd="3dp"
+                        android:orientation="vertical">
+                        <FrameLayout
+                            android:id="@+id/hdrChat"
+                            android:layout_width="match_parent"
+                            android:layout_height="160dp"
+                            android:background="@color/metro_lime"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etYoutubeUrl"
-                            style="@style/Metro.Edit"
+                            <ImageView
+                                android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_metro_chat" />
+
+                            <TextView
+                                android:layout_gravity="start|bottom" android:layout_marginStart="12dp" android:layout_marginBottom="10dp" android:textSize="14sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-light"
+                                android:includeFontPadding="false"
+                                android:text="tiktok chat"
+                                android:textColor="@color/metro_text" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:id="@+id/bodyChat"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="textUri" />
-                    </com.google.android.material.textfield.TextInputLayout>
+                            android:background="@color/metro_tile"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:visibility="gone">
+                            <ScrollView
+                                android:id="@+id/scrollChat"
+                                android:layout_width="match_parent"
+                                android:layout_height="220dp"
+                                android:background="@color/metro_tile_light"
+                                android:padding="12dp">
 
+                                <TextView
+                                    android:id="@+id/tvChatLog"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:fontFamily="monospace"
+                                    android:textColor="#BBBBBB"
+                                    android:textSize="12sp" />
+                            </ScrollView>
+                        </LinearLayout>
+                    </LinearLayout>
                     <LinearLayout
-                        android:layout_width="match_parent"
+                        android:id="@+id/tileConnect"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_marginStart="3dp"
+                        android:orientation="vertical">
+                        <FrameLayout
+                            android:id="@+id/hdrConnect"
+                            android:layout_width="match_parent"
+                            android:layout_height="160dp"
+                            android:background="@color/metro_amber"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:foreground="?attr/selectableItemBackground">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnAddToQueue"
-                            style="@style/Metro.Tile"
-                            android:layout_width="0dp"
-                            android:layout_height="56dp"
-                            android:layout_marginEnd="3dp"
-                            android:layout_weight="1.3"
-                            android:text="add to queue"
-                            app:backgroundTint="@color/metro_accent" />
+                            <ImageView
+                                android:layout_width="48dp" android:layout_height="48dp" android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_metro_link" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnClearQueue"
-                            style="@style/Metro.Tile"
-                            android:layout_width="0dp"
-                            android:layout_height="56dp"
-                            android:layout_marginStart="3dp"
-                            android:layout_weight="1"
-                            android:text="clear all"
-                            app:backgroundTint="@color/metro_red" />
+                            <TextView
+                                android:layout_gravity="start|bottom" android:layout_marginStart="12dp" android:layout_marginBottom="10dp" android:textSize="14sp"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:fontFamily="sans-serif-light"
+                                android:includeFontPadding="false"
+                                android:text="eulerstream"
+                                android:textColor="@color/metro_text" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:id="@+id/bodyConnect"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:background="@color/metro_tile"
+                            android:orientation="vertical"
+                            android:padding="16dp"
+                            android:visibility="gone">
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Metro.Input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="12dp"
+                                android:hint="@string/api_key_hint">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etApiKey"
+                                    style="@style/Metro.Edit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="textPassword" />
+                            </com.google.android.material.textfield.TextInputLayout>
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Metro.Input"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="16dp"
+                                android:hint="@string/tiktok_user_hint">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etTiktokUser"
+                                    style="@style/Metro.Edit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="text" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnConnectTiktok"
+                                style="@style/Metro.Tile"
+                                android:layout_width="match_parent"
+                                android:layout_height="72dp"
+                                android:text="connect tiktok"
+                                android:textSize="20sp"
+                                app:backgroundTint="@color/metro_accent" />
+                        </LinearLayout>
                     </LinearLayout>
                 </LinearLayout>
-
-                <RelativeLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentStart="true"
-                        android:layout_centerVertical="true"
-                        android:text="up next"
-                        style="@style/Metro.Label" />
-
-                    <TextView
-                        android:id="@+id/tvQueueCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:background="@drawable/metro_pill_bg"
-                        android:fontFamily="sans-serif-light"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="4dp"
-                        android:text="@string/zero_songs"
-                        android:textColor="@color/metro_text_dim"
-                        android:textSize="12sp" />
-                </RelativeLayout>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/rvQueue"
-                    android:layout_width="match_parent"
-                    android:layout_height="320dp"
-                    android:background="@color/metro_tile"
-                    android:overScrollMode="never"
-                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp"
-                    android:text="eulerstream connect"
-                    style="@style/Metro.Label" />
                 <LinearLayout
+                    android:id="@+id/tileConfig"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/metro_tile"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
+                    android:layout_marginTop="6dp"
+                    android:orientation="vertical">
+                    <FrameLayout
+                        android:id="@+id/hdrConfig"
                         android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:hint="@string/api_key_hint">
+                        android:layout_height="96dp"
+                        android:background="@color/metro_steel"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:foreground="?attr/selectableItemBackground">
 
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etApiKey"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textPassword" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:hint="@string/tiktok_user_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etTiktokUser"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="text" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnConnectTiktok"
-                        style="@style/Metro.Tile"
-                        android:layout_width="match_parent"
-                        android:layout_height="72dp"
-                        android:text="connect tiktok"
-                        android:textSize="20sp"
-                        app:backgroundTint="@color/metro_accent" />
-                </LinearLayout>
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:layout_marginBottom="8dp"
-                    android:layout_marginStart="4dp"
-                    android:text="player configuration"
-                    style="@style/Metro.Label" />
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@color/metro_tile"
-                    android:orientation="vertical"
-                    android:padding="16dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="16dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        <ImageView
+                            android:layout_width="32dp" android:layout_height="32dp" android:layout_gravity="start|center_vertical" android:layout_marginStart="20dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_metro_settings" />
 
                         <TextView
-                            android:id="@+id/tvEnableCommandsLabel"
-                            android:layout_width="0dp"
+                            android:layout_gravity="start|center_vertical" android:layout_marginStart="72dp" android:textSize="22sp"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
                             android:fontFamily="sans-serif-light"
-                            android:text="enable chat commands"
-                            android:textColor="@color/metro_text"
-                            android:textSize="16sp" />
-
-                        <SeekBar
-                            android:id="@+id/sbEnableCommands"
-                            android:layout_width="80dp"
-                            android:layout_height="wrap_content"
-                            android:max="1"
-                            android:progress="1"
-                            android:progressTint="@color/metro_accent"
-                            android:splitTrack="false"
-                            android:thumbTint="@color/metro_accent" />
-                    </LinearLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="20dp"
-                        android:hint="@string/request_limit_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etRequestLimit"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="number" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:text="lyrics preference"
-                        style="@style/Metro.Label" />
+                            android:includeFontPadding="false"
+                            android:text="player configuration"
+                            android:textColor="@color/metro_text" />
+                    </FrameLayout>
 
                     <LinearLayout
+                        android:id="@+id/bodyConfig"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginBottom="20dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:background="@color/metro_tile"
+                        android:orientation="vertical"
+                        android:padding="16dp"
+                        android:visibility="gone">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="16dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
 
+                            <TextView
+                                android:id="@+id/tvEnableCommandsLabel"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:fontFamily="sans-serif-light"
+                                android:text="enable chat commands"
+                                android:textColor="@color/metro_text"
+                                android:textSize="16sp" />
+
+                            <SeekBar
+                                android:id="@+id/sbEnableCommands"
+                                android:layout_width="80dp"
+                                android:layout_height="wrap_content"
+                                android:max="1"
+                                android:progress="1"
+                                android:progressTint="@color/metro_accent"
+                                android:splitTrack="false"
+                                android:thumbTint="@color/metro_accent" />
+                        </LinearLayout>
                         <com.google.android.material.textfield.TextInputLayout
                             style="@style/Metro.Input"
-                            android:layout_width="0dp"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:hint="@string/lyrics_lang_hint">
+                            android:layout_marginBottom="20dp"
+                            android:hint="@string/request_limit_hint">
 
                             <com.google.android.material.textfield.TextInputEditText
-                                android:id="@+id/etLyricsLang"
+                                android:id="@+id/etRequestLimit"
                                 style="@style/Metro.Edit"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:inputType="text"
-                                android:maxLength="5" />
+                                android:inputType="number" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:text="lyrics preference"
+                            style="@style/Metro.Label" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="20dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                style="@style/Metro.Input"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:hint="@string/lyrics_lang_hint">
+
+                                <com.google.android.material.textfield.TextInputEditText
+                                    android:id="@+id/etLyricsLang"
+                                    style="@style/Metro.Edit"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="text"
+                                    android:maxLength="5" />
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnLangId"
+                                style="@style/Metro.Tile"
+                                android:layout_width="56dp"
+                                android:layout_height="56dp"
+                                android:layout_marginStart="6dp"
+                                android:padding="0dp"
+                                android:text="ID"
+                                app:backgroundTint="@color/metro_cobalt" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnLangEn"
+                                style="@style/Metro.Tile"
+                                android:layout_width="56dp"
+                                android:layout_height="56dp"
+                                android:layout_marginStart="4dp"
+                                android:padding="0dp"
+                                android:text="EN"
+                                app:backgroundTint="@color/metro_violet" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="12dp"
+                            android:text="command prefixes"
+                            style="@style/Metro.Label" />
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Metro.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:hint="@string/cmd_req_hint">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCmdRequest"
+                                style="@style/Metro.Edit"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Metro.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:hint="@string/cmd_skip_hint">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCmdSkip"
+                                style="@style/Metro.Edit"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Metro.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:hint="@string/cmd_stop_hint">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCmdStop"
+                                style="@style/Metro.Edit"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Metro.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:hint="@string/cmd_queue_hint">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCmdQueue"
+                                style="@style/Metro.Edit"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Metro.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="8dp"
+                            android:hint="@string/cmd_clear_music_hint">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCmdClearMusic"
+                                style="@style/Metro.Edit"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
+                        </com.google.android.material.textfield.TextInputLayout>
+                        <com.google.android.material.textfield.TextInputLayout
+                            style="@style/Metro.Input"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginBottom="24dp"
+                            android:hint="@string/cmd_lyric_hint">
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etCmdLyric"
+                                style="@style/Metro.Edit"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content" />
                         </com.google.android.material.textfield.TextInputLayout>
 
                         <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLangId"
+                            android:id="@+id/btnSaveSettings"
                             style="@style/Metro.Tile"
-                            android:layout_width="56dp"
-                            android:layout_height="56dp"
-                            android:layout_marginStart="6dp"
-                            android:padding="0dp"
-                            android:text="ID"
+                            android:layout_width="match_parent"
+                            android:layout_height="64dp"
+                            android:text="save configuration"
+                            android:textSize="20sp"
                             app:backgroundTint="@color/metro_cobalt" />
-
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnLangEn"
-                            style="@style/Metro.Tile"
-                            android:layout_width="56dp"
-                            android:layout_height="56dp"
-                            android:layout_marginStart="4dp"
-                            android:padding="0dp"
-                            android:text="EN"
-                            app:backgroundTint="@color/metro_violet" />
                     </LinearLayout>
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="12dp"
-                        android:text="command prefixes"
-                        style="@style/Metro.Label" />
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:hint="@string/cmd_req_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCmdRequest"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:hint="@string/cmd_skip_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCmdSkip"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:hint="@string/cmd_stop_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCmdStop"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:hint="@string/cmd_queue_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCmdQueue"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="8dp"
-                        android:hint="@string/cmd_clear_music_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCmdClearMusic"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-                    <com.google.android.material.textfield.TextInputLayout
-                        style="@style/Metro.Input"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginBottom="24dp"
-                        android:hint="@string/cmd_lyric_hint">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etCmdLyric"
-                            style="@style/Metro.Edit"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSaveSettings"
-                        style="@style/Metro.Tile"
-                        android:layout_width="match_parent"
-                        android:layout_height="64dp"
-                        android:text="save configuration"
-                        android:textSize="20sp"
-                        app:backgroundTint="@color/metro_cobalt" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>

@@ -65,6 +65,7 @@ import android.transition.ChangeBounds
 import android.transition.Fade
 import android.transition.TransitionManager
 import android.transition.TransitionSet
+import android.view.Gravity
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
 import androidx.activity.OnBackPressedCallback
@@ -398,53 +399,125 @@ class MainActivity : AppCompatActivity() {
     // ── Metro / Iconic UI ─────────────────────────────────────────────
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
+    /** Satu tile yang bisa expand di tempat (Add / Up Next / Chat / Connect / Config). */
+    private class Section(
+        val tile: View,
+        val header: ViewGroup,
+        val body: View,
+        val sibling: View?,     // tile pasangan satu baris; disembunyikan saat tile ini melebar
+        val wide: Boolean,
+        val collapsedDp: Int
+    )
+
+    private val sections = mutableListOf<Section>()
+    private var openSection: Section? = null
+
+    private fun contentRoot() = binding.root.getChildAt(0) as ViewGroup
+
+    private fun metroTransition() = TransitionSet()
+        .addTransition(ChangeBounds())
+        .addTransition(Fade())
+        .setDuration(320)
+        .setInterpolator(DecelerateInterpolator(1.5f))
+
+    private fun updateBackCallback() {
+        tileBackCallback.isEnabled = tileExpanded || openSection != null
+    }
+
     private fun setupMetroUi() {
         tileColor = ContextCompat.getColor(this, R.color.metro_accent)
         binding.tileNowPlaying.setBackgroundColor(tileColor)
 
-        // Ketuk tile -> expand jadi kotak Now Playing; ketuk lagi -> collapse
+        // Ketuk tile Now Playing -> expand jadi kotak Now Playing; ketuk lagi -> collapse
         binding.tileNowPlaying.setOnClickListener { setTileExpanded(!tileExpanded) }
 
-        // Tombol Back menutup tile yang sedang expand dulu sebelum keluar app
+        // Tombol Back menutup tile yang sedang terbuka dulu sebelum keluar app
         tileBackCallback = object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() { setTileExpanded(false) }
+            override fun handleOnBackPressed() {
+                val open = openSection
+                if (open != null) toggleSection(open) else setTileExpanded(false)
+            }
         }
         onBackPressedDispatcher.addCallback(this, tileBackCallback)
 
-        // Efek tilt khas Windows Phone di semua tile
+        // Tile bergaya Start screen yang expand di tempat
+        sections += Section(binding.tileAddQueue, binding.hdrAddQueue, binding.bodyAddQueue, binding.tileUpNext, false, 160)
+        sections += Section(binding.tileUpNext, binding.hdrUpNext, binding.bodyUpNext, binding.tileAddQueue, false, 160)
+        sections += Section(binding.tileChat, binding.hdrChat, binding.bodyChat, binding.tileConnect, false, 160)
+        sections += Section(binding.tileConnect, binding.hdrConnect, binding.bodyConnect, binding.tileChat, false, 160)
+        sections += Section(binding.tileConfig, binding.hdrConfig, binding.bodyConfig, null, true, 96)
+        sections.forEach { s ->
+            styleHeader(s, false)
+            s.header.setOnClickListener { toggleSection(s) }
+            Metro.tilt(s.header)
+        }
+
+        // Efek tilt khas Windows Phone di tile lain & tombol
         listOf<View>(
             binding.tileNowPlaying, binding.btnAdminList, binding.btnShowOverlays,
             binding.btnPlayPause, binding.btnSkip, binding.btnStop, binding.btnShuffle,
             binding.btnAddToQueue, binding.btnClearQueue, binding.btnConnectTiktok,
-            binding.btnSaveSettings, binding.btnLangId, binding.btnLangEn, binding.btnGrantOverlay
+            binding.btnSaveSettings, binding.btnLangId, binding.btnLangEn, binding.btnGrantOverlay,
+            binding.btnDevNote, binding.btnFeedback
         ).forEach { Metro.tilt(it) }
+    }
+
+    /** Header tile: ikon di tengah + label kiri-bawah saat collapsed; jadi baris ikon + judul saat expanded. */
+    private fun styleHeader(s: Section, expanded: Boolean) {
+        val compact = expanded || s.wide
+        val ic = s.header.getChildAt(0)
+        val lbl = s.header.getChildAt(1) as TextView
+        s.header.layoutParams.height = dp(if (expanded) 72 else s.collapsedDp)
+        (ic.layoutParams as FrameLayout.LayoutParams).apply {
+            width = dp(if (compact) 32 else 48)
+            height = width
+            gravity = if (compact) Gravity.START or Gravity.CENTER_VERTICAL else Gravity.CENTER
+            marginStart = if (compact) dp(20) else 0
+        }
+        (lbl.layoutParams as FrameLayout.LayoutParams).apply {
+            gravity = if (compact) Gravity.START or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.BOTTOM
+            marginStart = dp(if (compact) 72 else 12)
+            bottomMargin = if (compact) 0 else dp(10)
+        }
+        lbl.textSize = if (compact) 22f else 14f
+        s.header.requestLayout()
+    }
+
+    private fun applySection(s: Section, expand: Boolean) {
+        s.body.visibility = if (expand) View.VISIBLE else View.GONE
+        s.sibling?.visibility = if (expand) View.GONE else View.VISIBLE
+        styleHeader(s, expand)
+    }
+
+    /** Accordion: membuka satu tile otomatis menutup tile lain. */
+    private fun toggleSection(s: Section) {
+        val open = openSection
+        TransitionManager.beginDelayedTransition(contentRoot(), metroTransition())
+        if (open != null && open !== s) applySection(open, false)
+        val expand = open !== s
+        applySection(s, expand)
+        openSection = if (expand) s else null
+        updateBackCallback()
+        if (expand) scrollToTile(s.tile)
+    }
+
+    private fun scrollToTile(v: View) {
+        binding.root.postDelayed({
+            val r = Rect(0, 0, v.width, v.height)
+            binding.root.offsetDescendantRectToMyCoords(v, r)
+            binding.root.smoothScrollTo(0, r.top - dp(12))
+        }, 350)
     }
 
     private fun setTileExpanded(expand: Boolean) {
         if (tileExpanded == expand) return
         tileExpanded = expand
-        tileBackCallback.isEnabled = expand
+        updateBackCallback()
 
-        val container = binding.tileNowPlaying.parent as ViewGroup
-        TransitionManager.beginDelayedTransition(
-            container,
-            TransitionSet()
-                .addTransition(ChangeBounds())
-                .addTransition(Fade())
-                .setDuration(320)
-                .setInterpolator(DecelerateInterpolator(1.5f))
-        )
+        TransitionManager.beginDelayedTransition(contentRoot(), metroTransition())
         binding.nowPlayingExpanded.visibility = if (expand) View.VISIBLE else View.GONE
         binding.ivChevron.animate().rotation(if (expand) 180f else 0f).setDuration(300).start()
-
-        if (expand) {
-            // Pastikan tile yang membesar terlihat penuh di layar
-            binding.root.postDelayed({
-                val r = Rect(0, 0, binding.tileNowPlaying.width, binding.tileNowPlaying.height)
-                binding.root.offsetDescendantRectToMyCoords(binding.tileNowPlaying, r)
-                binding.root.smoothScrollTo(0, r.top - dp(12))
-            }, 120)
-        }
+        if (expand) scrollToTile(binding.tileNowPlaying)
     }
 
     private fun animateTileColor(to: Int) {
@@ -748,6 +821,8 @@ class MainActivity : AppCompatActivity() {
         overlaySheetBinding = sheetBinding
         overlaySheetDialog = dialog
         dialog.setContentView(sheetBinding.root)
+        dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            ?.setBackgroundColor(ContextCompat.getColor(this, R.color.metro_black))
 
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             val bottomSheet = dialog.findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
@@ -1214,6 +1289,21 @@ class MainActivity : AppCompatActivity() {
         b.panelGrid.btnMapping.setOnClickListener { startActivity(Intent(this, MappingActivity::class.java)); dialog.dismiss() }
         b.panelGrid.btnGesture.setOnClickListener { startActivity(Intent(this, QuickOverlayActivity::class.java)); dialog.dismiss() }
 
+        // Baris list Windows Phone: seluruh baris (bukan cuma kotak ikon) bisa diketuk / ditahan
+        listOf<View>(
+            b.panelGrid.btnOverlay, b.panelGrid.btnQueueOverlay, b.panelGrid.btnLyricsOverlay,
+            b.panelGrid.btnCanvas, b.panelGrid.btnChatOverlay, b.panelGrid.btnNotifOverlay,
+            b.panelGrid.btnCustomOverlay, b.panelGrid.btnJoinOverlay, b.panelGrid.btnLikeOverlay,
+            b.panelGrid.btnFollowOverlay, b.panelGrid.btnMapping, b.panelGrid.btnGesture,
+            b.panelGrid.btnVoiceOverlay, b.panelGrid.btnGiftSound
+        ).forEach { btn ->
+            (btn.parent as? View)?.apply {
+                isClickable = true
+                setOnClickListener { btn.performClick() }
+                setOnLongClickListener { btn.performLongClick() }
+            }
+        }
+
         b.btnBackToGrid.setOnClickListener {
             if (currentConfigKey == "queue") service?.updateQueueAutoHide(settingsManager.settings.queueAutoHide)
             if (currentConfigKey == "notif") service?.hideNotif()
@@ -1317,7 +1407,7 @@ class MainActivity : AppCompatActivity() {
             if (playingNow) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play
         )
         binding.eqPlaying.setPlaying(playingNow)
-        binding.tvQueueCount.text = "$qCount songs"
+        binding.tvQueueCount.text = "$qCount"
         binding.btnShuffle.text   = if (shuffle) "shuffle on" else "shuffle off"
         val musicVolPct = (musicVol * 100).toInt()
         binding.sbMusicVolume.progress = musicVolPct
@@ -1326,9 +1416,9 @@ class MainActivity : AppCompatActivity() {
         binding.tvEnableCommandsLabel.alpha = if (cmdsOn) 1.0f else 0.5f
 
         binding.tvTiktokStatus.text  = when {
-            tiktokOk -> "🟢 tiktok live"
-            tiktokConnecting -> "🟡 connecting..."
-            else -> "🔴 tiktok live"
+            tiktokOk -> "🟢\ntiktok"
+            tiktokConnecting -> "🟡\ntiktok"
+            else -> "🔴\ntiktok"
         }
         binding.btnConnectTiktok.text = when {
             tiktokOk -> "disconnect tiktok"
@@ -1344,7 +1434,7 @@ class MainActivity : AppCompatActivity() {
                 else -> ContextCompat.getColor(this, R.color.metro_accent)
             })
 
-        binding.tvYtdlpStatus.text = if (ytdlpOk) "🟢 yt-dlp ready" else "🔴 yt-dlp missing"
+        binding.tvYtdlpStatus.text = if (ytdlpOk) "🟢\nyt-dlp" else "🔴\nyt-dlp"
 
         syncBottomSheetOnly(svc, state)
     }
@@ -1365,9 +1455,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateDevNoteButtonUi(state: NotifBadgeState) {
         val btnText = when (state) {
-            NotifBadgeState.RED_FEEDBACK -> "🔴 dev note"
-            NotifBadgeState.GREEN_GLOBAL -> "🟢 dev note"
-            NotifBadgeState.NONE -> "📝 dev note"
+            NotifBadgeState.RED_FEEDBACK -> "🔴\ndev note"
+            NotifBadgeState.GREEN_GLOBAL -> "🟢\ndev note"
+            NotifBadgeState.NONE -> "📝\ndev note"
         }
         binding.btnDevNote.text = btnText
 
