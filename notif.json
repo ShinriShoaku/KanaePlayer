@@ -7,10 +7,10 @@
     "is_active": false
   },
   {
-    "notification_id": "info_global_11",
+    "notification_id": "info_global_12",
     "target_uid": "all",
-    "title": "Developer Note ☕",
-    "message": "Ingin fitur impianmu ada di pembaruan berikutnya? Ada saran atau kendala saat pakai aplikasi? Yuk, sampaikan feedback-mu sekarang!",
+    "title": "Kanae v12.5.2 (Pre-release)",
+    "message": "Public test sudah tersedia dan siap untuk diunduh! Silakan cek di halaman GitHub Release (Pre-release).",
     "is_active": true
   }
 ]
