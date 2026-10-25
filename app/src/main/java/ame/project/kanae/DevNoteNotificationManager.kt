@@ -26,7 +26,6 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.Keep
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.gson.Gson
 import com.google.gson.annotations.SerializedName
@@ -49,6 +48,13 @@ data class NotificationItem(
     @SerializedName("is_active") val isActive: Boolean = true
 )
 
+@Keep
+data class VersionInfo(
+    @SerializedName("versionCode") val versionCode: Int = 0,
+    @SerializedName("versionName") val versionName: String = "",
+    @SerializedName("updateMessage") val updateMessage: String = ""
+)
+
 enum class NotifBadgeState {
     NONE,
     RED_FEEDBACK,
@@ -63,6 +69,20 @@ object DevNoteNotificationManager {
     private const val PREFS_NOTIF = "app_notif_prefs"
     private const val KEY_READ_IDS = "read_notification_ids"
     private const val CACHE_FILE_NAME = "notif_cache.json"
+
+    private const val VERSION_URL_RAW = "https://raw.githubusercontent.com/ShinriShoaku/KanaePlayer/master/version.json"
+    private const val VERSION_URL_GITHUB = "https://github.com/ShinriShoaku/KanaePlayer/raw/master/version.json"
+    private const val VERSION_URL_JSDELIVR = "https://cdn.jsdelivr.net/gh/ShinriShoaku/KanaePlayer@master/version.json"
+    private const val VERSION_CACHE_FILE_NAME = "version_cache.json"
+
+    private const val DEFAULT_DEV_NOTE_TEXT = """
+        • Pembaruan antarmuka Metro UI ala Windows Phone
+        • Peralihan default STT ke Speech Recognizer
+        • Perbaikan bug Android 12 & 14 dan sistem feedback.
+    """
+
+    @Volatile
+    private var cachedUpdateMessage: String? = null
 
     private val httpClient by lazy {
         OkHttpClient.Builder()
@@ -82,6 +102,7 @@ object DevNoteNotificationManager {
         scope.launch(Dispatchers.IO) {
             val myDeviceUid = DeviceIdManager.getUniqueId(appContext).trim()
             val jsonText = downloadJsonWithFallback(appContext)
+            downloadVersionJsonWithFallback(appContext)
             val allNotifs = parseNotifications(jsonText)
 
             val activeRelevant = allNotifs.filter { item ->
@@ -144,10 +165,73 @@ object DevNoteNotificationManager {
         } else null
     }
 
+    private fun downloadVersionJsonWithFallback(context: Context): String? {
+        val cacheFile = File(context.filesDir, VERSION_CACHE_FILE_NAME)
+
+        // 1. Try RAW Github URL
+        var json = tryFetchUrl(VERSION_URL_RAW)
+        if (json.isNullOrBlank()) {
+            // 2. Try secondary Github URL
+            json = tryFetchUrl(VERSION_URL_GITHUB)
+        }
+        if (json.isNullOrBlank()) {
+            // 3. Try jsDelivr CDN URL
+            json = tryFetchUrl(VERSION_URL_JSDELIVR)
+        }
+
+        if (!json.isNullOrBlank()) {
+            try {
+                cacheFile.writeText(json)
+                Log.d(TAG, "Saved fresh version JSON to local cache (${json.length} bytes)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to write version cache file: ${e.message}")
+            }
+            parseAndCacheVersionMessage(json)
+            return json
+        }
+
+        Log.w(TAG, "Network fetch failed for version URLs, loading local cached JSON if available")
+        val cachedJson = if (cacheFile.exists()) {
+            try { cacheFile.readText() } catch (_: Exception) { null }
+        } else null
+        parseAndCacheVersionMessage(cachedJson)
+        return cachedJson
+    }
+
+    private fun parseAndCacheVersionMessage(json: String?) {
+        if (json.isNullOrBlank()) return
+        try {
+            val item = gson.fromJson(json, VersionInfo::class.java)
+            if (!item?.updateMessage.isNullOrBlank()) {
+                cachedUpdateMessage = item.updateMessage
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to parse version JSON: ${e.message}")
+        }
+    }
+
+    private fun getDevNoteText(context: Context): String {
+        cachedUpdateMessage?.let { if (it.isNotBlank()) return it }
+
+        val cacheFile = File(context.filesDir, VERSION_CACHE_FILE_NAME)
+        if (cacheFile.exists()) {
+            val json = try { cacheFile.readText() } catch (_: Exception) { null }
+            parseAndCacheVersionMessage(json)
+            cachedUpdateMessage?.let { if (it.isNotBlank()) return it }
+        }
+
+        return DEFAULT_DEV_NOTE_TEXT.trimIndent()
+    }
+
     private fun tryFetchUrl(baseUrl: String): String? {
         return try {
-            val separator = if (baseUrl.contains("?")) "&" else "?"
-            val url = "$baseUrl${separator}t=${System.currentTimeMillis()}"
+            val urlToFetch = if (baseUrl.contains("github.com") && baseUrl.contains("/blob/")) {
+                baseUrl.replace("/blob/", "/raw/")
+            } else {
+                baseUrl
+            }
+            val separator = if (urlToFetch.contains("?")) "&" else "?"
+            val url = "$urlToFetch${separator}t=${System.currentTimeMillis()}"
             val request = Request.Builder()
                 .url(url)
                 .header("User-Agent", "KanaePlayer/1.0 (Android)")
@@ -159,11 +243,11 @@ object DevNoteNotificationManager {
                 if (response.isSuccessful) {
                     val body = response.body.string()
                     if (body.isNotBlank()) {
-                        Log.d(TAG, "Fetch success from $baseUrl")
+                        Log.d(TAG, "Fetch success from $urlToFetch")
                         return body
                     }
                 } else {
-                    Log.w(TAG, "Fetch HTTP ${response.code} (${response.message}) from $baseUrl")
+                    Log.w(TAG, "Fetch HTTP ${response.code} (${response.message}) from $urlToFetch")
                 }
                 null
             }
@@ -278,13 +362,7 @@ object DevNoteNotificationManager {
         }
         container.addView(tvDevNoteTitle)
 
-        val devNoteText = """
-            • Realtime Speech-to-Text & Voice Overlay
-            • Custom Sound untuk event Join & Follow
-            • Integrasi TikTok Live & YouTube DL-P
-            • Perintah Chat Remote (#lyric on/off)
-            • Peningkatan Stabilitas Overlay & Android 12+
-        """.trimIndent()
+        val devNoteText = getDevNoteText(appContext)
 
         val tvDevNoteContent = TextView(context).apply {
             text = devNoteText

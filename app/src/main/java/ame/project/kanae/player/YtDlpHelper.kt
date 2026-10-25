@@ -230,6 +230,7 @@ class YtDlpHelper(private val context: Context) {
             if (resolvedUrl != null) {
                 val npeResult = tryExtractWithNpe(resolvedUrl)
                 if (npeResult.isSuccess) {
+                    ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(context).trackExtraction("NPE")
                     return@withContext npeResult
                 }
                 val npeError = npeResult.exceptionOrNull()
@@ -259,7 +260,9 @@ class YtDlpHelper(private val context: Context) {
             Log.d(TAG, "[yt-dlp] Menjalankan fallback akhir dengan input: $ytDlpInput")
             val ytDlpResult = tryExtractWithYtdlp(ytDlpInput)
             
-            if (ytDlpResult.isFailure) {
+            if (ytDlpResult.isSuccess) {
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(context).trackExtraction("YTDLP")
+            } else {
                 Log.e(TAG, "Semua ekstraktor gagal untuk: $input")
                 showToast("Music tidak tersedia atau gagal dimuat")
             }

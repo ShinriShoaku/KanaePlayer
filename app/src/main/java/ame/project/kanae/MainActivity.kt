@@ -31,6 +31,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
@@ -90,6 +91,9 @@ class MainActivity : AppCompatActivity() {
     private var lastSyncTime: Long = 0L
     private var currentNotifs: List<NotificationItem> = emptyList()
     private var notifPollingJob: Job? = null
+    private var liveReportTickerJob: Job? = null
+    private var tiktokConnected = false          // sesi live dianggap aktif hanya kalau TikTok benar-benar terhubung
+    private var disconnectedAtMs = 0L            // waktu TikTok terputus, dipakai untuk freeze durasi sebelum sesi ditutup service
 
     // ── Metro / Iconic now-playing tile ──
     private var tileExpanded = false
@@ -113,7 +117,14 @@ class MainActivity : AppCompatActivity() {
     private val stateReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, intent: Intent) {
             when (intent.action) {
-                PlayerForegroundService.BROADCAST_STATE -> syncUi()
+                PlayerForegroundService.BROADCAST_STATE -> {
+                    syncUi()
+                    // Request selesai / gift / coin: update instan tanpa nunggu tick
+                    if (isLiveReportOpen()) {
+                        renderLiveReport()
+                        if (liveReportTickerJob?.isActive != true) refreshLiveReportTicker()
+                    }
+                }
                 PlayerForegroundService.BROADCAST_SERVICE_READY -> syncUi(force = true)
                 PlayerForegroundService.BROADCAST_CHAT  -> {
                     val uid  = intent.getStringExtra("unique_id") ?: ""
@@ -268,11 +279,13 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         startNotifPolling()
+        refreshLiveReportTicker()
     }
 
     override fun onPause() {
         super.onPause()
         stopNotifPolling()
+        stopLiveReportTicker()
     }
 
     private fun startNotifPolling() {
@@ -292,6 +305,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        stopLiveReportTicker()
+        tiktokConnected = false
         artTarget?.let { Glide.with(applicationContext).clear(it) }
         artTarget = null
         if (serviceBound) {
@@ -338,11 +353,11 @@ class MainActivity : AppCompatActivity() {
             .setTitle("Izinkan Berjalan Tanpa Batasan")
             .setMessage(
                 "Supaya overlay (follow, quick custom, dll) tidak telat " +
-                "hilang/update saat kamu lagi main game di HP ini, aplikasi " +
-                "perlu dikecualikan dari battery optimization.\n\n" +
-                "Kalau HP kamu Xiaomi/Oppo/Vivo/Samsung, cek juga menu " +
-                "Game Turbo / Game Space / Game Assistant lalu keluarkan " +
-                "KanaePlayer dari daftar app yang dibatasi saat mode game."
+                        "hilang/update saat kamu lagi main game di HP ini, aplikasi " +
+                        "perlu dikecualikan dari battery optimization.\n\n" +
+                        "Kalau HP kamu Xiaomi/Oppo/Vivo/Samsung, cek juga menu " +
+                        "Game Turbo / Game Space / Game Assistant lalu keluarkan " +
+                        "KanaePlayer dari daftar app yang dibatasi saat mode game."
             )
             .setPositiveButton("Izinkan") { _, _ ->
                 crashlytics.setCustomKey("battery_opt_user_response", "accepted")
@@ -445,11 +460,25 @@ class MainActivity : AppCompatActivity() {
         sections += Section(binding.tileUpNext, binding.hdrUpNext, binding.bodyUpNext, binding.tileAddQueue, false, 160)
         sections += Section(binding.tileChat, binding.hdrChat, binding.bodyChat, binding.tileConnect, false, 160)
         sections += Section(binding.tileConnect, binding.hdrConnect, binding.bodyConnect, binding.tileChat, false, 160)
+        sections += Section(binding.tileLiveReport, binding.hdrLiveReport, binding.bodyLiveReport, null, true, 80)
         sections += Section(binding.tileConfig, binding.hdrConfig, binding.bodyConfig, null, true, 96)
         sections.forEach { s ->
             styleHeader(s, false)
             s.header.setOnClickListener { toggleSection(s) }
             Metro.tilt(s.header)
+        }
+
+        binding.btnExpandReportInfo.setOnClickListener {
+            val isVis = binding.bodyLiveReportExpanded.visibility == View.VISIBLE
+            binding.bodyLiveReportExpanded.visibility = if (isVis) View.GONE else View.VISIBLE
+            binding.btnExpandReportInfo.text = if (isVis) "Expand Info" else "Sembunyikan Info"
+            // Isi field detail langsung saat panel dibuka
+            if (!isVis) renderLiveReport()
+        }
+
+        binding.btnOpenFullReport.setOnClickListener {
+            val intent = Intent(this, ame.project.kanae.analytics.LiveReportActivity::class.java)
+            startActivity(intent)
         }
 
         // Efek tilt khas Windows Phone di tile lain & tombol
@@ -458,7 +487,7 @@ class MainActivity : AppCompatActivity() {
             binding.btnPlayPause, binding.btnSkip, binding.btnStop, binding.btnShuffle,
             binding.btnAddToQueue, binding.btnClearQueue, binding.btnConnectTiktok,
             binding.btnSaveSettings, binding.btnLangId, binding.btnLangEn, binding.btnGrantOverlay,
-            binding.btnDevNote, binding.btnFeedback
+            binding.btnDevNote, binding.btnFeedback, binding.btnExpandReportInfo, binding.btnOpenFullReport
         ).forEach { Metro.tilt(it) }
     }
 
@@ -466,21 +495,43 @@ class MainActivity : AppCompatActivity() {
     private fun styleHeader(s: Section, expanded: Boolean) {
         val compact = expanded || s.wide
         val ic = s.header.getChildAt(0)
-        val lbl = s.header.getChildAt(1) as TextView
+        // child ke-1 bisa TextView langsung, atau wrapper (LinearLayout) berisi TextView
+        val lblView = s.header.getChildAt(1)
+        val lbl = (lblView as? TextView) ?: findFirstTextView(lblView) ?: return
+
         s.header.layoutParams.height = dp(if (expanded) 72 else s.collapsedDp)
-        (ic.layoutParams as FrameLayout.LayoutParams).apply {
+
+        (ic.layoutParams as? FrameLayout.LayoutParams)?.apply {
             width = dp(if (compact) 32 else 48)
             height = width
             gravity = if (compact) Gravity.START or Gravity.CENTER_VERTICAL else Gravity.CENTER
-            marginStart = if (compact) dp(20) else 0
+            val ms = if (compact) dp(20) else 0
+            leftMargin = ms
+            marginStart = ms
         }
-        (lbl.layoutParams as FrameLayout.LayoutParams).apply {
+        // Atur layoutParams pada view yang benar-benar child dari header (wrapper, bukan TextView di dalamnya)
+        (lblView.layoutParams as? FrameLayout.LayoutParams)?.apply {
             gravity = if (compact) Gravity.START or Gravity.CENTER_VERTICAL else Gravity.START or Gravity.BOTTOM
-            marginStart = dp(if (compact) 72 else 12)
-            bottomMargin = if (compact) 0 else dp(10)
+            val ms = dp(if (compact) 72 else 12)
+            val bm = if (compact) 0 else dp(10)
+            leftMargin = ms
+            marginStart = ms
+            bottomMargin = bm
         }
         lbl.textSize = if (compact) 22f else 14f
+        ic.requestLayout()
+        lblView.requestLayout()
         s.header.requestLayout()
+    }
+
+    private fun findFirstTextView(v: View): TextView? {
+        if (v is TextView) return v
+        if (v is ViewGroup) {
+            for (i in 0 until v.childCount) {
+                findFirstTextView(v.getChildAt(i))?.let { return it }
+            }
+        }
+        return null
     }
 
     private fun applySection(s: Section, expand: Boolean) {
@@ -498,6 +549,7 @@ class MainActivity : AppCompatActivity() {
         applySection(s, expand)
         openSection = if (expand) s else null
         updateBackCallback()
+        refreshLiveReportTicker()
         if (expand) scrollToTile(s.tile)
     }
 
@@ -995,7 +1047,7 @@ class MainActivity : AppCompatActivity() {
 
         b.extraVoiceSettings.cbVoiceOnline.setOnCheckedChangeListener { _, isChecked -> service?.updateVoiceOnline(isChecked) }
         b.extraVoiceSettings.cbVoiceContinuous.setOnCheckedChangeListener { _, isChecked -> service?.updateVoiceContinuous(isChecked) }
-        
+
         val langCodes = listOf("id-ID", "en-US", "ja-JP", "ms-MY", "zh-CN")
         val langNames = listOf("Indonesia (id-ID)", "English (en-US)", "Japanese (ja-JP)", "Malay (ms-MY)", "Chinese (zh-CN)")
         val langAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, langNames).apply {
@@ -1146,7 +1198,7 @@ class MainActivity : AppCompatActivity() {
                 b.extraVoiceSettings.tvVoiceTextSizeLabel.text = "Text Size: ${s.voiceTextSize.toInt()}sp"
                 b.extraVoiceSettings.sbVoiceDuration.progress = s.voiceDuration
                 b.extraVoiceSettings.tvVoiceDurationLabel.text = "Auto Hide: ${s.voiceDuration}s"
-                
+
                 val currentLangIndex = langCodes.indexOf(s.voiceLanguage).coerceAtLeast(0)
                 b.extraVoiceSettings.spVoiceLanguage.setSelection(currentLangIndex)
 
@@ -1397,6 +1449,14 @@ class MainActivity : AppCompatActivity() {
         val shuffle   = state["shuffle_mode"] as? Boolean ?: false
         val tiktokOk  = state["tiktok_connected"] as? Boolean ?: false
         val tiktokConnecting = state["tiktok_connecting"] as? Boolean ?: false
+        if (tiktokConnected != tiktokOk) {
+            // Dicatat di sini (selalu jalan, tile terbuka atau tidak) supaya durasi akhir akurat
+            disconnectedAtMs = if (tiktokOk) 0L else System.currentTimeMillis()
+            tiktokConnected = tiktokOk
+            refreshLiveReportTicker()   // mulai/berhenti ticker saat koneksi live berubah
+        }
+        // Setelah disconnect, service bisa menutup sesi sedikit terlambat: ambil durasi final begitu tersedia
+        if (!tiktokOk && isLiveReportOpen()) renderLiveReport()
         val ytdlpOk   = state["ytdlp_installed"]  as? Boolean ?: false
         val musicVol  = state["music_volume"]     as? Float   ?: 1.0f
         val cmdsOn    = state["commands_enabled"] as? Boolean ?: true
@@ -1437,6 +1497,102 @@ class MainActivity : AppCompatActivity() {
         binding.tvYtdlpStatus.text = if (ytdlpOk) "🟢\nyt-dlp" else "🔴\nyt-dlp"
 
         syncBottomSheetOnly(svc, state)
+    }
+
+    // ── Live Report (realtime, ringan) ────────────────────────────────
+    private val liveAnalytics by lazy {
+        ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(applicationContext)
+    }
+
+    private fun isLiveReportOpen() = openSection?.tile === binding.tileLiveReport
+
+    /** Hanya set teks kalau berubah, jadi tidak ada relayout/redraw sia-sia. */
+    private fun TextView.setIfChanged(s: String) {
+        if (!text.contentEquals(s)) text = s
+    }
+
+    private fun fmtDuration(totalSec: Long): String {
+        val h = totalSec / 3600
+        val m = (totalSec % 3600) / 60
+        val s = totalSec % 60
+        val sb = StringBuilder(8)
+        if (h > 0) {
+            if (h < 10) sb.append('0')
+            sb.append(h).append(':')
+        }
+        if (m < 10) sb.append('0')
+        sb.append(m).append(':')
+        if (s < 10) sb.append('0')
+        sb.append(s)
+        return sb.toString()
+    }
+
+    /** Render ringkasan live report. Mengembalikan delay (ms) ke tick berikutnya, atau -1 kalau tidak perlu tick lagi. */
+    private fun renderLiveReport(): Long {
+        val report = liveAnalytics.getCurrentOrLastReport() ?: return -1L
+        // Aktif hanya jika sesi belum ditutup DAN TikTok masih terhubung.
+        // Kalau app/service mati tanpa menutup sesi (endTimeMs == 0), durasi di-freeze, tidak lanjut jalan.
+        val active = report.endTimeMs == 0L && tiktokConnected
+        val elapsedMs = when {
+            report.endTimeMs != 0L -> report.durationMs
+            active -> System.currentTimeMillis() - report.startTimeMs
+            disconnectedAtMs > report.startTimeMs -> disconnectedAtMs - report.startTimeMs
+            else -> report.durationMs
+        }
+
+        // Bagian ringan: berubah tiap detik / tiap event
+        binding.tvLiveReportStatus.setIfChanged(
+            if (active) "🔴 Sesi Live Aktif (@${report.streamerUsername})"
+            else "Sesi Terakhir (@${report.streamerUsername})"
+        )
+        binding.tvShortLiveDuration.setIfChanged(fmtDuration(elapsedMs / 1000))
+        binding.tvShortCompleted.setIfChanged("${report.songsCompleted} lagu")
+        binding.tvShortGiftsCoins.setIfChanged("${report.totalGiftsCount} / ${report.totalCoinsEstimated}🪙")
+
+        // Bagian berat: hanya dihitung kalau panel info detail sedang terlihat
+        if (binding.bodyLiveReportExpanded.visibility == View.VISIBLE) {
+            val topReq = report.requestersMap.values.maxByOrNull { it.requestCount }
+            binding.tvShortTopRequester.setIfChanged(
+                "Top Requester: ${topReq?.let { "${it.username} (${it.requestCount}x)" } ?: "-"}"
+            )
+            val topSong = report.songRequestsMap.maxByOrNull { it.value }
+            binding.tvShortTopSong.setIfChanged(
+                "Lagu Terfavorit: ${topSong?.let { "${it.key} (${it.value}x)" } ?: "-"}"
+            )
+            val totalExt = report.npeSuccessCount + report.ytdlpFallbackCount
+            val npePct = if (totalExt > 0) (report.npeSuccessCount * 100) / totalExt else 100
+            val ytdlpPct = if (totalExt > 0) (report.ytdlpFallbackCount * 100) / totalExt else 0
+            binding.tvShortSystemEngine.setIfChanged("Extractor: NPE ($npePct%) vs yt-dlp ($ytdlpPct%)")
+        }
+
+        // Selaraskan tick ke batas detik asli sesi, jadi angka berganti mulus tanpa drift
+        return if (active) 1000L - (elapsedMs % 1000L) else -1L
+    }
+
+    private fun startLiveReportTicker() {
+        stopLiveReportTicker()
+        liveReportTickerJob = lifecycleScope.launch {
+            while (isActive) {
+                val next = renderLiveReport()
+                if (next < 0) break          // sesi tidak aktif: berhenti, nol pekerjaan
+                delay(next.coerceIn(50L, 1000L))
+            }
+        }
+    }
+
+    private fun stopLiveReportTicker() {
+        liveReportTickerJob?.cancel()
+        liveReportTickerJob = null
+    }
+
+    /** Jalan hanya kalau tile Live Report terbuka DAN activity di foreground. */
+    private fun refreshLiveReportTicker() {
+        if (isLiveReportOpen() && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
+            renderLiveReport()          // tampilkan nilai segar langsung, tanpa tunggu 1 detik
+            startLiveReportTicker()
+        } else {
+            stopLiveReportTicker()
+        }
     }
 
     private fun addChatLine(line: String) {
@@ -1517,7 +1673,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.IO) {
             try {
                 val url = "https://script.google.com/macros/s/AKfycbzVFzKyAafhZlRRHH-U8cSRtbg-fggMiQ8fMTWMlwCyh1EwXgQ9gXorDzIbwBCo2WEDdw/exec"
-                
+
                 val uid = DeviceIdManager.getUniqueId(this@MainActivity)
                 val versionName = DeviceIdManager.getAppVersionName(this@MainActivity)
                 val versionCode = DeviceIdManager.getAppVersionCode(this@MainActivity)

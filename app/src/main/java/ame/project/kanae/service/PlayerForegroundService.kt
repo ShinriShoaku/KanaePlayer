@@ -673,6 +673,8 @@ class PlayerForegroundService : Service() {
                 requestedBy = requestedBy
             )
             queue.addLast(song)
+            ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                .trackRequestAdded(requestedBy ?: "App", song.title)
             if (!isPlaying && currentSong == null) {
                 playNext()
             } else {
@@ -842,6 +844,10 @@ class PlayerForegroundService : Service() {
     }
 
     private fun onSongComplete() {
+        currentSong?.let {
+            ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                .trackSongCompleted(it.title, it.duration.toLong())
+        }
         playNext()
     }
 
@@ -849,6 +855,8 @@ class PlayerForegroundService : Service() {
     private fun handleTikTokChat(chat: TikTokChat) {
         Log.d(TAG, "[TikTok] @${chat.uniqueId}: ${chat.comment}")
         broadcastChat(chat)
+        ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+            .trackChat(chat.nickname, chat.comment)
 
         if (chatOverlayManager.isShowing) {
             chatOverlayManager.addChat(chat.nickname, chat.comment, emotes = chat.emotes)
@@ -866,13 +874,23 @@ class PlayerForegroundService : Service() {
                 if (!isAdmin) {
                     val userReq = "@${chat.uniqueId}"
                     val count   = queue.count { it.requestedBy == userReq }
-                    if (count >= settingsManager.settings.requestLimit) return
+                    if (count >= settingsManager.settings.requestLimit) {
+                        ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                            .trackRequestRejected(userReq, arg)
+                        return
+                    }
                 }
                 val url = if (arg.contains("youtube.com") || arg.contains("youtu.be")) arg
                 else "ytsearch1:$arg"
                 addToQueue(url, requestedBy = "@${chat.uniqueId}")
             }
-            TikTokChat.CommandType.SKIP        -> if (isAdmin) playNext()
+            TikTokChat.CommandType.SKIP        -> if (isAdmin) {
+                currentSong?.let {
+                    ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                        .trackSongSkipped(it.title)
+                }
+                playNext()
+            }
             TikTokChat.CommandType.STOP        -> if (isAdmin) stopPlayer()
             TikTokChat.CommandType.QUEUE       -> {
                 if (isAdmin) broadcastState()
@@ -890,6 +908,8 @@ class PlayerForegroundService : Service() {
             TikTokChat.CommandType.CLEAR_MUSIC -> {
                 if (!isAdmin) return
                 val arg = chat.commandArg?.trim() ?: return
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackRequestRejected(chat.nickname, arg)
                 val pos = arg.toIntOrNull()
                 if (pos != null) clearMusicAt(pos)
                 else clearMusicByTitle(arg)
@@ -1919,7 +1939,13 @@ class PlayerForegroundService : Service() {
         return TikTokLiveManager(s.tiktokApiKey, s.tiktokUsername, serviceScope).also { t ->
             t.setCommandConfig(buildCommandConfig())
             t.onChat = ::handleTikTokChat
+            t.onReconnect = {
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackAutoReconnect()
+            }
             t.onLike = { nick, _, count, profile ->
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackLike(nick, count)
                 if (s.likeEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) likeOverlayManager.showLike(nick, count, profile)
 
                 // Notify AIDL
@@ -1930,6 +1956,8 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onJoin = { nick, _, profile ->
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackJoin(nick)
                 if (s.joinEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
                     joinOverlayManager.showJoin(nick, profile)
                     notifOverlayManager.playNotificationSound("join")
@@ -1943,6 +1971,8 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onFollow = { nick, _, profile ->
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackFollow(nick)
                 if (s.followEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
                     followOverlayManager.showFollow(nick, profile)
                     notifOverlayManager.playNotificationSound("follow")
@@ -1956,6 +1986,8 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onGift = { uid, nick, gift, count, giftId, iconUrl ->
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackGift(nick, gift, count, giftId)
                 broadcastSystemChat("$nick mengirim $gift x$count")
                 if (s.notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) {
                     notifOverlayManager.showNotification(nick, "mengirim $gift x$count", "gift", giftIconUrl = iconUrl, giftName = gift, giftId = giftId)
@@ -1971,6 +2003,8 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onShare = { _, nick, profile ->
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .trackShare(nick)
                 broadcastSystemChat("$nick membagikan live")
                 if (s.notifEnabled && System.currentTimeMillis() - tiktokConnectTime >= 5000) notifOverlayManager.showNotification(nick, "membagikan live", "share")
 
@@ -1982,6 +2016,8 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onConnected = {
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .startSession(s.tiktokUsername)
                 tiktokConnected = true; chatOverlayManager.setTikTokConnected(true); tiktokConnecting = false
                 tiktokConnectTime = System.currentTimeMillis(); overlayManager.setLiveStatus(true)
                 broadcastSystemChat("Connected to TikTok Live @${s.tiktokUsername}"); broadcastState()
@@ -1996,6 +2032,8 @@ class PlayerForegroundService : Service() {
                 remoteCallbacks.finishBroadcast()
             }
             t.onDisconnected = {
+                ame.project.kanae.analytics.LiveAnalyticsManager.getInstance(this@PlayerForegroundService)
+                    .endSession()
                 tiktokConnected = false; chatOverlayManager.setTikTokConnected(false); tiktokConnecting = false
                 overlayManager.setLiveStatus(false); broadcastSystemChat("Disconnected from TikTok Live"); broadcastState()
 

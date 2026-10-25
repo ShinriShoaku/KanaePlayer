@@ -59,6 +59,7 @@ class TikTokLiveManager(
     var onDisconnected: (() -> Unit)? = null
     var onConnecting: (() -> Unit)? = null
     var onError: ((String) -> Unit)? = null
+    var onReconnect: (() -> Unit)? = null
 
     var isConnected: Boolean = false
         private set
@@ -199,6 +200,7 @@ class TikTokLiveManager(
             Log.d(TAG, "Attempting reconnect in ${delayMs}ms... (Reason: $reason)")
             
             scope.launch(Dispatchers.Main) {
+                onReconnect?.invoke()
                 onError?.invoke("$reason. Retrying in ${delayMs/1000}s...")
             }
             

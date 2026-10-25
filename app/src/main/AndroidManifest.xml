@@ -89,6 +89,12 @@
             android:label="Gift Custom Sound"
             android:theme="@style/Theme.YTTikTokPlayer"
             android:exported="false" />
+
+        <activity
+            android:name=".analytics.LiveReportActivity"
+            android:label="Report Analitik Live"
+            android:theme="@style/Theme.YTTikTokPlayer"
+            android:exported="false" />
         <!-- ─── Foreground Service ────────────────────────────── -->
         <service
             android:name=".service.PlayerForegroundService"
