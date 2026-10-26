@@ -7,10 +7,10 @@
     "is_active": false
   },
   {
-    "notification_id": "info_global_12",
+    "notification_id": "info_global_13",
     "target_uid": "all",
-    "title": "Kanae v12.5.2 (Pre-release)",
-    "message": "Public test sudah tersedia dan siap untuk diunduh! Silakan cek di halaman GitHub Release (Pre-release).",
+    "title": "Kanae v12.5.2",
+    "message": "Live Report Analytics telah tersedia.",
     "is_active": true
   }
 ]
