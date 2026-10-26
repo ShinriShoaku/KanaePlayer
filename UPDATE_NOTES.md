@@ -1,5 +1,18 @@
 # Update Notes - KanaePlayer
 
+## Update 12.5.2: Metro UI Fixes & Live Report Analytics
+
+Update ini membawa perbaikan pada antarmuka Metro UI serta memperkenalkan fitur Laporan Analitik Live (Live Report Analytics) untuk analisis aktivitas streaming.
+
+### 1. Perbaikan Antarmuka Metro UI
+- **Metro UI Stability & Layout Fixes**: Memperbaiki berbagai kendala visual, masalah perataan elemen, dan responsivitas tata letak kotak (*Metro UI box*) untuk pengalaman penggunaan yang lebih stabil dan mulus.
+
+### 2. Fitur Baru: Live Report Analytics (Laporan Analitik Live)
+- **Real-time Live Analytics**: Menghadirkan sistem laporan analitik live yang memberikan wawasan mendalam (*insights*) mengenai statistik interaksi, aktivitas lagu, dan metrik penonton secara real-time.
+- **Visual Data Reports**: Visualisasi laporan yang rapi dan terstruktur untuk membantu streamer menganalisis performa sesi live streaming secara efisien.
+
+---
+
 ## Update 12.5.1: Metro UI Style, Default Speech Recognizer & Android 12/14 Optimization
 
 Update ini membawa penyegaran visual total dengan adopsi gaya *Metro UI box*, optimalisasi engine Speech-to-Text, serta perbaikan bug penting untuk Android 12 & 14.

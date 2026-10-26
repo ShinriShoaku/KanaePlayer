@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/metro_black"
+    android:background="#0B1224"
     android:orientation="vertical"
     tools:context=".analytics.LiveReportActivity">
 
@@ -51,7 +51,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#1F1F1F"
+        android:background="#0F1830"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingHorizontal="16dp"
@@ -100,7 +100,7 @@
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
                     android:text="\@streamer"
-                    android:textColor="@color/metro_accent"
+                    android:textColor="#2BB5B0"
                     android:textSize="22sp" />
 
                 <TextView
@@ -131,14 +131,14 @@
                 android:layout_marginTop="20dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="1. Overview Live Session"
-                android:textColor="@color/metro_accent"
+                android:textColor="#2BB5B0"
                 android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="#181818"
+                android:background="@drawable/bg_report_card"
                 android:orientation="vertical"
                 android:padding="14dp">
 
@@ -221,7 +221,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
-                    android:background="#2C2C2C" />
+                    android:background="#1F2B4D" />
 
                 <TextView
                     android:id="@+id/tvTotalMusicDuration"
@@ -231,6 +231,46 @@
                     android:text="Total Durasi Musik Mengudara: 0 menit"
                     android:textColor="#E0E0E0"
                     android:textSize="14sp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="10dp"
+                    android:background="#1F2B4D" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="📈 Grafik Aktivitas Live Stream Over Time"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <com.github.mikephil.charting.charts.LineChart
+                    android:id="@+id/chartTimelineActivity"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginTop="8dp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginVertical="10dp"
+                    android:background="#1F2B4D" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="🍩 Status Request Musik"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/chartSongStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="260dp"
+                    android:layout_marginTop="8dp" />
             </LinearLayout>
 
             <!-- 2. AUDIENCE & MUSIC INSIGHTS -->
@@ -240,14 +280,14 @@
                 android:layout_marginTop="20dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="2. Stat Penonton &amp; Request"
-                android:textColor="@color/metro_accent"
+                android:textColor="#2BB5B0"
                 android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="#181818"
+                android:background="@drawable/bg_report_card"
                 android:orientation="vertical"
                 android:padding="14dp">
 
@@ -255,9 +295,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-bold"
-                    android:text="Top Request Users (Papan Peringkat):"
+                    android:text="👑 Top Request Users (Papan Peringkat):"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp" />
+
+                <com.github.mikephil.charting.charts.HorizontalBarChart
+                    android:id="@+id/chartTopRequesters"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginTop="8dp" />
 
                 <TextView
                     android:id="@+id/tvTopRequesters"
@@ -274,15 +320,21 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
-                    android:background="#2C2C2C" />
+                    android:background="#1F2B4D" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-bold"
-                    android:text="Lagu Paling Populer:"
+                    android:text="🎵 Lagu Paling Populer:"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp" />
+
+                <com.github.mikephil.charting.charts.BarChart
+                    android:id="@+id/chartTopSongs"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginTop="8dp" />
 
                 <TextView
                     android:id="@+id/tvTopSongs"
@@ -299,7 +351,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
-                    android:background="#2C2C2C" />
+                    android:background="#1F2B4D" />
 
                 <TextView
                     android:id="@+id/tvAudienceStats"
@@ -318,14 +370,14 @@
                 android:layout_marginTop="20dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="3. Interaksi &amp; Monetisasi TikTok Live"
-                android:textColor="@color/metro_accent"
+                android:textColor="#2BB5B0"
                 android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="#181818"
+                android:background="@drawable/bg_report_card"
                 android:orientation="vertical"
                 android:padding="14dp">
 
@@ -333,9 +385,15 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-bold"
-                    android:text="Top Donatur / Gifter:"
+                    android:text="🎁 Top Donatur / Gifters (Est. Coins):"
                     android:textColor="#FFFFFF"
                     android:textSize="14sp" />
+
+                <com.github.mikephil.charting.charts.HorizontalBarChart
+                    android:id="@+id/chartTopGifters"
+                    android:layout_width="match_parent"
+                    android:layout_height="220dp"
+                    android:layout_marginTop="8dp" />
 
                 <TextView
                     android:id="@+id/tvTopGifters"
@@ -352,7 +410,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
-                    android:background="#2C2C2C" />
+                    android:background="#1F2B4D" />
 
                 <TextView
                     android:id="@+id/tvGiftsCoinsTotal"
@@ -367,12 +425,27 @@
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
                     android:layout_marginVertical="10dp"
-                    android:background="#2C2C2C" />
+                    android:background="#1F2B4D" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-bold"
+                    android:text="📊 Distribusi Interaksi Live Stream"
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp" />
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/chartInteractions"
+                    android:layout_width="match_parent"
+                    android:layout_height="260dp"
+                    android:layout_marginTop="8dp" />
 
                 <TextView
                     android:id="@+id/tvInteractionCounts"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:fontFamily="sans-serif"
                     android:lineSpacingExtra="4dp"
                     android:text="Likes: 0 ❤️ | Followers: 0 👤 | Shares: 0 ↗️ | Joins: 0 👋"
@@ -387,21 +460,27 @@
                 android:layout_marginTop="20dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="4. Performa Bot &amp; Sistem Audio"
-                android:textColor="@color/metro_accent"
+                android:textColor="#2BB5B0"
                 android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="#181818"
+                android:background="@drawable/bg_report_card"
                 android:orientation="vertical"
                 android:padding="14dp">
+
+                <com.github.mikephil.charting.charts.PieChart
+                    android:id="@+id/chartExtractorEngine"
+                    android:layout_width="match_parent"
+                    android:layout_height="240dp" />
 
                 <TextView
                     android:id="@+id/tvEngineFallback"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:fontFamily="sans-serif"
                     android:text="Engine Fallback Rate: NPE (0%) vs yt-dlp (0%)"
                     android:textColor="#E0E0E0"
@@ -435,7 +514,7 @@
                 android:layout_marginTop="20dp"
                 android:fontFamily="sans-serif-medium"
                 android:text="5. Fitur Ekspor &amp; Bagikan"
-                android:textColor="@color/metro_accent"
+                android:textColor="#2BB5B0"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -461,7 +540,7 @@
                     android:layout_marginTop="8dp"
                     android:text="📁 Ekspor Data (JSON / CSV / TXT)"
                     android:textColor="@color/metro_text"
-                    app:backgroundTint="#2D2D30" />
+                    app:backgroundTint="#1A2547" />
             </LinearLayout>
 
         </LinearLayout>

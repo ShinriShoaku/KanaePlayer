@@ -85,10 +85,12 @@ class LiveAnalyticsManager private constructor(context: Context) {
             endSession()
         }
         val cleanName = streamerUsername.trim().removePrefix("@")
+        val now = System.currentTimeMillis()
         val report = LiveAnalyticsReport(
             streamerUsername = if (cleanName.isBlank()) "Streamer" else cleanName,
-            startTimeMs = System.currentTimeMillis()
+            startTimeMs = now
         )
+        report.timelineSnapshots.add(TimelineSnapshot(timestampMs = now))
         activeReport = report
         saveReports()
         Log.d(TAG, "Started live analytics session for @${report.streamerUsername}")
@@ -99,12 +101,33 @@ class LiveAnalyticsManager private constructor(context: Context) {
         val current = activeReport ?: return
         current.endTimeMs = System.currentTimeMillis()
         current.durationMs = current.endTimeMs - current.startTimeMs
-        
+        current.timelineSnapshots.add(TimelineSnapshot(
+            timestampMs = current.endTimeMs,
+            totalRequests = current.totalRequestsCount,
+            totalCoins = current.totalCoinsEstimated,
+            totalLikes = current.likesCount,
+            totalJoins = current.joinsCount
+        ))
+
         // Push to past reports (at top)
         pastReports.add(0, current)
         activeReport = null
         saveReports()
         Log.d(TAG, "Ended live analytics session: ${current.durationMs / 1000}s")
+    }
+
+    private fun recordSnapshotIfNeeded(report: LiveAnalyticsReport) {
+        val now = System.currentTimeMillis()
+        val last = report.timelineSnapshots.lastOrNull()
+        if (last == null || (now - last.timestampMs) >= 15_000) {
+            report.timelineSnapshots.add(TimelineSnapshot(
+                timestampMs = now,
+                totalRequests = report.totalRequestsCount,
+                totalCoins = report.totalCoinsEstimated,
+                totalLikes = report.likesCount,
+                totalJoins = report.joinsCount
+            ))
+        }
     }
 
     fun isSessionActive(): Boolean = activeReport != null
@@ -173,6 +196,7 @@ class LiveAnalyticsManager private constructor(context: Context) {
             songTitle = cleanTitle,
             status = "QUEUED"
         ))
+        recordSnapshotIfNeeded(report)
         saveReports()
     }
 
@@ -277,6 +301,7 @@ class LiveAnalyticsManager private constructor(context: Context) {
         gStat.estimatedCoins += estimatedCoins
         gStat.lastGiftName = giftName
 
+        recordSnapshotIfNeeded(report)
         saveReports()
     }
 

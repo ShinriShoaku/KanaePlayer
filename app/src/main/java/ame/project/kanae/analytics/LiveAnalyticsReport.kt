@@ -48,6 +48,15 @@ data class ChatLogEntry(
 )
 
 @Keep
+data class TimelineSnapshot(
+    val timestampMs: Long = System.currentTimeMillis(),
+    val totalRequests: Int = 0,
+    val totalCoins: Int = 0,
+    val totalLikes: Int = 0,
+    val totalJoins: Int = 0
+)
+
+@Keep
 data class LiveAnalyticsReport(
     val id: String = UUID.randomUUID().toString(),
     var streamerUsername: String = "",
@@ -84,5 +93,8 @@ data class LiveAnalyticsReport(
 
     // Logs for export
     var requestLogs: MutableList<RequestLogEntry> = mutableListOf(),
-    var chatLogs: MutableList<ChatLogEntry> = mutableListOf()
+    var chatLogs: MutableList<ChatLogEntry> = mutableListOf(),
+
+    // Timeline activity snapshots for charts
+    var timelineSnapshots: MutableList<TimelineSnapshot> = mutableListOf()
 )

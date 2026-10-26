@@ -29,7 +29,7 @@ android {
         minSdk = 26
         targetSdk = 37
         versionCode 29
-        versionName "12.5.2"
+        versionName "12.5.2-klukai"
         ndk { abiFilters "arm64-v8a","x86_64"} //mobile
      //   ndk { abiFilters "x86_64"} // chrome os (desktop)
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -111,6 +111,9 @@ dependencies {
 
     // ── Preference ────────────────────────────────────────────────────────────
     implementation 'androidx.preference:preference-ktx:1.2.1'
+
+    // ── MPAndroidChart ────────────────────────────────────────────────────────
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
 
     // ── NL Studio SDK ────────────────────────────────────────────────────────
     implementation project(':nlstudio-sdk')

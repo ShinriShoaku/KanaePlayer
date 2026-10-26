@@ -13,13 +13,10 @@
 
 package ame.project.kanae.analytics
 
+import android.content.ClipData
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.RectF
-import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
@@ -42,6 +39,7 @@ class LiveReportActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLiveReportBinding
     private lateinit var analyticsManager: LiveAnalyticsManager
     private val dateFormat = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault())
+    private val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     private val gson = GsonBuilder().setPrettyPrinting().create()
 
     private var availableReports: List<LiveAnalyticsReport> = emptyList()
@@ -127,6 +125,7 @@ class LiveReportActivity : AppCompatActivity() {
     }
 
     private fun displayReportData(report: LiveAnalyticsReport) {
+        renderCharts(report)
         val isActive = report.endTimeMs == 0L
         val startTimeStr = dateFormat.format(Date(report.startTimeMs))
         val endTimeStr = if (isActive) "Sekarang (Sedang Live)" else dateFormat.format(Date(report.endTimeMs))
@@ -205,6 +204,78 @@ class LiveReportActivity : AppCompatActivity() {
         binding.tvEngineFallback.text = "Engine Fallback Rate: NewPipe ($npePct%) vs yt-dlp ($ytdlpPct%)"
         binding.tvPoTokenStatus.text = "PoToken / Bypass Status: Refresh: ${report.poTokenRefreshCount} | Errors: ${report.poTokenErrorCount}"
         binding.tvAutoReconnectStat.text = "Auto Reconnect Stat: ${report.autoReconnectCount} kali terputus & auto-reconnect"
+
+    }
+
+    // ── Chart (tema navy/teal, lihat ReportCharts.kt) ──────────────────────────
+
+    private fun renderCharts(report: LiveAnalyticsReport) {
+        // Overview
+        ReportCharts.timeline(
+            binding.chartTimelineActivity, this,
+            ReportCharts.timelineSnapshots(report), timeFormat, animate = true
+        )
+
+        val queued = (report.totalRequestsCount - report.songsCompleted - report.songsSkipped - report.requestsRejected)
+            .coerceAtLeast(0)
+        ReportCharts.donut(
+            binding.chartSongStatus,
+            listOf(
+                ReportCharts.Slice("Diputar (${report.songsCompleted})", report.songsCompleted.toFloat(), ReportTheme.TEAL),
+                ReportCharts.Slice("Di-skip (${report.songsSkipped})", report.songsSkipped.toFloat(), ReportTheme.AMBER),
+                ReportCharts.Slice("Ditolak (${report.requestsRejected})", report.requestsRejected.toFloat(), ReportTheme.CORAL),
+                ReportCharts.Slice("Antrian ($queued)", queued.toFloat(), ReportTheme.PURPLE)
+            ),
+            "${report.totalRequestsCount}", "Request", "Belum ada request musik", animate = true
+        )
+
+        // Audience
+        val topReq = report.requestersMap.values.sortedByDescending { it.requestCount }.take(5)
+        ReportCharts.horizontalPills(
+            binding.chartTopRequesters,
+            topReq.map { it.username to it.requestCount.toFloat() },
+            "Request", "Belum ada data requester", animate = true
+        )
+
+        val topSongs = report.songRequestsMap.entries.sortedByDescending { it.value }.take(5)
+        ReportCharts.verticalBars(
+            binding.chartTopSongs,
+            topSongs.map { (if (it.key.length > 12) it.key.take(11) + "…" else it.key) to it.value.toFloat() },
+            "Total Request", "Belum ada data lagu", animate = true
+        )
+
+        // TikTok
+        val topGifters = report.giftersMap.values.sortedByDescending { it.estimatedCoins }.take(5)
+        ReportCharts.horizontalPills(
+            binding.chartTopGifters,
+            topGifters.map { it.username to it.estimatedCoins.toFloat() },
+            "Est. Coins", "Belum ada data gift", animate = true
+        )
+
+        val totalInter = report.likesCount + report.totalGiftsCount + report.followersCount +
+                report.sharesCount + report.joinsCount
+        ReportCharts.donut(
+            binding.chartInteractions,
+            listOf(
+                ReportCharts.Slice("Likes (${report.likesCount})", report.likesCount.toFloat(), ReportTheme.CORAL),
+                ReportCharts.Slice("Gifts (${report.totalGiftsCount})", report.totalGiftsCount.toFloat(), ReportTheme.AMBER),
+                ReportCharts.Slice("Followers (${report.followersCount})", report.followersCount.toFloat(), ReportTheme.GREEN),
+                ReportCharts.Slice("Shares (${report.sharesCount})", report.sharesCount.toFloat(), ReportTheme.TEAL),
+                ReportCharts.Slice("Joins (${report.joinsCount})", report.joinsCount.toFloat(), ReportTheme.PURPLE)
+            ),
+            "$totalInter", "Interaksi", "Belum ada interaksi penonton", animate = true
+        )
+
+        // System
+        ReportCharts.donut(
+            binding.chartExtractorEngine,
+            listOf(
+                ReportCharts.Slice("NewPipe (${report.npeSuccessCount})", report.npeSuccessCount.toFloat(), ReportTheme.GREEN),
+                ReportCharts.Slice("yt-dlp (${report.ytdlpFallbackCount})", report.ytdlpFallbackCount.toFloat(), ReportTheme.AMBER)
+            ),
+            "${report.npeSuccessCount + report.ytdlpFallbackCount}", "Ekstraksi",
+            "Belum ada statistik pencarian lagu", animate = true
+        )
     }
 
     private fun formatDuration(durationMs: Long): String {
@@ -216,122 +287,26 @@ class LiveReportActivity : AppCompatActivity() {
         else String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
     }
 
-    // 📸 Poster summary generator
+    // 📸 Poster infografis (tinggi dinamis, lihat LivePosterBuilder.kt)
     private fun generateAndSharePoster(report: LiveAnalyticsReport) {
+        var bitmap: Bitmap? = null
         try {
-            val width = 1080
-            val height = 1920
-            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-
-            // Background gradient / dark theme
-            canvas.drawColor(Color.parseColor("#121212"))
-
-            val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-            
-            // Header bar
-            paint.color = Color.parseColor("#E91E63") // Metro Accent
-            canvas.drawRect(0f, 0f, width.toFloat(), 200f, paint)
-
-            paint.color = Color.WHITE
-            paint.textSize = 54f
-            paint.typeface = Typeface.DEFAULT_BOLD
-            canvas.drawText("KANAE PLAYER - LIVE RECAP", 60f, 120f, paint)
-
-            // Streamer Info
-            paint.color = Color.parseColor("#E91E63")
-            paint.textSize = 64f
-            canvas.drawText("@${report.streamerUsername}", 60f, 310f, paint)
-
             val durationMs = if (report.endTimeMs == 0L) System.currentTimeMillis() - report.startTimeMs else report.durationMs
-            val dateStr = dateFormat.format(Date(report.startTimeMs))
+            bitmap = LivePosterBuilder(
+                context = this,
+                report = report,
+                dateFormat = dateFormat,
+                timeFormat = timeFormat,
+                durationText = formatDuration(durationMs)
+            ).build()
 
-            paint.color = Color.parseColor("#BBBBBB")
-            paint.textSize = 36f
-            paint.typeface = Typeface.DEFAULT
-            canvas.drawText("Sesi Live: $dateStr | Durasi: ${formatDuration(durationMs)}", 60f, 370f, paint)
-
-            // Card 1: Requests & Songs Summary
-            val cardPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#1E1E1E") }
-            val cardRect = RectF(50f, 420f, 1030f, 820f)
-            canvas.drawRoundRect(cardRect, 24f, 24f, cardPaint)
-
-            paint.color = Color.WHITE
-            paint.textSize = 42f
-            paint.typeface = Typeface.DEFAULT_BOLD
-            canvas.drawText("🎵 MUSIC & REQUEST HIGHLIGHTS", 90f, 490f, paint)
-
-            paint.textSize = 36f
-            paint.typeface = Typeface.DEFAULT
-            paint.color = Color.parseColor("#E0E0E0")
-            canvas.drawText("• Total Request: ${report.totalRequestsCount} lagu", 90f, 570f, paint)
-            canvas.drawText("• Selesai Diputar: ${report.songsCompleted} lagu", 90f, 630f, paint)
-            canvas.drawText("• Di-skip / Rejected: ${report.songsSkipped} / ${report.requestsRejected}", 90f, 690f, paint)
-
-            val topSong = report.songRequestsMap.maxByOrNull { it.value }?.key ?: "-"
-            canvas.drawText("• Lagu Terfavorit: $topSong", 90f, 750f, paint)
-
-            // Card 2: Top Requesters Leaderboard
-            val cardRect2 = RectF(50f, 860f, 1030f, 1260f)
-            canvas.drawRoundRect(cardRect2, 24f, 24f, cardPaint)
-
-            paint.color = Color.WHITE
-            paint.textSize = 42f
-            paint.typeface = Typeface.DEFAULT_BOLD
-            canvas.drawText("👑 TOP REQUESTERS LEADERBOARD", 90f, 930f, paint)
-
-            paint.textSize = 34f
-            paint.typeface = Typeface.DEFAULT
-            val top5Requesters = report.requestersMap.values.sortedByDescending { it.requestCount }.take(4)
-            var yOffset = 1000f
-            if (top5Requesters.isEmpty()) {
-                canvas.drawText("Belum ada request penonton", 90f, yOffset, paint)
-            } else {
-                top5Requesters.forEachIndexed { i, req ->
-                    canvas.drawText("${i + 1}. ${req.username} (${req.requestCount} req)", 90f, yOffset, paint)
-                    yOffset += 55f
-                }
-            }
-
-            // Card 3: TikTok Live Interaction & Gifts
-            val cardRect3 = RectF(50f, 1300f, 1030f, 1720f)
-            canvas.drawRoundRect(cardRect3, 24f, 24f, cardPaint)
-
-            paint.color = Color.WHITE
-            paint.textSize = 42f
-            paint.typeface = Typeface.DEFAULT_BOLD
-            canvas.drawText("🎁 GIFTS & LIVE INTERACTIONS", 90f, 1370f, paint)
-
-            paint.textSize = 36f
-            paint.typeface = Typeface.DEFAULT
-            canvas.drawText("• Total Gift Terkumpul: ${report.totalGiftsCount} (${report.totalCoinsEstimated} Coins 🪙)", 90f, 1450f, paint)
-            canvas.drawText("• Likes: ${report.likesCount} ❤️  | Followers Baru: ${report.followersCount} 👤", 90f, 1520f, paint)
-            canvas.drawText("• Total Share: ${report.sharesCount} ↗️  | Total Joins: ${report.joinsCount} 👋", 90f, 1590f, paint)
-
-            val topGifter = report.giftersMap.values.maxByOrNull { it.estimatedCoins }?.username ?: "-"
-            canvas.drawText("• Top Gifter: $topGifter", 90f, 1660f, paint)
-
-            // Footer
-            paint.color = Color.parseColor("#888888")
-            paint.textSize = 30f
-            canvas.drawText("Generated by KanaePlayer", 60f, 1820f, paint)
-
-            // Save to Cache and Share
             val file = File(cacheDir, "live_summary_poster.png")
-            FileOutputStream(file).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
-            }
-
-            val uri: Uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "image/png"
-                putExtra(Intent.EXTRA_STREAM, uri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-            startActivity(Intent.createChooser(shareIntent, "Bagikan Infografis Live"))
-
-        } catch (e: Exception) {
+            FileOutputStream(file).use { out -> bitmap.compress(Bitmap.CompressFormat.PNG, 100, out) }
+            shareExportedFile(file, "image/png", "Bagikan Infografis Live")
+        } catch (e: Throwable) {
             Toast.makeText(this, "Gagal membuat poster: ${e.message}", Toast.LENGTH_SHORT).show()
+        } finally {
+            bitmap?.recycle()
         }
     }
 
@@ -415,13 +390,31 @@ class LiveReportActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Share via FileProvider. Chooser sistem (uid 1000 / Samsung) ikut membaca URI untuk preview,
+     * jadi izin baca harus diberikan lewat ClipData + flag di intent, bukan hanya addFlags().
+     */
     private fun shareExportedFile(file: File, mimeType: String, chooserTitle: String) {
         val uri: Uri = FileProvider.getUriForFile(this, "$packageName.fileprovider", file)
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+
+        val send = Intent(Intent.ACTION_SEND).apply {
             type = mimeType
             putExtra(Intent.EXTRA_STREAM, uri)
+            clipData = ClipData.newRawUri(file.name, uri)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        startActivity(Intent.createChooser(shareIntent, chooserTitle))
+        val chooser = Intent.createChooser(send, chooserTitle).apply {
+            clipData = ClipData.newRawUri(file.name, uri)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        // Cadangan: beri izin eksplisit ke semua aplikasi target yang bisa terlihat
+        try {
+            packageManager.queryIntentActivities(send, PackageManager.MATCH_DEFAULT_ONLY).forEach { ri ->
+                grantUriPermission(ri.activityInfo.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+        } catch (_: Exception) { }
+
+        startActivity(chooser)
     }
 }

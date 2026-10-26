@@ -841,7 +841,7 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:padding="14dp"
-                        android:visibility="visible">
+                        android:visibility="gone">
 
                         <!-- Short Summary Badges Grid -->
                         <LinearLayout

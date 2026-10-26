@@ -98,6 +98,10 @@
 -keep class top.defaults.colorpicker.** { *; }
 -dontwarn top.defaults.colorpicker.**
 
+# MPAndroidChart
+-keep class com.github.mikephil.charting.** { *; }
+-dontwarn com.github.mikephil.charting.**
+
 # Keep Enums
 -keepclassmembers enum * {
     public static **[] values();

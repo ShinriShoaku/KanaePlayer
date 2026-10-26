@@ -25,6 +25,7 @@
 
 - **🚀 YouTube Audio Streaming**: Pemutaran audio super ringan dengan arsitektur dual-engine (**NewPipeExtractor** + **yt-dlp** sebagai fallback).
 - **💬 TikTok Live Chat Sync**: Integrasi mulus dengan TikTok Live menggunakan **EulerStream API**.
+- **📊 Live Report Analytics**: Laporan analitik live untuk memantau performa streaming, statistik interaksi, dan aktivitas penonton secara real-time.
 - **🖼️ Advanced Floating Overlays**:
   - **Playing Overlay**: Menampilkan informasi lagu saat ini.
   - **Queue Overlay**: Daftar antrian lagu yang transparan.
@@ -37,7 +38,12 @@
 
 ---
 
-## 🆕 Pembaruan Terkini (v12.5.1)
+## 🆕 Pembaruan Terkini (v12.5.2)
+
+- **Metro UI Fixes**: Perbaikan berbagai masalah antarmuka, penyesuaian tata letak visual, dan responsivitas pada gaya Metro UI box.
+- **Live Report Analytics**: Menambahkan fitur laporan analitik live untuk pemantauan data interaksi, lagu, dan aktivitas streaming secara real-time.
+
+## 🆕 Pembaruan Sebelumnya (v12.5.1)
 
 - **Metro UI Design**: Penyegaran antarmuka dengan gaya *Metro UI box* ala Windows Phone yang clean, tegas, dan modern.
 - **Native Speech Recognizer**: Penghapusan dukungan `wit.ai` dan menetapkan sistem bawaan Android (`SpeechRecognizer`) sebagai engine default untuk STT yang lebih andal.
@@ -67,6 +73,7 @@
 | **Bypass Logic** | Custom Po-Token Generator (WebView + BotGuard VM) |
 | **Live Sync** | EulerStream API (WebSocket + HTTP Fallback) |
 | **UI/UX** | XML Layouts + Material Components + WindowManager |
+| **Charts & Analytics** | MPAndroidChart |
 | **Image Engine** | Glide |
 
 ---
@@ -118,6 +125,18 @@
 - **Error 403 / Sign-in Required**: Cek tab `PoTokenGenerator` di log, pastikan generator berjalan.
 - **Chat Terputus**: Gunakan fitur *Auto-Reconnection* yang akan mencoba menyambung kembali hingga 5 kali.
 - **Overlay Hilang**: Pastikan izin "Display over other apps" sudah aktif.
+
+---
+
+## 📜 Credits & Third-Party Libraries
+
+Apresiasi dan terima kasih kepada proyek open-source berikut yang digunakan dalam KanaePlayer:
+
+- **[MPAndroidChart](https://github.com/PhilJay/MPAndroidChart)** - Library grafik dan visualisasi data analitik live.
+- **[NewPipeExtractor](https://github.com/TeamNewPipe/NewPipeExtractor)** - Engine ekstraksi stream YouTube.
+- **[Media3 ExoPlayer](https://developer.android.com/media/media3)** - Engine pemutar audio & media.
+- **[Glide](https://github.com/bumptech/glide)** - Framework pemuat & caching gambar.
+- **[youtubedl-android](https://github.com/junkfood02/youtubedl-android)** - Fallback extractor berbasis yt-dlp.
 
 ---
 

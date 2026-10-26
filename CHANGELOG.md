@@ -1,5 +1,13 @@
 # Changelog - KanaePlayer
 
+## [12.5.2] - 2026-10-25
+
+### 📊 New Features & Analytics
+- **Live Report Analytics**: Menambahkan fitur laporan analitik live untuk memantau performa streaming, statistik interaksi, dan metrik aktivitas penonton secara real-time.
+
+### 🎨 UI/UX Improvements
+- **Metro UI Fixes & Optimization**: Memperbaiki berbagai masalah pada antarmuka Metro UI box, meningkatkan responsivitas layout, serta stabilitas tampilan visual.
+
 ## [12.5.1] - 2026-10-18
 
 ### 🎨 UI/UX Improvements
