@@ -1,5 +1,5 @@
 {
-  "versionCode": 28,
-  "versionName": "12.5.1-klukai",
-  "updateMessage": "Pembaruan antarmuka Metro UI ala Windows Phone, peralihan default STT ke Speech Recognizer, serta perbaikan bug Android 12 & 14 dan sistem feedback."
+  "versionCode": 29,
+  "versionName": "12.5.2-klukai",
+  "updateMessage": "Metro UI Fixes & Optimization, Fitur Baru: Live Report Analytics (Laporan Analitik Live)"
 }
